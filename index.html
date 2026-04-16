@@ -279,21 +279,26 @@ footer strong{color:rgba(255,255,255,.75)}
 .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-@media(max-width:540px){
-  .cal-cell{min-height:0;height:auto;padding:2px 2px 4px;aspect-ratio:1/1.15}
-  .cal-num{font-size:.65rem;width:16px;height:16px}
-  .event-pill{font-size:.55rem;padding:1px 2px;gap:2px}
-  .ev-dot{width:5px;height:5px}
+@media(max-width:700px){
   .ev-time-inline{display:none}
-  .ev-more{font-size:.54rem;padding:0 2px}
+  .ev-more{font-size:.56rem}
+}
+@media(max-width:540px){
+  .cal-cell{min-height:0;padding:3px 2px 4px}
+  .cal-num{font-size:.64rem;width:16px;height:16px}
+  .event-pill{font-size:.56rem;padding:1px 3px;gap:2px}
+  .ev-dot{width:5px;height:5px}
+  .ev-more{font-size:.52rem;padding:0 2px}
   .cal-title{font-size:1.05rem}
-  main{padding:10px 8px 50px}
-  .cal-name{font-size:.58rem;padding:6px 1px}
+  main{padding:10px 6px 50px}
+  .cal-name{font-size:.6rem;padding:6px 1px;letter-spacing:.02em}
+  .toolbar-inner{padding:0 8px}
+  .cal-grid{font-size:.7rem}
 }
 @media(max-width:380px){
-  .cal-cell{aspect-ratio:1/1.25}
-  .cal-num{font-size:.6rem;width:14px;height:14px}
+  .cal-num{font-size:.58rem;width:14px;height:14px}
   .event-pill{font-size:.5rem}
+  .cal-name{font-size:.55rem}
 }
 </style>
 </head>
