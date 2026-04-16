@@ -280,11 +280,20 @@ footer strong{color:rgba(255,255,255,.75)}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(max-width:540px){
-  .cal-cell{min-height:56px;padding:3px 2px}
-  .cal-num{font-size:.68rem;width:17px;height:17px}
-  .event-pill{font-size:.58rem;padding:1px 3px}
+  .cal-cell{min-height:0;height:auto;padding:2px 2px 4px;aspect-ratio:1/1.15}
+  .cal-num{font-size:.65rem;width:16px;height:16px}
+  .event-pill{font-size:.55rem;padding:1px 2px;gap:2px}
+  .ev-dot{width:5px;height:5px}
+  .ev-time-inline{display:none}
+  .ev-more{font-size:.54rem;padding:0 2px}
   .cal-title{font-size:1.05rem}
-  main{padding:10px 10px 50px}
+  main{padding:10px 8px 50px}
+  .cal-name{font-size:.58rem;padding:6px 1px}
+}
+@media(max-width:380px){
+  .cal-cell{aspect-ratio:1/1.25}
+  .cal-num{font-size:.6rem;width:14px;height:14px}
+  .event-pill{font-size:.5rem}
 }
 </style>
 </head>
@@ -368,14 +377,14 @@ footer strong{color:rgba(255,255,255,.75)}
   <!-- Row 1: month tabs -->
   <div class="month-row">
     <span class="year-badge">2026</span>
-    <div class="month-tabs" id="monthTabs"></div> <button class="today-btn" id="todayBtn" onclick="goToday()">Today</button>
+    
   </div>
   <!-- Row 2: title + info btn + search + add -->
   <div class="cal-header-row">
     <h2 class="cal-title" id="calTitle">April <span>2026</span></h2>
     <!-- (i) stats popup -->
     <div style="position:relative">
-      <button class="info-btn" id="infoBtn" onclick="toggleStats()" title="Statistik">i</button>
+      <button class="today-btn" id="todayBtn" onclick="goToday()" style="font-size:.72rem;padding:3px 10px;margin-right:2px">Today</button><button class="info-btn" id="infoBtn" onclick="toggleStats()" title="Statistik">i</button>
       <div class="stats-popup" id="statsPopup">
         <div class="stat-row"><span class="stat-row-lbl" id="stLblTotal">Total Event</span><span class="stat-row-val" id="stValTotal">–</span></div>
         <div class="stat-row"><span class="stat-row-lbl" id="stLblMonth">Bulan ini</span><span class="stat-row-val" id="stValMonth">–</span></div>
@@ -383,16 +392,16 @@ footer strong{color:rgba(255,255,255,.75)}
         <div class="stat-row"><span class="stat-row-lbl" id="stLblVisit">Total kunjungan</span><span class="stat-row-val" id="stValVisit">–</span></div>
       </div>
     </div>
-    <!-- search -->
-    <div class="search-wrap">
-      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-      <input type="text" id="searchInput" placeholder="Cari event…" oninput="applyFilters()"/>
-    </div>
     <!-- add (admin) -->
     <button class="btn btn-primary btn-sm" id="addEventBtn" onclick="openAddModal(null)">+ <span id="addBtnTxt">Tambah</span></button>
   </div>
   <!-- Row 3: category filter dropdown -->
   <div class="filter-row">
+    <!-- search -->
+    <div class="search-wrap" style="margin-left:0;margin-right:4px;position:relative">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);opacity:.38;pointer-events:none"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+      <input type="text" id="searchInput" placeholder="Cari event…" oninput="applyFilters()"/>
+    </div>
     <div class="cat-filter-wrap" id="catFilterWrap">
       <button class="cat-filter-btn" id="catFilterBtn" onclick="toggleCatFilter()">
         <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
