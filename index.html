@@ -79,6 +79,9 @@ header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue-mid) 60%,var(
 .mtab{padding:4px 9px;border-radius:5px;font-size:.73rem;font-weight:500;color:var(--text2);cursor:pointer;border:1px solid transparent;background:transparent;font-family:var(--font-b);transition:all .15s}
 .mtab:hover{color:var(--text);background:var(--surface2)}
 .mtab.on{color:#fff;background:var(--blue);border-color:var(--blue);font-weight:600}
+  .today-btn{padding:4px 11px;border-radius:5px;font-size:.73rem;font-weight:600;color:var(--text);cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);font-family:var(--font-b);transition:all .15s;flex-shrink:0}
+.today-btn:hover{border-color:var(--blue);color:var(--blue)}
+.today-btn.dim{opacity:.4;pointer-events:none}
 
 /* cal header row: title + controls */
 .cal-header-row{display:flex;align-items:center;gap:8px;padding:8px 0 6px;flex-wrap:wrap}
@@ -365,7 +368,7 @@ footer strong{color:rgba(255,255,255,.75)}
   <!-- Row 1: month tabs -->
   <div class="month-row">
     <span class="year-badge">2026</span>
-    <div class="month-tabs" id="monthTabs"></div>
+    <div class="month-tabs" id="monthTabs"></div> <button class="today-btn" id="todayBtn" onclick="goToday()">Today</button>
   </div>
   <!-- Row 2: title + info btn + search + add -->
   <div class="cal-header-row">
@@ -501,11 +504,11 @@ async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.
 
 /* ══ PASSWORDS ══ */
 const USERS={
-  Andre:'An#7mK!p2xRw',Catherine:'C@th3r!n3#Nps',Daniel:'D@n!3l$K3y#26',
-  David:'Dv!d#7xQm2Lz',Dea:'D3a@Nps!07kR',Eliza:'El!z4#mPx9Wq',
-  Frans:'Fr@ns#8vL!2Tz',Grace:'Gr@c3!Nps#9Kx',Gunawan:'Gu#n4w@n!7Lp',
-  Lisken:'L!sk3n@#mR8Qv',Mutiara:'Mut!@r4#7xKp2',Rut:'Ru7#!mK@3xPz',
-  Selfa:'S3lf@#9xK!mRv',Tomy:'T0my#!7mK@3Lx',
+  Andre:'aNdRe2026nps',Catherine:'aNdRe2026nps',Daniel:'dAniEl2026nPs',
+  David:'dAniEl2026nPs',Dea:'dEa2026NapoSo',Eliza:'eLiZa26NpHkbp',
+  Frans:'fRaNs2026nPso',Grace:'gRaCe26NaPoSo',Gunawan:'gUnAwAn26nPs',
+  Lisken:'lIsKeN2026nPs',Mutiara:'lIsKeN2026nPs',Rut:'lIsKeN2026nPs',
+  Selfa:'lIsKeN2026nPs',Tomy:'tOmY2026naPso',
 };
 
 /* ══ CATEGORIES ══ */
@@ -719,7 +722,8 @@ function buildTabs(){
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   document.getElementById('monthTabs').innerHTML=MO.map((m,i)=>`<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`).join('');
 }
-function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();}
+function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();document.getElementById('todayBtn').classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
+function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();document.getElementById('todayBtn').classList.add('dim');}
 
 /* ══ STATS ══ */
 function renderStats(){
