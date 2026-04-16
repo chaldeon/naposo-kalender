@@ -731,8 +731,8 @@ function buildTabs(){
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   document.getElementById('monthTabs').innerHTML=MO.map((m,i)=>`<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`).join('');
 }
-function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();document.getElementById('todayBtn').classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
-function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();document.getElementById('todayBtn').classList.add('dim');}
+function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
+function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.add('dim');}
 
 /* ══ STATS ══ */
 function renderStats(){
