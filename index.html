@@ -1,472 +1,593 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Kalender Pelayanan Naposo HKBP Ujung Menteng</title>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --navy:        #0a1f44;
-      --blue-mid:    #1a4a8a;
-      --blue:        #2563be;
-      --blue-light:  #4a90d9;
-      --sky:         #dbeafe;
-      --sky-pale:    #eff6ff;
-      --gold:        #c9a227;
-      --gold-light:  #f5e0a0;
-      --white:       #ffffff;
-      --gray-50:     #f8fafc;
-      --gray-100:    #f1f5f9;
-      --gray-200:    #e2e8f0;
-      --gray-400:    #94a3b8;
-      --gray-600:    #475569;
-      --gray-800:    #1e293b;
-      --red:         #dc2626;
-      --green:       #16a34a;
-      --font-serif:  'Libre Baskerville', Georgia, serif;
-      --font-sans:   'DM Sans', system-ui, sans-serif;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body { font-family: var(--font-sans); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalender Pelayanan · Naposo HKBP Ujung Menteng</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════
+   CSS VARIABLES — light & dark
+══════════════════════════════════════════════════ */
+:root {
+  --navy:       #0a1f44;
+  --blue-mid:   #1a4a8a;
+  --blue:       #2563be;
+  --blue-lt:    #4a90d9;
+  --sky:        #dbeafe;
+  --sky-pale:   #eff6ff;
+  --gold:       #c9a227;
+  --gold-lt:    #f5e0a0;
+  --white:      #ffffff;
+  --bg:         #f8fafc;
+  --surface:    #ffffff;
+  --surface2:   #f1f5f9;
+  --border:     #e2e8f0;
+  --border2:    #cbd5e1;
+  --text:       #1e293b;
+  --text2:      #475569;
+  --text3:      #94a3b8;
+  --red:        #dc2626;
+  --green:      #16a34a;
+  --purple:     #7c3aed;
+  --cyan:       #0891b2;
+  --pink:       #db2777;
+  --shadow:     0 1px 6px rgba(10,31,68,.08), 0 4px 20px rgba(10,31,68,.05);
+  --font-s:     'Libre Baskerville', Georgia, serif;
+  --font-b:     'DM Sans', system-ui, sans-serif;
+  --radius:     12px;
+  --hdr-h:      64px;
+}
+[data-theme="dark"] {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #21262d;
+  --border:   #30363d;
+  --border2:  #484f58;
+  --text:     #e6edf3;
+  --text2:    #8b949e;
+  --text3:    #6e7681;
+  --sky:      #1c3a5e;
+  --sky-pale: #162033;
+  --shadow:   0 1px 6px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.2);
+}
 
-    /* ── HEADER ── */
-    header {
-      background: linear-gradient(135deg, var(--navy) 0%, var(--blue-mid) 60%, var(--blue) 100%);
-      color: var(--white); position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 16px rgba(10,31,68,.35);
-    }
-    .header-inner {
-      max-width: 1280px; margin: 0 auto; padding: 16px 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    }
-    .header-brand { display: flex; align-items: center; gap: 14px; }
-    .header-title h1 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; line-height: 1.2; }
-    .header-title p  { font-size: .75rem; font-weight: 300; opacity: .75; letter-spacing: .06em; text-transform: uppercase; }
-    .header-actions  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
 
-    /* ── BUTTONS ── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px;
-      font-family: var(--font-sans); font-size: .85rem; font-weight: 500; cursor: pointer;
-      border: none; transition: all .18s; white-space: nowrap;
-    }
-    .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,.45); color: var(--white); }
-    .btn-outline:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.8); }
-    .btn-primary { background: var(--blue); color: var(--white); }
-    .btn-primary:hover { background: var(--blue-mid); }
-    .btn-success { background: var(--green); color: var(--white); }
-    .btn-success:hover { background: #15803d; }
-    .btn-sm { padding: 5px 10px; font-size: .78rem; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
+/* ─ HEADER ─ */
+header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue-mid) 60%,var(--blue) 100%);color:#fff;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(10,31,68,.35)}
+.hdr{max-width:1400px;margin:0 auto;padding:0 20px;height:var(--hdr-h);display:flex;align-items:center;gap:12px}
+.hdr-brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.hdr-logo{width:38px;height:38px;flex-shrink:0}
+.hdr-title h1{font-family:var(--font-s);font-size:1.05rem;font-weight:700;line-height:1.2}
+.hdr-title p{font-size:.68rem;opacity:.7;letter-spacing:.07em;text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
 
-    /* ── YEAR NAV ── */
-    .year-nav { background: var(--navy); border-bottom: 2px solid var(--gold); }
-    .year-nav-inner {
-      max-width: 1280px; margin: 0 auto; padding: 10px 24px;
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    }
-    .year-label { font-family: var(--font-serif); font-size: 1rem; color: var(--gold); font-weight: 700; letter-spacing: .04em; margin-right: 8px; }
-    .month-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-    .month-tab {
-      padding: 5px 12px; border-radius: 4px; font-size: .78rem; font-weight: 500;
-      color: rgba(255,255,255,.65); cursor: pointer; border: 1px solid transparent;
-      transition: all .15s; background: transparent; font-family: var(--font-sans);
-    }
-    .month-tab:hover  { color: var(--white); background: rgba(255,255,255,.08); }
-    .month-tab.active { color: var(--navy); background: var(--gold); border-color: var(--gold); font-weight: 600; }
+/* ─ ADMIN BAR ─ */
+.admin-bar{background:linear-gradient(90deg,#1a4a8a,#0a1f44);border-bottom:2px solid var(--gold);padding:7px 20px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-bar.on{display:flex}
+.admin-bar-txt{font-size:.76rem;color:var(--gold-lt);font-weight:500}
 
-    /* ── ADMIN BAR ── */
-    .admin-bar {
-      background: linear-gradient(90deg,#1a4a8a,#0a1f44); border-bottom: 2px solid var(--gold);
-      padding: 8px 24px; display: none; align-items: center; gap: 10px; flex-wrap: wrap;
-    }
-    .admin-bar.visible { display: flex; }
-    .admin-bar-text { font-size: .78rem; color: var(--gold-light); font-weight: 500; }
-    .sync-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: .72rem; padding: 3px 10px; border-radius: 20px; margin-left: auto;
-    }
-    .sync-badge.ok   { background: rgba(22,163,74,.2);  color: #86efac; }
-    .sync-badge.err  { background: rgba(220,38,38,.2);  color: #fca5a5; }
-    .sync-badge.load { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
-    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-    .sync-dot.pulse { animation: pulse 1.4s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+/* ─ TOOLBAR ─ */
+.toolbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:var(--hdr-h);z-index:150;transition:background .25s}
+.toolbar-inner{max-width:1400px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.year-badge{font-family:var(--font-s);font-size:.95rem;color:var(--gold);font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.month-tabs{display:flex;gap:3px;flex-wrap:wrap}
+.mtab{padding:5px 11px;border-radius:5px;font-size:.76rem;font-weight:500;color:var(--text2);cursor:pointer;border:1px solid transparent;background:transparent;font-family:var(--font-b);transition:all .15s}
+.mtab:hover{color:var(--text);background:var(--surface2)}
+.mtab.on{color:#fff;background:var(--blue);border-color:var(--blue);font-weight:600}
+.toolbar-sep{width:1px;height:24px;background:var(--border);flex-shrink:0}
 
-    /* ── MAIN ── */
-    main { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
+/* ─ SEARCH & FILTER BAR ─ */
+.filter-bar{background:var(--surface2);border-bottom:1px solid var(--border);transition:background .25s}
+.filter-inner{max-width:1400px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:320px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none}
+#searchInput{width:100%;padding:7px 10px 7px 32px;border:1.5px solid var(--border2);border-radius:7px;font-family:var(--font-b);font-size:.83rem;background:var(--surface);color:var(--text);transition:border-color .15s}
+#searchInput:focus{outline:none;border-color:var(--blue)}
+.filter-chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{padding:4px 11px;border-radius:20px;font-size:.73rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s;white-space:nowrap}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{color:#fff;border-color:transparent}
+.chip[data-cat="all"].on{background:var(--blue)}
+.chip[data-cat="koor"].on{background:var(--purple)}
+.chip[data-cat="ibadah"].on{background:var(--gold)}
+.chip[data-cat="rapat"].on{background:var(--cyan)}
+.chip[data-cat="latihan"].on{background:var(--green)}
+.chip[data-cat="reversement"].on{background:var(--pink)}
+.chip[data-cat="doa"].on{background:var(--blue-lt)}
+.chip[data-cat="other"].on{background:var(--text3)}
+.sort-select{padding:6px 10px;border:1.5px solid var(--border2);border-radius:7px;font-family:var(--font-b);font-size:.78rem;background:var(--surface);color:var(--text);cursor:pointer}
+.sort-select:focus{outline:none;border-color:var(--blue)}
 
-    .loading-overlay { text-align: center; padding: 80px 20px; color: var(--gray-400); }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--gray-200);
-      border-top-color: var(--blue); border-radius: 50%;
-      animation: spin .7s linear infinite; margin: 0 auto 16px;
-    }
-    @keyframes spin { to{transform:rotate(360deg)} }
+/* ─ MAIN ─ */
+main{max-width:1400px;margin:0 auto;padding:22px 20px 80px}
 
-    /* ── LEGEND ── */
-    .legend {
-      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
-      padding: 14px 18px; background: var(--white); border-radius: 8px; border: 1px solid var(--gray-200);
-    }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: .75rem; color: var(--gray-600); }
-    .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+/* ─ BUTTONS ─ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-family:var(--font-b);font-size:.82rem;font-weight:500;cursor:pointer;border:none;transition:all .18s;white-space:nowrap}
+.btn-outline{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff}
+.btn-outline:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.8)}
+.btn-ghost{background:var(--surface2);border:1.5px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--blue-lt);color:var(--text)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-mid)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 
-    /* ── CALENDAR ── */
-    .calendar-section { animation: fadeUp .35s ease both; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
-    .calendar-month-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
-    }
-    .calendar-month-title { font-family: var(--font-serif); font-size: 1.6rem; color: var(--navy); font-weight: 700; }
-    .calendar-month-title span { color: var(--blue); font-style: italic; }
+/* ─ BADGE / LOGIN STATE ─ */
+.login-badge{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
+.login-badge.on{background:rgba(201,162,39,.25);color:var(--gold-lt)}
 
-    .cal-grid {
-      background: var(--white); border-radius: 12px;
-      box-shadow: 0 1px 6px rgba(10,31,68,.08), 0 4px 20px rgba(10,31,68,.05);
-      overflow: hidden; border: 1px solid var(--gray-200);
-    }
-    .cal-header-row { display: grid; grid-template-columns: repeat(7,1fr); background: var(--navy); }
-    .cal-day-name {
-      text-align: center; font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.75);
-      padding: 10px 4px; letter-spacing: .08em; text-transform: uppercase;
-    }
-    .cal-day-name:first-child { color: var(--gold); }
-    .cal-day-name:last-child  { color: var(--gold-light); }
-    .cal-body { display: grid; grid-template-columns: repeat(7,1fr); }
-    .cal-cell {
-      min-height: 110px; border-right: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100);
-      padding: 8px 8px 6px; display: flex; flex-direction: column; gap: 4px; position: relative; transition: background .12s;
-    }
-    .cal-cell:nth-child(7n) { border-right: none; }
-    .cal-cell.empty    { background: var(--gray-50); }
-    .cal-cell.today    { background: var(--sky-pale); }
-    .cal-cell.today .cal-date-num { background: var(--blue); color: var(--white); }
-    .cal-date-num {
-      font-size: .8rem; font-weight: 700; color: var(--gray-600);
-      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; flex-shrink: 0;
-    }
-    .cal-cell:not(.empty):hover .cal-date-num { background: var(--sky); color: var(--blue); }
-    .cal-cell.sunday   .cal-date-num { color: var(--red); }
-    .cal-cell.saturday .cal-date-num { color: #7c3aed; }
+/* ─ SYNC DOT ─ */
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;padding:3px 10px;border-radius:20px;margin-left:auto}
+.sync-badge.ok{background:rgba(22,163,74,.2);color:#86efac}
+.sync-badge.err{background:rgba(220,38,38,.2);color:#fca5a5}
+.sync-badge.load{background:rgba(255,255,255,.08);color:rgba(255,255,255,.55)}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+.sync-dot.pulse{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-    .cal-add-btn {
-      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%;
-      background: var(--blue); color: white; border: none; cursor: pointer; font-size: 14px;
-      display: none; align-items: center; justify-content: center; opacity: .8; transition: opacity .15s; line-height:1;
-    }
-    .cal-add-btn:hover { opacity: 1; }
-    body.admin-mode .cal-cell:not(.empty):hover .cal-add-btn { display: flex; }
+/* ─ CALENDAR ─ */
+.cal-section{animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.cal-title{font-family:var(--font-s);font-size:1.5rem;color:var(--navy);font-weight:700}
+[data-theme="dark"] .cal-title{color:var(--blue-lt)}
+.cal-title span{color:var(--blue);font-style:italic}
 
-    .event-pill {
-      background: var(--sky); border-left: 3px solid var(--blue); border-radius: 0 4px 4px 0;
-      padding: 3px 6px; font-size: .68rem; line-height: 1.3; color: var(--navy);
-      cursor: pointer; position: relative; word-break: break-word; transition: background .12s, color .12s;
-    }
-    .event-pill:hover { background: var(--blue); color: var(--white); }
-    .event-time  { font-weight: 600; display: block; font-size: .64rem; opacity: .8; }
-    .event-title { display: block; }
-    .event-del {
-      display: none; position: absolute; top: 2px; right: 3px;
-      background: var(--red); color: white; border: none; border-radius: 3px;
-      font-size: .6rem; padding: 1px 4px; cursor: pointer; line-height: 1.4;
-    }
-    body.admin-mode .event-pill:hover .event-del { display: block; }
+.cal-grid{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border);transition:background .25s}
+.cal-names{display:grid;grid-template-columns:repeat(7,1fr);background:var(--navy)}
+[data-theme="dark"] .cal-names{background:#0d1b2a}
+.cal-name{text-align:center;font-size:.68rem;font-weight:600;color:rgba(255,255,255,.7);padding:9px 2px;letter-spacing:.07em;text-transform:uppercase}
+.cal-name:first-child{color:var(--gold)}
+.cal-name:last-child{color:var(--gold-lt)}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr)}
 
-    .event-koor        { border-color: #7c3aed; background: #f3f0ff; }
-    .event-ibadah      { border-color: var(--gold); background: #fffbeb; }
-    .event-rapat       { border-color: #0891b2; background: #ecfeff; }
-    .event-latihan     { border-color: #16a34a; background: #f0fdf4; }
-    .event-reversement { border-color: #db2777; background: #fdf2f8; }
-    .event-doa         { border-color: var(--blue-light); background: var(--sky-pale); }
-    .event-other       { border-color: var(--gray-400); background: var(--gray-100); }
-    .event-koor:hover        { background: #7c3aed; }
-    .event-ibadah:hover      { background: var(--gold); color: var(--navy); }
-    .event-rapat:hover       { background: #0891b2; }
-    .event-latihan:hover     { background: #16a34a; }
-    .event-reversement:hover { background: #db2777; }
-    .event-doa:hover         { background: var(--blue-light); }
+.cal-cell{min-height:108px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px;display:flex;flex-direction:column;gap:3px;position:relative;transition:background .12s}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell.empty{background:var(--surface2)}
+.cal-cell.today{background:var(--sky-pale)}
+[data-theme="dark"] .cal-cell.today{background:#162033}
+.cal-cell.today .cal-num{background:var(--blue);color:#fff}
+.cal-num{font-size:.78rem;font-weight:700;color:var(--text2);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;line-height:1;cursor:default}
+.cal-cell.sunday   .cal-num{color:var(--red)}
+.cal-cell.saturday .cal-num{color:var(--purple)}
+.cal-cell:not(.empty):hover .cal-num{background:var(--sky);color:var(--blue)}
+[data-theme="dark"] .cal-cell:not(.empty):hover .cal-num{background:var(--sky);color:var(--blue)}
 
-    /* ── MODAL ── */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(10,31,68,.55); backdrop-filter: blur(3px);
-      z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;
-      opacity: 0; pointer-events: none; transition: opacity .2s;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .modal {
-      background: var(--white); border-radius: 14px; width: 100%; max-width: 480px;
-      box-shadow: 0 20px 60px rgba(10,31,68,.3); transform: translateY(20px); transition: transform .2s; overflow: hidden;
-    }
-    .modal-overlay.open .modal { transform: translateY(0); }
-    .modal-header {
-      background: linear-gradient(135deg, var(--navy), var(--blue-mid)); padding: 18px 22px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .modal-header h2 { font-family: var(--font-serif); font-size: 1rem; color: var(--white); font-weight: 700; }
-    .modal-close {
-      background: rgba(255,255,255,.15); border: none; color: white; width: 28px; height: 28px;
-      border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-    }
-    .modal-close:hover { background: rgba(255,255,255,.3); }
-    .modal-body   { padding: 22px; }
-    .modal-footer { padding: 14px 22px; background: var(--gray-50); border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 10px; }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 7px;
-      font-family: var(--font-sans); font-size: .88rem; color: var(--gray-800); background: var(--gray-50); transition: border-color .15s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); background: var(--white); }
-    .form-row { display: flex; gap: 12px; }
-    .form-row .form-group { flex: 1; }
+/* add btn */
+.cal-add{position:absolute;top:5px;right:5px;width:19px;height:19px;border-radius:50%;background:var(--blue);color:#fff;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;opacity:.75;transition:opacity .15s;line-height:1}
+.cal-add:hover{opacity:1}
+body.admin-mode .cal-cell:not(.empty):hover .cal-add{display:flex}
 
-    .login-badge {
-      display: inline-flex; align-items: center; gap: 5px; font-size: .72rem;
-      padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.8);
-    }
-    .login-badge.logged-in { background: rgba(201,162,39,.25); color: var(--gold-light); }
+/* events */
+.event-pill{border-left:3px solid var(--blue);background:var(--sky);border-radius:0 4px 4px 0;padding:2px 5px;font-size:.65rem;line-height:1.3;color:var(--text);cursor:pointer;position:relative;word-break:break-word;transition:background .12s,color .12s;user-select:none}
+.event-pill:hover{background:var(--blue);color:#fff}
+.ev-time{font-weight:600;display:block;font-size:.6rem;opacity:.8}
+.ev-title{display:block}
+.ev-del{display:none;position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border:none;border-radius:3px;font-size:.58rem;padding:1px 4px;cursor:pointer;line-height:1.4;z-index:2}
+body.admin-mode .event-pill:hover .ev-del{display:block}
+.event-pill.dragging{opacity:.5;transform:scale(.97)}
+.event-pill[draggable="true"]{cursor:grab}
+.cal-cell.drag-over{background:var(--sky)!important;outline:2px dashed var(--blue);outline-offset:-2px}
 
-    .toast {
-      position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: var(--white);
-      padding: 12px 18px; border-radius: 8px; font-size: .85rem;
-      box-shadow: 0 4px 20px rgba(10,31,68,.3); transform: translateY(80px); opacity: 0;
-      transition: all .25s; z-index: 300; max-width: 320px; border-left: 4px solid var(--gold);
-    }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast.err  { border-left-color: var(--red); }
+/* category colours */
+.ev-koor        {border-color:var(--purple);background:#f3f0ff;color:#4c1d95}
+.ev-ibadah      {border-color:var(--gold);background:#fffbeb;color:#78350f}
+.ev-rapat       {border-color:var(--cyan);background:#ecfeff;color:#164e63}
+.ev-latihan     {border-color:var(--green);background:#f0fdf4;color:#14532d}
+.ev-reversement {border-color:var(--pink);background:#fdf2f8;color:#831843}
+.ev-doa         {border-color:var(--blue-lt);background:var(--sky-pale);color:#1e3a5f}
+.ev-other       {border-color:var(--text3);background:var(--surface2);color:var(--text2)}
+[data-theme="dark"] .ev-koor        {background:#2e1065;color:#c4b5fd}
+[data-theme="dark"] .ev-ibadah      {background:#292000;color:#fde68a}
+[data-theme="dark"] .ev-rapat       {background:#082f49;color:#7dd3fc}
+[data-theme="dark"] .ev-latihan     {background:#052e16;color:#86efac}
+[data-theme="dark"] .ev-reversement {background:#500724;color:#f9a8d4}
+[data-theme="dark"] .ev-doa         {background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .ev-other       {background:var(--surface2);color:var(--text2)}
+.ev-koor:hover        {background:var(--purple)!important;color:#fff!important}
+.ev-ibadah:hover      {background:var(--gold)!important;color:var(--navy)!important}
+.ev-rapat:hover       {background:var(--cyan)!important;color:#fff!important}
+.ev-latihan:hover     {background:var(--green)!important;color:#fff!important}
+.ev-reversement:hover {background:var(--pink)!important;color:#fff!important}
+.ev-doa:hover         {background:var(--blue-lt)!important;color:#fff!important}
 
-    .event-detail { background: var(--white); border-radius: 10px; padding: 18px; border: 1px solid var(--gray-200); }
-    .event-detail-date  { font-size: .75rem; color: var(--blue); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-    .event-detail-title { font-size: 1rem; font-weight: 600; color: var(--navy); }
-    .event-detail-time  { font-size: .82rem; color: var(--gray-600); margin-top: 4px; }
+/* search highlight */
+.ev-hl{outline:2px solid var(--gold);outline-offset:1px}
+.cal-cell.no-match{opacity:.25}
 
-    @media (max-width: 640px) {
-      .cal-cell { min-height: 70px; padding: 4px; }
-      .event-pill { font-size: .6rem; }
-      .cal-date-num { font-size: .7rem; width: 20px; height: 20px; }
-      .calendar-month-title { font-size: 1.2rem; }
-      main { padding: 16px 12px 40px; }
-    }
-  </style>
+/* ─ LEGEND ─ */
+.legend{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-top:20px;transition:background .25s}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:.73rem;color:var(--text2)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ─ MODAL ─ */
+.overlay{position:fixed;inset:0;background:rgba(10,31,68,.55);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.on{opacity:1;pointer-events:auto}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:translateY(20px);transition:transform .2s,background .25s;overflow:hidden}
+.overlay.on .modal{transform:translateY(0)}
+.modal-hdr{background:linear-gradient(135deg,var(--navy),var(--blue-mid));padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h2{font-family:var(--font-s);font-size:.95rem;color:#fff;font-weight:700}
+.modal-x{background:rgba(255,255,255,.15);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-x:hover{background:rgba(255,255,255,.3)}
+.modal-body{padding:20px}
+.modal-foot{padding:12px 20px;background:var(--surface2);border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.form-g{margin-bottom:14px}
+.form-g label{display:block;font-size:.76rem;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase}
+.form-g input,.form-g select,.form-g textarea{width:100%;padding:9px 11px;border:1.5px solid var(--border2);border-radius:7px;font-family:var(--font-b);font-size:.85rem;color:var(--text);background:var(--surface);transition:border-color .15s}
+.form-g input:focus,.form-g select:focus,.form-g textarea:focus{outline:none;border-color:var(--blue)}
+.form-row{display:flex;gap:10px}
+.form-row .form-g{flex:1}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:38px}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:2px;display:flex;align-items:center}
+.pw-eye:hover{color:var(--text2)}
+.login-err{color:var(--red);font-size:.78rem;display:none;margin-top:-8px;margin-bottom:4px}
+
+/* ─ TOAST ─ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:11px 16px;border-radius:8px;font-size:.83rem;box-shadow:0 4px 20px rgba(0,0,0,.25);transform:translateY(80px);opacity:0;transition:all .25s;z-index:900;max-width:300px;border-left:4px solid var(--gold)}
+.toast.on{transform:translateY(0);opacity:1}
+.toast.err{border-left-color:var(--red)}
+.toast.ok{border-left-color:var(--green)}
+
+/* ─ DETAIL MODAL ─ */
+.det-date{font-size:.73rem;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.det-title{font-size:1rem;font-weight:600;color:var(--text)}
+.det-time{font-size:.82rem;color:var(--text2);margin-top:4px}
+.det-note{margin-top:10px;font-size:.84rem;color:var(--text2);line-height:1.55}
+.det-cat{display:inline-block;margin-top:10px;font-size:.7rem;padding:3px 8px;border-radius:20px;background:var(--sky);color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+/* ─ STATS BAR ─ */
+.stats-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;flex:1;min-width:120px;transition:background .25s}
+.stat-val{font-family:var(--font-s);font-size:1.5rem;font-weight:700;color:var(--blue)}
+.stat-lbl{font-size:.71rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+/* ─ TOGGLE SWITCH ─ */
+.tog{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:.78rem;color:rgba(255,255,255,.8)}
+.tog-track{width:32px;height:18px;border-radius:9px;background:rgba(255,255,255,.2);position:relative;transition:background .2s;flex-shrink:0}
+.tog-track.on{background:var(--gold)}
+.tog-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.tog-track.on .tog-thumb{left:16px}
+
+/* ─ FOOTER ─ */
+footer{background:var(--navy);color:rgba(255,255,255,.55);text-align:center;padding:18px 20px;font-size:.75rem;line-height:1.7;margin-top:40px}
+footer a{color:var(--gold-lt);text-decoration:none}
+footer strong{color:rgba(255,255,255,.8)}
+
+/* ─ CATEGORY MANAGER ─ */
+.cat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.cat-row:last-child{border-bottom:none}
+.cat-swatch{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.cat-name-in{flex:1;padding:5px 8px;border:1.5px solid var(--border2);border-radius:5px;font-family:var(--font-b);font-size:.82rem;background:var(--surface);color:var(--text)}
+.cat-del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:2px 4px;border-radius:4px;opacity:.7}
+.cat-del-btn:hover{opacity:1;background:rgba(220,38,38,.1)}
+
+/* ─ LOADING ─ */
+.loading-box{text-align:center;padding:80px 20px;color:var(--text3)}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .cal-cell{min-height:66px;padding:3px}
+  .event-pill{font-size:.58rem}
+  .cal-num{font-size:.7rem;width:19px;height:19px}
+  .cal-title{font-size:1.15rem}
+  main{padding:14px 10px 60px}
+  .stat-val{font-size:1.2rem}
+}
+</style>
 </head>
 <body>
 
+<!-- ══ HEADER ══ -->
 <header>
-  <div class="header-inner">
-    <div class="header-brand">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
-        <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
-        <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
-      </svg>
-      <div class="header-title">
-        <h1>Naposo HKBP Ujung Menteng</h1>
-        <p>Kalender Pelayanan 2026</p>
-      </div>
-    </div>
-    <div class="header-actions">
-      <div class="login-badge" id="loginBadge">
-        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm4 4a4 4 0 0 0-8 0h8z"/></svg>
-        <span id="loginBadgeText">Lihat saja</span>
-      </div>
-      <button class="btn btn-outline" id="loginBtn" onclick="openLoginModal()">🔒 Login Pengurus</button>
+<div class="hdr">
+  <div class="hdr-brand">
+    <svg class="hdr-logo" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+    </svg>
+    <div class="hdr-title">
+      <h1>Naposo HKBP Ujung Menteng</h1>
+      <p id="hdr-sub">Kalender Pelayanan 2026</p>
     </div>
   </div>
+  <div class="hdr-right">
+    <!-- Dark mode -->
+    <label class="tog" title="Dark mode">
+      <span id="darkLbl">🌙</span>
+      <div class="tog-track" id="darkTrack"><div class="tog-thumb"></div></div>
+      <input type="checkbox" id="darkCb" style="display:none" onchange="toggleDark()"/>
+    </label>
+    <!-- Language -->
+    <label class="tog" title="Language">
+      <span id="langLbl" style="font-size:.72rem;font-weight:600;">EN</span>
+      <div class="tog-track" id="langTrack"><div class="tog-thumb"></div></div>
+      <input type="checkbox" id="langCb" style="display:none" onchange="toggleLang()"/>
+    </label>
+    <div class="login-badge" id="loginBadge">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm4 4a4 4 0 0 0-8 0h8z"/></svg>
+      <span id="loginBadgeTxt">Lihat saja</span>
+    </div>
+    <button class="btn btn-outline btn-sm" id="loginBtn" onclick="openLoginModal()">🔒 <span data-i18n="loginBtn">Login Pengurus</span></button>
+  </div>
+</div>
 </header>
 
+<!-- ══ ADMIN BAR ══ -->
 <div class="admin-bar" id="adminBar">
-  <svg viewBox="0 0 16 16" fill="#c9a227" width="14" height="14"><path d="M8 1l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5l3.5-.5z"/></svg>
-  <span class="admin-bar-text">Mode Pengurus Aktif — kamu bisa tambah, ubah, dan hapus event. Data sinkron ke semua pengguna.</span>
-  <div class="sync-badge load" id="syncBadge" style="margin-left:auto;">
+  <svg viewBox="0 0 16 16" fill="#c9a227" width="13" height="13"><path d="M8 1l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5l3.5-.5z"/></svg>
+  <span class="admin-bar-txt" data-i18n="adminBarTxt">Mode Pengurus Aktif — tambah, ubah, hapus, atau drag-drop event. Data sinkron ke semua pengguna.</span>
+  <div class="sync-badge load" id="syncBadge">
     <div class="sync-dot pulse" id="syncDot"></div>
-    <span id="syncText">Menghubungkan…</span>
+    <span id="syncTxt">Menghubungkan…</span>
   </div>
-  <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:var(--gold-light);border:1px solid rgba(201,162,39,.4);" onclick="logout()">Logout</button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:var(--gold-lt);border:1px solid rgba(201,162,39,.35);" onclick="openCatModal()">⚙ <span data-i18n="manageCategories">Kelola Kategori</span></button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);" onclick="doLogout()"><span data-i18n="logout">Logout</span></button>
 </div>
 
-<div class="year-nav">
-  <div class="year-nav-inner">
-    <span class="year-label">2026</span>
-    <div class="month-tabs" id="monthTabs"></div>
-  </div>
+<!-- ══ TOOLBAR ══ -->
+<div class="toolbar">
+<div class="toolbar-inner">
+  <span class="year-badge">2026</span>
+  <div class="toolbar-sep"></div>
+  <div class="month-tabs" id="monthTabs"></div>
+</div>
 </div>
 
+<!-- ══ FILTER BAR ══ -->
+<div class="filter-bar">
+<div class="filter-inner">
+  <div class="search-wrap">
+    <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+    <input type="text" id="searchInput" placeholder="Cari event…" oninput="applyFilters()"/>
+  </div>
+  <div class="filter-chips" id="catChips"></div>
+  <div class="toolbar-sep"></div>
+  <select class="sort-select" id="sortSel" onchange="applyFilters()">
+    <option value="date-asc" data-i18n-opt="sortDateAsc">Tanggal ↑</option>
+    <option value="date-desc" data-i18n-opt="sortDateDesc">Tanggal ↓</option>
+    <option value="title-asc" data-i18n-opt="sortTitleAsc">Judul A–Z</option>
+    <option value="title-desc" data-i18n-opt="sortTitleDesc">Judul Z–A</option>
+  </select>
+</div>
+</div>
+
+<!-- ══ MAIN ══ -->
 <main>
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Koor</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Ibadah / Pelayanan</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#0891b2"></div>Rapat</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Latihan</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#db2777"></div>Reversement</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--blue-light)"></div>Doa</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-400)"></div>Lainnya</div>
-  </div>
-  <div id="calendarContainer">
-    <div class="loading-overlay"><div class="spinner"></div><p>Memuat data kalender…</p></div>
-  </div>
+  <!-- stats -->
+  <div class="stats-bar" id="statsBar"></div>
+  <!-- calendar -->
+  <div id="calWrap"><div class="loading-box"><div class="spinner"></div><p>Memuat data…</p></div></div>
+  <!-- legend (bottom) -->
+  <div class="legend" id="legendWrap"></div>
 </main>
 
-<!-- EVENT MODAL -->
-<div class="modal-overlay" id="eventModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="modalTitle">Tambah Event</h2>
-      <button class="modal-close" onclick="closeModal('eventModal')">×</button>
+<!-- ══ FOOTER ══ -->
+<footer>
+  <strong>Naposo HKBP Ujung Menteng</strong> · Kalender Pelayanan 2026<br>
+  Dibuat dengan ❤ untuk pelayanan bersama · <span id="footerYear"></span><br>
+  <small>Website ini hanya untuk internal pengurus dan anggota naposo. Tidak untuk disebarluaskan di luar komunitas.</small>
+</footer>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Event form -->
+<div class="overlay" id="eventModal">
+<div class="modal">
+  <div class="modal-hdr"><h2 id="evModalTitle">Tambah Event</h2><button class="modal-x" onclick="closeModal('eventModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g"><label data-i18n="labelDate">Tanggal</label><input type="date" id="evDate"/></div>
+    <div class="form-g"><label data-i18n="labelTitle">Judul Event</label><input type="text" id="evTitle" placeholder="cth: Latihan Koor Naposo-1"/></div>
+    <div class="form-row">
+      <div class="form-g"><label data-i18n="labelStart">Waktu Mulai</label><input type="time" id="evStart"/></div>
+      <div class="form-g"><label data-i18n="labelEnd">Waktu Selesai</label><input type="time" id="evEnd"/></div>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Tanggal</label>
-        <input type="date" id="eventDate"/>
-      </div>
-      <div class="form-group">
-        <label>Judul Event</label>
-        <input type="text" id="eventTitle" placeholder="cth: Latihan Koor Naposo-1"/>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Waktu Mulai</label><input type="time" id="eventTimeStart"/></div>
-        <div class="form-group"><label>Waktu Selesai</label><input type="time" id="eventTimeEnd"/></div>
-      </div>
-      <div class="form-group">
-        <label>Kategori</label>
-        <select id="eventCategory">
-          <option value="ibadah">Ibadah / Pelayanan</option>
-          <option value="koor">Koor</option>
-          <option value="latihan">Latihan</option>
-          <option value="rapat">Rapat</option>
-          <option value="reversement">Reversement</option>
-          <option value="doa">Doa</option>
-          <option value="other">Lainnya</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Catatan (opsional)</label>
-        <textarea id="eventNote" rows="2" placeholder="Detail tambahan…"></textarea>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('eventModal')">Batal</button>
-      <button class="btn btn-success" id="saveBtn" onclick="saveEvent()">Simpan</button>
-    </div>
+    <div class="form-g"><label data-i18n="labelCat">Kategori</label><select id="evCat"></select></div>
+    <div class="form-g"><label data-i18n="labelNote">Catatan (opsional)</label><textarea id="evNote" rows="2" placeholder="Detail tambahan…"></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('eventModal')" data-i18n="cancel">Batal</button>
+    <button class="btn btn-success" id="evSaveBtn" onclick="saveEvent()" data-i18n="save">Simpan</button>
   </div>
 </div>
-
-<!-- LOGIN MODAL -->
-<div class="modal-overlay" id="loginModal">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-header">
-      <h2>Login Pengurus</h2>
-      <button class="modal-close" onclick="closeModal('loginModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Nama Pengurus</label>
-        <select id="loginName">
-          <option value="">-- Pilih nama --</option>
-          <option value="Daniel">Daniel</option>
-          <option value="Andre">Andre</option>
-          <option value="Tomy">Tomy</option>
-          <option value="Grace">Grace</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="loginPassword" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <p id="loginError" style="color:var(--red);font-size:.8rem;display:none;margin-top:-8px;">Password salah atau nama tidak dipilih.</p>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('loginModal')">Batal</button>
-      <button class="btn btn-primary" onclick="doLogin()">Masuk</button>
-    </div>
-  </div>
 </div>
 
-<!-- DETAIL MODAL -->
-<div class="modal-overlay" id="detailModal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h2>Detail Event</h2>
-      <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+<!-- Login -->
+<div class="overlay" id="loginModal">
+<div class="modal" style="max-width:360px">
+  <div class="modal-hdr"><h2 data-i18n="loginTitle">Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g">
+      <label data-i18n="labelName">Nama Pengurus</label>
+      <select id="loginName"><option value="" data-i18n="selectName">-- Pilih nama --</option></select>
     </div>
-    <div class="modal-body" id="detailBody"></div>
-    <div class="modal-footer" id="detailFooter">
-      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('detailModal')">Tutup</button>
+    <div class="form-g">
+      <label data-i18n="labelPassword">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button class="pw-eye" type="button" onclick="togglePw('loginPw',this)" title="Lihat/sembunyikan password">
+          <svg id="eyeIcon" viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="login-err" id="loginErr" data-i18n="loginErr">Password salah atau nama tidak dipilih.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('loginModal')" data-i18n="cancel">Batal</button>
+    <button class="btn btn-primary" onclick="doLogin()" data-i18n="loginBtn2">Masuk</button>
+  </div>
+</div>
+</div>
+
+<!-- Detail -->
+<div class="overlay" id="detailModal">
+<div class="modal" style="max-width:420px">
+  <div class="modal-hdr"><h2 data-i18n="eventDetail">Detail Event</h2><button class="modal-x" onclick="closeModal('detailModal')">×</button></div>
+  <div class="modal-body" id="detailBody"></div>
+  <div class="modal-foot" id="detailFoot"><button class="btn btn-ghost" onclick="closeModal('detailModal')" data-i18n="close">Tutup</button></div>
+</div>
+</div>
+
+<!-- Category manager -->
+<div class="overlay" id="catModal">
+<div class="modal" style="max-width:400px">
+  <div class="modal-hdr"><h2 data-i18n="manageCategories">Kelola Kategori</h2><button class="modal-x" onclick="closeModal('catModal')">×</button></div>
+  <div class="modal-body">
+    <p style="font-size:.8rem;color:var(--text2);margin-bottom:12px;" data-i18n="catHint">Tambah atau hapus kategori event. Kategori bawaan tidak bisa dihapus.</p>
+    <div id="catList"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <input type="text" id="newCatName" placeholder="Nama kategori baru…" style="flex:1;padding:8px 10px;border:1.5px solid var(--border2);border-radius:6px;font-family:var(--font-b);font-size:.83rem;background:var(--surface);color:var(--text)"/>
+      <input type="color" id="newCatColor" value="#6366f1" style="width:36px;height:36px;border:none;border-radius:6px;cursor:pointer;padding:2px"/>
+      <button class="btn btn-primary btn-sm" onclick="addCategory()" data-i18n="add">+ Tambah</button>
     </div>
   </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('catModal')" data-i18n="close">Tutup</button></div>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-//  CONFIG
-// ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
+   CONFIG & CONSTANTS
+══════════════════════════════════════════════════ */
 const SUPA_URL = 'https://wejbubxrlqyazlodhbua.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
 
-// Password pengurus — ganti sesuai kebutuhan
-const PASSWORDS = {
-  Daniel: 'naposo2026dan',
-  Andre:  'naposo2026and',
-  Tomy:   'naposo2026tom',
-  Grace:  'naposo2026gra',
+/* Passwords — sorted alphabetically in dropdown */
+const USERS = {
+  Andre:     'naposo2026and',
+  Catherine: 'naposo2026cat',
+  Daniel:    'naposo2026dan',
+  David:     'naposo2026dav',
+  Dea:       'naposo2026dea',
+  Eliza:     'naposo2026eli',
+  Frans:     'naposo2026fra',
+  Grace:     'naposo2026gra',
+  Gunawan:   'naposo2026gun',
+  Lisken:    'naposo2026lis',
+  Mutiara:   'naposo2026mut',
+  Rut:       'naposo2026rut',
+  Selfa:     'naposo2026sel',
+  Tomy:      'naposo2026tom',
 };
 
-// ══════════════════════════════════════════
-//  SUPABASE HELPER
-// ══════════════════════════════════════════
-function sbFetch(path, opts = {}) {
+/* Default categories (built-in, can't delete) */
+const BUILT_IN_CATS = ['koor','ibadah','rapat','latihan','reversement','doa','other'];
+const CAT_COLORS = {
+  koor:'#7c3aed', ibadah:'#c9a227', rapat:'#0891b2',
+  latihan:'#16a34a', reversement:'#db2777', doa:'#4a90d9', other:'#94a3b8'
+};
+const CAT_LABELS = {
+  koor:'Koor', ibadah:'Ibadah / Pelayanan', rapat:'Rapat',
+  latihan:'Latihan', reversement:'Reversement', doa:'Doa', other:'Lainnya'
+};
+
+/* i18n */
+const I18N = {
+  id: {
+    loginBtn:'Login Pengurus', adminBarTxt:'Mode Pengurus Aktif — tambah, ubah, hapus, atau drag-drop event.',
+    manageCategories:'Kelola Kategori', logout:'Logout', labelDate:'Tanggal',
+    labelTitle:'Judul Event', labelStart:'Waktu Mulai', labelEnd:'Waktu Selesai',
+    labelCat:'Kategori', labelNote:'Catatan (opsional)', cancel:'Batal', save:'Simpan',
+    loginTitle:'Login Pengurus', labelName:'Nama Pengurus', selectName:'-- Pilih nama --',
+    labelPassword:'Password', loginErr:'Password salah atau nama tidak dipilih.',
+    loginBtn2:'Masuk', eventDetail:'Detail Event', close:'Tutup', add:'+ Tambah',
+    catHint:'Tambah atau hapus kategori event. Kategori bawaan tidak bisa dihapus.',
+    searchPlaceholder:'Cari event…', sortDateAsc:'Tanggal ↑', sortDateDesc:'Tanggal ↓',
+    sortTitleAsc:'Judul A–Z', sortTitleDesc:'Judul Z–A',
+    statToday:'Event Hari Ini', statMonth:'Event Bulan Ini', statTotal:'Total Event',
+    statVisitor:'Kunjungan Hari Ini', viewOnly:'Lihat saja',
+    addEvent:'+ Tambah Event', editEvent:'Edit', deleteConfirm:'Hapus event ini?',
+    saved:'Event berhasil disimpan ✓', deleted:'Event dihapus.', saveFail:'Gagal menyimpan',
+    delFail:'Gagal menghapus', fieldRequired:'Tanggal dan judul harus diisi!',
+    dragMoved:'Event dipindahkan ✓', dragFail:'Gagal memindahkan event',
+    connected:'Terhubung ke server', connecting:'Menghubungkan…', savingMsg:'Menyimpan…',
+    catAdded:'Kategori ditambahkan!', catDeleted:'Kategori dihapus.',
+    welcome:'Selamat datang', modeActive:'Mode edit aktif.',
+    hdrSub: 'Kalender Pelayanan 2026',
+  },
+  en: {
+    loginBtn:'Admin Login', adminBarTxt:'Admin Mode Active — add, edit, delete, or drag-drop events.',
+    manageCategories:'Manage Categories', logout:'Logout', labelDate:'Date',
+    labelTitle:'Event Title', labelStart:'Start Time', labelEnd:'End Time',
+    labelCat:'Category', labelNote:'Notes (optional)', cancel:'Cancel', save:'Save',
+    loginTitle:'Admin Login', labelName:'Admin Name', selectName:'-- Select name --',
+    labelPassword:'Password', loginErr:'Wrong password or name not selected.',
+    loginBtn2:'Sign In', eventDetail:'Event Detail', close:'Close', add:'+ Add',
+    catHint:'Add or remove event categories. Built-in categories cannot be deleted.',
+    searchPlaceholder:'Search events…', sortDateAsc:'Date ↑', sortDateDesc:'Date ↓',
+    sortTitleAsc:'Title A–Z', sortTitleDesc:'Title Z–A',
+    statToday:"Today's Events", statMonth:'This Month', statTotal:'Total Events',
+    statVisitor:"Today's Visits", viewOnly:'View only',
+    addEvent:'+ Add Event', editEvent:'Edit', deleteConfirm:'Delete this event?',
+    saved:'Event saved ✓', deleted:'Event deleted.', saveFail:'Save failed',
+    delFail:'Delete failed', fieldRequired:'Date and title are required!',
+    dragMoved:'Event moved ✓', dragFail:'Failed to move event',
+    connected:'Connected to server', connecting:'Connecting…', savingMsg:'Saving…',
+    catAdded:'Category added!', catDeleted:'Category deleted.',
+    welcome:'Welcome', modeActive:'Edit mode active.',
+    hdrSub: 'Ministry Calendar 2026',
+  }
+};
+
+const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const DAYS_EN   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const YEAR      = 2026;
+const TODAY     = new Date();
+
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+let EVENTS      = [];
+let CATS        = {...CAT_COLORS};       // id -> color
+let CAT_NAMES   = {...CAT_LABELS};       // id -> label
+let lang        = localStorage.getItem('naposo_lang') || 'id';
+let darkMode    = localStorage.getItem('naposo_dark') === '1';
+let isAdmin     = false;
+let editingId   = null;
+let filterCat   = 'all';
+let currentMonth= Math.min(Math.max(TODAY.getFullYear()===YEAR ? TODAY.getMonth():3, 0), 11);
+
+/* ══════════════════════════════════════════════════
+   SUPABASE
+══════════════════════════════════════════════════ */
+function sb(path, opts={}) {
   return fetch(`${SUPA_URL}/rest/v1/${path}`, {
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...(opts.headers || {}),
-    },
-    ...opts,
+    headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(opts.headers||{})},
+    ...opts
   });
 }
+async function dbGet(t,q=''){const r=await sb(`${t}?${q}`);if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
 
-async function dbSelect(table, query = '') {
-  const r = await sbFetch(`${table}?${query}`);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function dbInsert(table, data) {
-  const r = await sbFetch(table, { method: 'POST', body: JSON.stringify(data) });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function dbUpdate(table, match, data) {
-  const r = await sbFetch(`${table}?${match}`, { method: 'PATCH', body: JSON.stringify(data) });
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function dbDelete(table, match) {
-  const r = await sbFetch(`${table}?${match}`, { method: 'DELETE' });
-  if (!r.ok) throw new Error(await r.text());
-}
-
-// ══════════════════════════════════════════
-//  SEED DATA
-// ══════════════════════════════════════════
-const SEED = [
-  // APRIL
-  {id:'e1', date:'2026-04-02',title:'VG RN Passion III',time:'19:30–21:00',category:'ibadah',note:''},
-  {id:'e2', date:'2026-04-03',title:'Koor RN Jumat Agung',time:'10:00–12:00',category:'koor',note:''},
-  {id:'e3', date:'2026-04-04',title:'Paskah RN',time:'18:00',category:'ibadah',note:''},
-  {id:'e4', date:'2026-04-05',title:'Koor RN Paskah',time:'17:00–18:30',category:'koor',note:''},
-  {id:'e5', date:'2026-04-08',title:'Rapat BKR',time:'18:30–19:30',category:'rapat',note:''},
-  {id:'e6', date:'2026-04-10',title:'Rapat Program Pelayanan Naposo 2026',time:'',category:'rapat',note:''},
-  {id:'e7', date:'2026-04-11',title:'Pembekalan Pengurus Naposo Ke-1',time:'13:00–16:00',category:'ibadah',note:''},
-  {id:'e8', date:'2026-04-12',title:'Latihan Koor Naposo-1 (19 Apr)',time:'11:30–13:00',category:'latihan',note:''},
-  {id:'e9', date:'2026-04-17',title:'Evaluasi Paskah',time:'19:30–21:30',category:'rapat',note:''},
+/* ══════════════════════════════════════════════════
+   SEED
+══════════════════════════════════════════════════ */
+const SEED=[
+  {id:'e1',date:'2026-04-02',title:'VG RN Passion III',time:'19:30–21:00',category:'ibadah',note:''},
+  {id:'e2',date:'2026-04-03',title:'Koor RN Jumat Agung',time:'10:00–12:00',category:'koor',note:''},
+  {id:'e3',date:'2026-04-04',title:'Paskah RN',time:'18:00',category:'ibadah',note:''},
+  {id:'e4',date:'2026-04-05',title:'Koor RN Paskah',time:'17:00–18:30',category:'koor',note:''},
+  {id:'e5',date:'2026-04-08',title:'Rapat BKR',time:'18:30–19:30',category:'rapat',note:''},
+  {id:'e6',date:'2026-04-10',title:'Rapat Program Pelayanan Naposo 2026',time:'',category:'rapat',note:''},
+  {id:'e7',date:'2026-04-11',title:'Pembekalan Pengurus Naposo Ke-1',time:'13:00–16:00',category:'ibadah',note:''},
+  {id:'e8',date:'2026-04-12',title:'Latihan Koor Naposo-1 (19 Apr)',time:'11:30–13:00',category:'latihan',note:''},
+  {id:'e9',date:'2026-04-17',title:'Evaluasi Paskah',time:'19:30–21:30',category:'rapat',note:''},
   {id:'e10',date:'2026-04-17',title:'Latihan Koor Naposo-2 (19 Apr)',time:'19:00–20:30',category:'latihan',note:''},
   {id:'e11',date:'2026-04-18',title:'Sosialisasi Program Pelayanan 2026–2028',time:'',category:'ibadah',note:''},
   {id:'e12',date:'2026-04-19',title:'Koor Naposo-1',time:'09:30–11:00',category:'koor',note:''},
@@ -479,16 +600,15 @@ const SEED = [
   {id:'e19',date:'2026-04-26',title:'Latihan Koor Naposo-1 (3 Mei)',time:'11:30–13:00',category:'latihan',note:''},
   {id:'e20',date:'2026-04-27',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
   {id:'e21',date:'2026-04-27',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  // MEI
-  {id:'m1', date:'2026-05-01',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m2', date:'2026-05-01',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m3', date:'2026-05-02',title:'Latihan Koor Naposo-2 (3 Mei)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'m4', date:'2026-05-03',title:'Koor Naposo (3 Mei)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'m5', date:'2026-05-04',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
-  {id:'m6', date:'2026-05-04',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m7', date:'2026-05-08',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m8', date:'2026-05-08',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m9', date:'2026-05-09',title:'Latihan Koor Naposo-1 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m1',date:'2026-05-01',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m2',date:'2026-05-01',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m3',date:'2026-05-02',title:'Latihan Koor Naposo-2 (3 Mei)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'m4',date:'2026-05-03',title:'Koor Naposo (3 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'m5',date:'2026-05-04',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
+  {id:'m6',date:'2026-05-04',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m7',date:'2026-05-08',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m8',date:'2026-05-08',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m9',date:'2026-05-09',title:'Latihan Koor Naposo-1 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
   {id:'m10',date:'2026-05-09',title:'Ibadah Naposo Kedua',time:'19:00–20:30',category:'ibadah',note:''},
   {id:'m11',date:'2026-05-11',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
   {id:'m12',date:'2026-05-11',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
@@ -511,16 +631,15 @@ const SEED = [
   {id:'m29',date:'2026-05-29',title:'Evaluasi Pelayanan BPP',time:'',category:'rapat',note:''},
   {id:'m30',date:'2026-05-30',title:'Latihan Koor Naposo-2 (31 Mei)',time:'20:00–21:30',category:'latihan',note:''},
   {id:'m31',date:'2026-05-31',title:'Koor RN (31 Mei)',time:'09:30–11:00',category:'koor',note:''},
-  // JUNI
-  {id:'j1', date:'2026-06-01',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j2', date:'2026-06-05',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j3', date:'2026-06-06',title:'Ibadah Naposo Ke-empat',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'j4', date:'2026-06-06',title:'Latihan Koor Naposo-1 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'j5', date:'2026-06-08',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j6', date:'2026-06-12',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j7', date:'2026-06-13',title:'Kesehatian Naposo',time:'',category:'ibadah',note:''},
-  {id:'j8', date:'2026-06-13',title:'Latihan Koor Naposo-2 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'j9', date:'2026-06-14',title:'Koor Naposo (14 Jun)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j1',date:'2026-06-01',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j2',date:'2026-06-05',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j3',date:'2026-06-06',title:'Ibadah Naposo Ke-empat',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'j4',date:'2026-06-06',title:'Latihan Koor Naposo-1 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j5',date:'2026-06-08',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j6',date:'2026-06-12',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j7',date:'2026-06-13',title:'Kesehatian Naposo',time:'',category:'ibadah',note:''},
+  {id:'j8',date:'2026-06-13',title:'Latihan Koor Naposo-2 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j9',date:'2026-06-14',title:'Koor Naposo (14 Jun)',time:'09:30–11:00',category:'koor',note:''},
   {id:'j10',date:'2026-06-15',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
   {id:'j11',date:'2026-06-19',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
   {id:'j12',date:'2026-06-20',title:'Latihan Koor RN-1 (28 Jun)',time:'19:00–20:30',category:'latihan',note:''},
@@ -533,105 +652,285 @@ const SEED = [
   {id:'j19',date:'2026-06-29',title:'Reversement (Bersama)',time:'',category:'reversement',note:''},
 ];
 
-// ══════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════
-const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-const YEAR   = 2026;
-const TODAY  = new Date();
+/* ══════════════════════════════════════════════════
+   TRAFFIC (simple localStorage counter)
+══════════════════════════════════════════════════ */
+function trackVisit(){
+  const key='naposo_visits';
+  const today=new Date().toISOString().slice(0,10);
+  let data=JSON.parse(localStorage.getItem(key)||'{}');
+  data.total=(data.total||0)+1;
+  if(data.lastDay!==today){data.today=0;data.lastDay=today;}
+  data.today=(data.today||0)+1;
+  localStorage.setItem(key,JSON.stringify(data));
+  return data;
+}
 
-let EVENTS       = [];
-let currentMonth = Math.min(Math.max(TODAY.getFullYear()===YEAR ? TODAY.getMonth() : 3, 0), 11);
-let isAdmin      = false;
-let editingId    = null;
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+async function init(){
+  applyDark();
+  applyLangUI();
+  buildLoginDropdown();
+  trackVisit();
+  document.getElementById('footerYear').textContent='© '+new Date().getFullYear();
 
-// ══════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════
-async function init() {
+  // Load custom categories from localStorage
+  const savedCats=JSON.parse(localStorage.getItem('naposo_cats')||'null');
+  if(savedCats){CATS={...CAT_COLORS,...savedCats.colors};CAT_NAMES={...CAT_LABELS,...savedCats.names};}
+
+  buildChips();
+  buildLegend();
   buildTabs();
-  try {
-    // seed if empty
-    const check = await dbSelect('events', 'select=id&limit=1');
-    if (check.length === 0) {
-      await dbInsert('events', SEED);
-    }
-    EVENTS = await dbSelect('events', 'select=*&order=date.asc,created_at.asc');
+  renderStats();
+
+  try{
+    const check=await dbGet('events','select=id&limit=1');
+    if(check.length===0) await dbIns('events',SEED);
+    EVENTS=await dbGet('events','select=*&order=date.asc,created_at.asc');
     renderCalendar();
-  } catch(e) {
-    document.getElementById('calendarContainer').innerHTML =
-      `<div class="loading-overlay" style="color:var(--red);">
-        ⚠️ Gagal memuat data dari server.<br><small style="display:block;margin-top:8px;opacity:.7;">${e.message}</small>
-       </div>`;
+  }catch(e){
+    document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;
   }
 }
 
-// ══════════════════════════════════════════
-//  TABS & RENDER
-// ══════════════════════════════════════════
-function buildTabs() {
-  document.getElementById('monthTabs').innerHTML = MONTHS.map((m,i) =>
-    `<button class="month-tab ${i===currentMonth?'active':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`
+/* ══════════════════════════════════════════════════
+   DARK MODE
+══════════════════════════════════════════════════ */
+function applyDark(){
+  document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  const track=document.getElementById('darkTrack');
+  if(track) track.classList.toggle('on',darkMode);
+  const cb=document.getElementById('darkCb');
+  if(cb) cb.checked=darkMode;
+}
+function toggleDark(){
+  darkMode=document.getElementById('darkCb').checked;
+  localStorage.setItem('naposo_dark',darkMode?'1':'0');
+  applyDark();
+}
+
+/* ══════════════════════════════════════════════════
+   LANGUAGE
+══════════════════════════════════════════════════ */
+function t(k){return I18N[lang][k]||I18N.id[k]||k;}
+function applyLangUI(){
+  const cb=document.getElementById('langCb');
+  const track=document.getElementById('langTrack');
+  const isEn=lang==='en';
+  if(cb) cb.checked=isEn;
+  if(track) track.classList.toggle('on',isEn);
+  document.getElementById('langLbl').textContent=isEn?'ID':'EN';
+  // update all data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-opt]').forEach(el=>{ el.textContent=t(el.dataset.i18nOpt); });
+  // search placeholder
+  const si=document.getElementById('searchInput');
+  if(si) si.placeholder=t('searchPlaceholder');
+  // hdr sub
+  document.getElementById('hdr-sub').textContent=t('hdrSub');
+  // rebuild what depends on language
+  buildTabs();
+  buildChips();
+  buildLegend();
+  renderStats();
+  if(EVENTS.length) renderCalendar();
+}
+function toggleLang(){
+  lang=document.getElementById('langCb').checked?'en':'id';
+  localStorage.setItem('naposo_lang',lang);
+  applyLangUI();
+}
+
+/* ══════════════════════════════════════════════════
+   LOGIN DROPDOWN
+══════════════════════════════════════════════════ */
+function buildLoginDropdown(){
+  const sel=document.getElementById('loginName');
+  sel.innerHTML=`<option value="">${t('selectName')}</option>`;
+  Object.keys(USERS).sort().forEach(n=>{
+    const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   CATEGORY HELPERS
+══════════════════════════════════════════════════ */
+function saveCatsLocal(){
+  const custom={};const customN={};
+  Object.keys(CATS).forEach(k=>{if(!BUILT_IN_CATS.includes(k)){custom[k]=CATS[k];customN[k]=CAT_NAMES[k];}});
+  localStorage.setItem('naposo_cats',JSON.stringify({colors:custom,names:customN}));
+}
+function getCatColor(cat){return CATS[cat]||'#94a3b8';}
+function getCatLabel(cat){return CAT_NAMES[cat]||cat;}
+
+function buildChips(){
+  const wrap=document.getElementById('catChips');
+  wrap.innerHTML='';
+  const allChip=document.createElement('button');
+  allChip.className=`chip${filterCat==='all'?' on':''}`;
+  allChip.dataset.cat='all';
+  allChip.textContent=lang==='en'?'All':'Semua';
+  allChip.onclick=()=>setFilter('all');
+  wrap.appendChild(allChip);
+  Object.keys(CATS).forEach(cat=>{
+    const ch=document.createElement('button');
+    ch.className=`chip${filterCat===cat?' on':''}`;
+    ch.dataset.cat=cat;
+    ch.textContent=getCatLabel(cat);
+    if(filterCat===cat) ch.style.background=getCatColor(cat);
+    ch.onclick=()=>setFilter(cat);
+    wrap.appendChild(ch);
+  });
+  // rebuild category select in event form
+  buildCatSelect();
+}
+function buildCatSelect(){
+  const sel=document.getElementById('evCat');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{
+    const o=document.createElement('option');o.value=cat;o.textContent=getCatLabel(cat);sel.appendChild(o);
+  });
+  if(cur) sel.value=cur;
+}
+function buildLegend(){
+  const wrap=document.getElementById('legendWrap');
+  wrap.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{
+    const item=document.createElement('div');item.className='leg-item';
+    item.innerHTML=`<div class="leg-dot" style="background:${getCatColor(cat)}"></div>${getCatLabel(cat)}`;
+    wrap.appendChild(item);
+  });
+}
+
+function setFilter(cat){
+  filterCat=cat;
+  buildChips();
+  applyFilters();
+}
+
+/* ══════════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════════ */
+function renderStats(){
+  const visits=JSON.parse(localStorage.getItem('naposo_visits')||'{}');
+  const todayStr=new Date().toISOString().slice(0,10);
+  const todayEvs=EVENTS.filter(e=>e.date===todayStr).length;
+  const monthEvs=EVENTS.filter(e=>e.date.startsWith(`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`)).length;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${EVENTS.length}</div><div class="stat-lbl">${t('statTotal')}</div></div>
+    <div class="stat-card"><div class="stat-val">${monthEvs}</div><div class="stat-lbl">${t('statMonth')}</div></div>
+    <div class="stat-card"><div class="stat-val">${todayEvs}</div><div class="stat-lbl">${t('statToday')}</div></div>
+    <div class="stat-card"><div class="stat-val">${visits.today||1}</div><div class="stat-lbl">${t('statVisitor')}</div></div>
+  `;
+}
+
+/* ══════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════ */
+function buildTabs(){
+  const MONTHS=lang==='en'?MONTHS_EN:MONTHS_ID;
+  document.getElementById('monthTabs').innerHTML=MONTHS.map((m,i)=>
+    `<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`
   ).join('');
 }
-function switchMonth(i) { currentMonth=i; buildTabs(); renderCalendar(); }
+function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();}
 
-function renderCalendar() {
-  const c = document.getElementById('calendarContainer');
-  c.innerHTML = '';
-  c.appendChild(buildMonth(YEAR, currentMonth));
+/* ══════════════════════════════════════════════════
+   FILTERS / SEARCH / SORT
+══════════════════════════════════════════════════ */
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const sort=document.getElementById('sortSel').value;
+  const pills=document.querySelectorAll('.event-pill');
+  const cells=document.querySelectorAll('.cal-cell:not(.empty)');
+
+  // sort EVENTS array for rendering (don't mutate, just reorder display)
+  let sorted=[...EVENTS];
+  if(sort==='date-asc') sorted.sort((a,b)=>a.date.localeCompare(b.date));
+  else if(sort==='date-desc') sorted.sort((a,b)=>b.date.localeCompare(a.date));
+  else if(sort==='title-asc') sorted.sort((a,b)=>a.title.localeCompare(b.title));
+  else if(sort==='title-desc') sorted.sort((a,b)=>b.title.localeCompare(a.title));
+
+  // apply filters visually to existing pills
+  let anyMatch=false;
+  pills.forEach(pill=>{
+    const evId=pill.dataset.evid;
+    const ev=EVENTS.find(e=>e.id===evId);
+    if(!ev) return;
+    const catOk = filterCat==='all'||ev.category===filterCat;
+    const qOk   = !q||(ev.title.toLowerCase().includes(q)||(ev.note||'').toLowerCase().includes(q));
+    const show   = catOk && qOk;
+    pill.style.display=show?'':'none';
+    pill.classList.toggle('ev-hl', show && !!q);
+    if(show) anyMatch=true;
+  });
+
+  // dim cells with no visible events
+  cells.forEach(cell=>{
+    const visible=[...cell.querySelectorAll('.event-pill')].filter(p=>p.style.display!=='none');
+    cell.classList.toggle('no-match', visible.length===0 && !!q);
+  });
 }
 
-function buildMonth(year, month) {
-  const sec = document.createElement('div');
-  sec.className = 'calendar-section';
-  const firstDay   = new Date(year,month,1).getDay();
-  const totalDays  = new Date(year,month+1,0).getDate();
+/* ══════════════════════════════════════════════════
+   RENDER CALENDAR
+══════════════════════════════════════════════════ */
+function renderCalendar(){
+  const wrap=document.getElementById('calWrap');
+  wrap.innerHTML='';
+  wrap.appendChild(buildMonth(YEAR,currentMonth));
+  applyFilters();
+}
 
-  const hdr = document.createElement('div');
-  hdr.className = 'calendar-month-header';
-  hdr.innerHTML = `
-    <h2 class="calendar-month-title">${MONTHS[month]} <span>${year}</span></h2>
-    ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="openAddModal(null)">+ Tambah Event</button>` : ''}
-  `;
+function buildMonth(year,month){
+  const MONTHS=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const DAYS  =lang==='en'?DAYS_EN:DAYS_ID;
+  const sec=document.createElement('div');sec.className='cal-section';
+  const first=new Date(year,month,1).getDay();
+  const total=new Date(year,month+1,0).getDate();
+
+  // header row
+  const hdr=document.createElement('div');hdr.className='cal-header';
+  hdr.innerHTML=`<h2 class="cal-title">${MONTHS[month]} <span>${year}</span></h2>
+  ${isAdmin?`<button class="btn btn-primary btn-sm" onclick="openAddModal(null)">+ ${t('addEvent')}</button>`:''}`;
   sec.appendChild(hdr);
 
-  const grid = document.createElement('div'); grid.className='cal-grid';
-  const dayRow = document.createElement('div'); dayRow.className='cal-header-row';
-  DAYS.forEach(d => { const el=document.createElement('div'); el.className='cal-day-name'; el.textContent=d; dayRow.appendChild(el); });
-  grid.appendChild(dayRow);
+  const grid=document.createElement('div');grid.className='cal-grid';
+  const names=document.createElement('div');names.className='cal-names';
+  DAYS.forEach(d=>{const el=document.createElement('div');el.className='cal-name';el.textContent=d;names.appendChild(el);});
+  grid.appendChild(names);
 
-  const body = document.createElement('div'); body.className='cal-body';
-  for (let i=0;i<firstDay;i++) { const e=document.createElement('div'); e.className='cal-cell empty'; body.appendChild(e); }
+  const body=document.createElement('div');body.className='cal-body';
+  for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cal-cell empty';body.appendChild(c);}
 
-  for (let d=1;d<=totalDays;d++) {
-    const dow    = new Date(year,month,d).getDay();
-    const ds     = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const today  = TODAY.getFullYear()===year && TODAY.getMonth()===month && TODAY.getDate()===d;
-    const cell   = document.createElement('div');
-    cell.className = `cal-cell${today?' today':''}${dow===0?' sunday':dow===6?' saturday':''}`;
+  for(let d=1;d<=total;d++){
+    const dow=new Date(year,month,d).getDay();
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=TODAY.getFullYear()===year&&TODAY.getMonth()===month&&TODAY.getDate()===d;
+    const cell=document.createElement('div');
+    cell.className=`cal-cell${isToday?' today':''}${dow===0?' sunday':dow===6?' saturday':''}`;
+    cell.dataset.date=ds;
 
-    const num = document.createElement('div'); num.className='cal-date-num'; num.textContent=d;
-    cell.appendChild(num);
-
-    if (isAdmin) {
-      const ab = document.createElement('button');
-      ab.className='cal-add-btn'; ab.textContent='+'; ab.title='Tambah event';
-      ab.onclick = e => { e.stopPropagation(); openAddModal(ds); };
-      cell.appendChild(ab);
+    // drag-drop on cell (drop target)
+    if(isAdmin){
+      cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
+      cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
+      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');dropEvent(e,ds);});
     }
 
-    EVENTS.filter(ev=>ev.date===ds).forEach(ev => {
-      const pill = document.createElement('div');
-      pill.className = `event-pill event-${ev.category||'other'}`;
-      pill.innerHTML = `
-        ${ev.time?`<span class="event-time">${ev.time}</span>`:''}
-        <span class="event-title">${ev.title}</span>
-        ${isAdmin?`<button class="event-del" onclick="confirmDel('${ev.id}',event)">✕</button>`:''}
-      `;
-      pill.onclick = () => openDetail(ev);
-      cell.appendChild(pill);
+    const num=document.createElement('div');num.className='cal-num';num.textContent=d;cell.appendChild(num);
+
+    if(isAdmin){
+      const ab=document.createElement('button');ab.className='cal-add';ab.textContent='+';ab.title=t('addEvent');
+      ab.onclick=e=>{e.stopPropagation();openAddModal(ds);};cell.appendChild(ab);
+    }
+
+    EVENTS.filter(ev=>ev.date===ds).forEach(ev=>{
+      cell.appendChild(makePill(ev));
     });
     body.appendChild(cell);
   }
@@ -640,170 +939,253 @@ function buildMonth(year, month) {
   return sec;
 }
 
-// ══════════════════════════════════════════
-//  MODALS
-// ══════════════════════════════════════════
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(el =>
-  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); })
-);
+function makePill(ev){
+  const pill=document.createElement('div');
+  pill.className=`event-pill ev-${ev.category||'other'}`;
+  pill.dataset.evid=ev.id;
+  pill.innerHTML=`${ev.time?`<span class="ev-time">${ev.time}</span>`:''}
+    <span class="ev-title">${ev.title}</span>
+    ${isAdmin?`<button class="ev-del" onclick="confirmDel('${ev.id}',event)">✕</button>`:''}`;
+  pill.onclick=()=>openDetail(ev);
+  if(isAdmin){
+    pill.draggable=true;
+    pill.addEventListener('dragstart',e=>{e.dataTransfer.setData('evId',ev.id);pill.classList.add('dragging');});
+    pill.addEventListener('dragend',()=>pill.classList.remove('dragging'));
+  }
+  // apply custom cat color if not built-in class
+  if(!BUILT_IN_CATS.includes(ev.category)){
+    const col=getCatColor(ev.category);
+    pill.style.borderLeftColor=col;
+    pill.style.background=col+'22';
+    pill.style.color=col;
+  }
+  return pill;
+}
 
-function openAddModal(ds) {
+/* ══════════════════════════════════════════════════
+   DRAG AND DROP
+══════════════════════════════════════════════════ */
+async function dropEvent(e,newDate){
+  const evId=e.dataTransfer.getData('evId');
+  if(!evId) return;
+  const ev=EVENTS.find(x=>x.id===evId);
+  if(!ev||ev.date===newDate) return;
+  setSyncBadge('load',t('savingMsg'));
+  try{
+    await dbUpd('events',`id=eq.${evId}`,{date:newDate});
+    ev.date=newDate;
+    renderCalendar();
+    renderStats();
+    showToast(t('dragMoved'));
+    setSyncBadge('ok',t('connected'));
+  }catch(err){
+    showToast(t('dragFail'),'err');
+    setSyncBadge('err','Error');
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('on');}));
+
+function openAddModal(ds){
   editingId=null;
-  document.getElementById('modalTitle').textContent = 'Tambah Event';
-  document.getElementById('eventDate').value    = ds||'';
-  document.getElementById('eventTitle').value   = '';
-  document.getElementById('eventTimeStart').value='';
-  document.getElementById('eventTimeEnd').value  ='';
-  document.getElementById('eventCategory').value ='ibadah';
-  document.getElementById('eventNote').value     ='';
+  document.getElementById('evModalTitle').textContent=t('addEvent');
+  document.getElementById('evDate').value=ds||'';
+  document.getElementById('evTitle').value='';
+  document.getElementById('evStart').value='';
+  document.getElementById('evEnd').value='';
+  document.getElementById('evNote').value='';
+  buildCatSelect();
   openModal('eventModal');
 }
-function openEditModal(ev) {
+function openEditModal(ev){
   editingId=ev.id;
-  document.getElementById('modalTitle').textContent='Ubah Event';
-  document.getElementById('eventDate').value     =ev.date;
-  document.getElementById('eventTitle').value    =ev.title;
-  const t=(ev.time||'').split('–');
-  document.getElementById('eventTimeStart').value=t[0]||'';
-  document.getElementById('eventTimeEnd').value  =t[1]||'';
-  document.getElementById('eventCategory').value =ev.category||'other';
-  document.getElementById('eventNote').value     =ev.note||'';
+  document.getElementById('evModalTitle').textContent=t('editEvent');
+  document.getElementById('evDate').value=ev.date;
+  document.getElementById('evTitle').value=ev.title;
+  const ts=(ev.time||'').split('–');
+  document.getElementById('evStart').value=ts[0]||'';
+  document.getElementById('evEnd').value=ts[1]||'';
+  document.getElementById('evNote').value=ev.note||'';
+  buildCatSelect();
+  document.getElementById('evCat').value=ev.category||'other';
   openModal('eventModal');
 }
-function openDetail(ev) {
+function openDetail(ev){
+  window._detEv=ev;
   const d=new Date(ev.date+'T00:00:00');
-  const lbl=d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const lbl=d.toLocaleDateString(lang==='en'?'en-US':'id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const col=getCatColor(ev.category);
   document.getElementById('detailBody').innerHTML=`
-    <div class="event-detail">
-      <div class="event-detail-date">${lbl}</div>
-      <div class="event-detail-title">${ev.title}</div>
-      ${ev.time?`<div class="event-detail-time">⏰ ${ev.time}</div>`:''}
-      ${ev.note?`<p style="margin-top:10px;font-size:.85rem;color:var(--gray-600);line-height:1.5;">${ev.note}</p>`:''}
-      <div style="margin-top:12px;">
-        <span style="font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--sky);color:var(--blue);font-weight:600;text-transform:uppercase;">${ev.category||'other'}</span>
-      </div>
+    <div style="padding:2px">
+      <div class="det-date">${lbl}</div>
+      <div class="det-title">${ev.title}</div>
+      ${ev.time?`<div class="det-time">⏰ ${ev.time}</div>`:''}
+      ${ev.note?`<div class="det-note">${ev.note}</div>`:''}
+      <span class="det-cat" style="background:${col}22;color:${col}">${getCatLabel(ev.category)}</span>
     </div>`;
-  // Store current event for edit button
-  window._detailEv = ev;
-  document.getElementById('detailFooter').innerHTML=`
-    <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('detailModal')">Tutup</button>
-    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detailEv)">Edit</button>`:''}
-  `;
+  document.getElementById('detailFoot').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal('detailModal')">${t('close')}</button>
+    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">${t('editEvent')}</button>`:''}`;
   openModal('detailModal');
 }
 
-// ══════════════════════════════════════════
-//  CRUD
-// ══════════════════════════════════════════
-async function saveEvent() {
-  const date  = document.getElementById('eventDate').value;
-  const title = document.getElementById('eventTitle').value.trim();
-  const tS    = document.getElementById('eventTimeStart').value;
-  const tE    = document.getElementById('eventTimeEnd').value;
-  const cat   = document.getElementById('eventCategory').value;
-  const note  = document.getElementById('eventNote').value.trim();
-  if (!date||!title) { showToast('Tanggal dan judul harus diisi!','err'); return; }
-
-  const time = tS ? (tE ? `${tS}–${tE}` : tS) : '';
-  const btn  = document.getElementById('saveBtn');
-  btn.disabled=true; btn.textContent='Menyimpan…';
-  setSyncBadge('load','Menyimpan…');
-
-  try {
-    if (editingId) {
-      await dbUpdate('events',`id=eq.${editingId}`,{date,title,time,category:cat,note});
+/* ══════════════════════════════════════════════════
+   CRUD
+══════════════════════════════════════════════════ */
+async function saveEvent(){
+  const date=document.getElementById('evDate').value;
+  const title=document.getElementById('evTitle').value.trim();
+  const tS=document.getElementById('evStart').value;
+  const tE=document.getElementById('evEnd').value;
+  const cat=document.getElementById('evCat').value;
+  const note=document.getElementById('evNote').value.trim();
+  if(!date||!title){showToast(t('fieldRequired'),'err');return;}
+  const time=tS?(tE?`${tS}–${tE}`:tS):'';
+  const btn=document.getElementById('evSaveBtn');
+  btn.disabled=true;btn.textContent=t('savingMsg');
+  setSyncBadge('load',t('savingMsg'));
+  try{
+    if(editingId){
+      await dbUpd('events',`id=eq.${editingId}`,{date,title,time,category:cat,note});
       const i=EVENTS.findIndex(e=>e.id===editingId);
       if(i!==-1) EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note};
-      showToast('Event berhasil diubah ✓');
-    } else {
+    }else{
       const id='ev_'+Date.now();
-      const [ins]=await dbInsert('events',{id,date,title,time,category:cat,note});
+      const [ins]=await dbIns('events',{id,date,title,time,category:cat,note});
       EVENTS.push(ins);
-      showToast('Event berhasil ditambah ✓');
     }
-    closeModal('eventModal');
-    renderCalendar();
-    setSyncBadge('ok','Tersimpan di server');
-  } catch(e) {
-    showToast('Gagal menyimpan: '+e.message,'err');
-    setSyncBadge('err','Gagal tersimpan');
-  } finally {
-    btn.disabled=false; btn.textContent='Simpan';
-  }
+    closeModal('eventModal');renderCalendar();renderStats();
+    showToast(t('saved'));setSyncBadge('ok',t('connected'));
+  }catch(e){showToast(`${t('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
+  finally{btn.disabled=false;btn.textContent=t('save');}
 }
 
-async function confirmDel(id,e) {
+async function confirmDel(id,e){
   e.stopPropagation();
-  if(!confirm('Hapus event ini?')) return;
-  setSyncBadge('load','Menghapus…');
-  try {
-    await dbDelete('events',`id=eq.${id}`);
+  if(!confirm(t('deleteConfirm'))) return;
+  setSyncBadge('load',t('savingMsg'));
+  try{
+    await dbDel('events',`id=eq.${id}`);
     EVENTS=EVENTS.filter(ev=>ev.id!==id);
-    renderCalendar();
-    showToast('Event dihapus.');
-    setSyncBadge('ok','Terhubung ke server');
-  } catch(err) {
-    showToast('Gagal menghapus: '+err.message,'err');
-    setSyncBadge('err','Gagal');
-  }
+    renderCalendar();renderStats();
+    showToast(t('deleted'));setSyncBadge('ok',t('connected'));
+  }catch(err){showToast(`${t('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
 }
 
-// ══════════════════════════════════════════
-//  AUTH
-// ══════════════════════════════════════════
-function openLoginModal() {
-  document.getElementById('loginError').style.display='none';
+/* ══════════════════════════════════════════════════
+   CATEGORY MANAGER
+══════════════════════════════════════════════════ */
+function openCatModal(){
+  renderCatList();
+  openModal('catModal');
+}
+function renderCatList(){
+  const list=document.getElementById('catList');
+  list.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{
+    const row=document.createElement('div');row.className='cat-row';
+    const isBuiltIn=BUILT_IN_CATS.includes(cat);
+    row.innerHTML=`
+      <div class="cat-swatch" style="background:${getCatColor(cat)}"></div>
+      <span style="font-size:.82rem;flex:1;color:var(--text)">${getCatLabel(cat)}</span>
+      ${!isBuiltIn?`<button class="cat-del-btn" onclick="deleteCategory('${cat}')" title="Hapus">×</button>`:'<span style="font-size:.68rem;color:var(--text3);padding:0 6px">bawaan</span>'}`;
+    list.appendChild(row);
+  });
+}
+function addCategory(){
+  const name=document.getElementById('newCatName').value.trim();
+  const color=document.getElementById('newCatColor').value;
+  if(!name) return;
+  const id='cat_'+name.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
+  CATS[id]=color;CAT_NAMES[id]=name;
+  saveCatsLocal();buildChips();buildLegend();renderCatList();
+  document.getElementById('newCatName').value='';
+  showToast(t('catAdded'),'ok');
+}
+function deleteCategory(cat){
+  if(BUILT_IN_CATS.includes(cat)) return;
+  delete CATS[cat];delete CAT_NAMES[cat];
+  saveCatsLocal();buildChips();buildLegend();renderCatList();
+  showToast(t('catDeleted'));
+}
+
+/* ══════════════════════════════════════════════════
+   AUTH
+══════════════════════════════════════════════════ */
+function openLoginModal(){
+  document.getElementById('loginErr').style.display='none';
   document.getElementById('loginName').value='';
-  document.getElementById('loginPassword').value='';
+  document.getElementById('loginPw').value='';
+  buildLoginDropdown();
   openModal('loginModal');
 }
-function doLogin() {
+function doLogin(){
   const name=document.getElementById('loginName').value;
-  const pass=document.getElementById('loginPassword').value;
-  if(!name||PASSWORDS[name]!==pass) { document.getElementById('loginError').style.display='block'; return; }
+  const pw=document.getElementById('loginPw').value;
+  if(!name||USERS[name]!==pw){document.getElementById('loginErr').style.display='block';return;}
   isAdmin=true;
   document.body.classList.add('admin-mode');
-  document.getElementById('adminBar').classList.add('visible');
-  document.getElementById('loginBadge').classList.add('logged-in');
-  document.getElementById('loginBadgeText').textContent=name+' (Pengurus)';
-  document.getElementById('loginBtn').textContent='✓ Mode Edit Aktif';
+  document.getElementById('adminBar').classList.add('on');
+  document.getElementById('loginBadge').classList.add('on');
+  document.getElementById('loginBadgeTxt').textContent=name+' (Pengurus)';
+  document.getElementById('loginBtn').textContent='✓ Mode Edit';
   document.getElementById('loginBtn').disabled=true;
-  setSyncBadge('ok','Terhubung ke server');
+  setSyncBadge('ok',t('connected'));
   closeModal('loginModal');
   renderCalendar();
-  showToast(`Selamat datang, ${name}! Mode edit aktif.`);
+  showToast(`${t('welcome')}, ${name}! ${t('modeActive')}`,'ok');
 }
-function logout() {
+function doLogout(){
   isAdmin=false;
   document.body.classList.remove('admin-mode');
-  document.getElementById('adminBar').classList.remove('visible');
-  document.getElementById('loginBadge').classList.remove('logged-in');
-  document.getElementById('loginBadgeText').textContent='Lihat saja';
-  document.getElementById('loginBtn').textContent='🔒 Login Pengurus';
+  document.getElementById('adminBar').classList.remove('on');
+  document.getElementById('loginBadge').classList.remove('on');
+  document.getElementById('loginBadgeTxt').textContent=t('viewOnly');
+  document.getElementById('loginBtn').textContent='🔒 '+t('loginBtn');
   document.getElementById('loginBtn').disabled=false;
-  renderCalendar();
-  showToast('Kamu sudah logout.');
+  renderCalendar();showToast(t('logout'));
 }
-function setSyncBadge(type,text) {
+
+/* ══════════════════════════════════════════════════
+   PASSWORD TOGGLE
+══════════════════════════════════════════════════ */
+function togglePw(inputId,btn){
+  const input=document.getElementById(inputId);
+  const isText=input.type==='text';
+  input.type=isText?'password':'text';
+  btn.innerHTML=isText
+    ?`<svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>`
+    :`<svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/><path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/></svg>`;
+}
+
+/* ══════════════════════════════════════════════════
+   SYNC BADGE
+══════════════════════════════════════════════════ */
+function setSyncBadge(type,txt){
   const b=document.getElementById('syncBadge');
   const d=document.getElementById('syncDot');
   b.className=`sync-badge ${type}`;
   d.className=`sync-dot${type==='load'?' pulse':''}`;
-  document.getElementById('syncText').textContent=text;
+  document.getElementById('syncTxt').textContent=txt;
 }
 
-// ══════════════════════════════════════════
-//  TOAST
-// ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
 let _tt;
-function showToast(msg,type='') {
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className=`toast show${type==='err'?' err':''}`;
-  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),3000);
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className=`toast on${type==='err'?' err':type==='ok'?' ok':''}`;
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3200);
 }
 
+/* ── start ── */
 init();
 </script>
 </body>
