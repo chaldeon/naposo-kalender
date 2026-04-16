@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kalender Pelayanan Naposo HKBP Ujung Menteng</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:        #0a1f44;
+      --blue-mid:    #1a4a8a;
+      --blue:        #2563be;
+      --blue-light:  #4a90d9;
+      --sky:         #dbeafe;
+      --sky-pale:    #eff6ff;
+      --gold:        #c9a227;
+      --gold-light:  #f5e0a0;
+      --white:       #ffffff;
+      --gray-50:     #f8fafc;
+      --gray-100:    #f1f5f9;
+      --gray-200:    #e2e8f0;
+      --gray-400:    #94a3b8;
+      --gray-600:    #475569;
+      --gray-800:    #1e293b;
+      --red:         #dc2626;
+      --green:       #16a34a;
+      --font-serif:  'Libre Baskerville', Georgia, serif;
+      --font-sans:   'DM Sans', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-sans); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue-mid) 60%, var(--blue) 100%);
+      color: var(--white); position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(10,31,68,.35);
+    }
+    .header-inner {
+      max-width: 1280px; margin: 0 auto; padding: 16px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-title h1 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; line-height: 1.2; }
+    .header-title p  { font-size: .75rem; font-weight: 300; opacity: .75; letter-spacing: .06em; text-transform: uppercase; }
+    .header-actions  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px;
+      font-family: var(--font-sans); font-size: .85rem; font-weight: 500; cursor: pointer;
+      border: none; transition: all .18s; white-space: nowrap;
+    }
+    .btn-outline { background: transparent; border: 1.5px solid rgba(255,255,255,.45); color: var(--white); }
+    .btn-outline:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.8); }
+    .btn-primary { background: var(--blue); color: var(--white); }
+    .btn-primary:hover { background: var(--blue-mid); }
+    .btn-success { background: var(--green); color: var(--white); }
+    .btn-success:hover { background: #15803d; }
+    .btn-sm { padding: 5px 10px; font-size: .78rem; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── YEAR NAV ── */
+    .year-nav { background: var(--navy); border-bottom: 2px solid var(--gold); }
+    .year-nav-inner {
+      max-width: 1280px; margin: 0 auto; padding: 10px 24px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .year-label { font-family: var(--font-serif); font-size: 1rem; color: var(--gold); font-weight: 700; letter-spacing: .04em; margin-right: 8px; }
+    .month-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+    .month-tab {
+      padding: 5px 12px; border-radius: 4px; font-size: .78rem; font-weight: 500;
+      color: rgba(255,255,255,.65); cursor: pointer; border: 1px solid transparent;
+      transition: all .15s; background: transparent; font-family: var(--font-sans);
+    }
+    .month-tab:hover  { color: var(--white); background: rgba(255,255,255,.08); }
+    .month-tab.active { color: var(--navy); background: var(--gold); border-color: var(--gold); font-weight: 600; }
+
+    /* ── ADMIN BAR ── */
+    .admin-bar {
+      background: linear-gradient(90deg,#1a4a8a,#0a1f44); border-bottom: 2px solid var(--gold);
+      padding: 8px 24px; display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .admin-bar.visible { display: flex; }
+    .admin-bar-text { font-size: .78rem; color: var(--gold-light); font-weight: 500; }
+    .sync-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: .72rem; padding: 3px 10px; border-radius: 20px; margin-left: auto;
+    }
+    .sync-badge.ok   { background: rgba(22,163,74,.2);  color: #86efac; }
+    .sync-badge.err  { background: rgba(220,38,38,.2);  color: #fca5a5; }
+    .sync-badge.load { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .sync-dot.pulse { animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    /* ── MAIN ── */
+    main { max-width: 1280px; margin: 0 auto; padding: 28px 24px 60px; }
+
+    .loading-overlay { text-align: center; padding: 80px 20px; color: var(--gray-400); }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--gray-200);
+      border-top-color: var(--blue); border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+      padding: 14px 18px; background: var(--white); border-radius: 8px; border: 1px solid var(--gray-200);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: .75rem; color: var(--gray-600); }
+    .legend-dot  { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── CALENDAR ── */
+    .calendar-section { animation: fadeUp .35s ease both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)} }
+    .calendar-month-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+    }
+    .calendar-month-title { font-family: var(--font-serif); font-size: 1.6rem; color: var(--navy); font-weight: 700; }
+    .calendar-month-title span { color: var(--blue); font-style: italic; }
+
+    .cal-grid {
+      background: var(--white); border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(10,31,68,.08), 0 4px 20px rgba(10,31,68,.05);
+      overflow: hidden; border: 1px solid var(--gray-200);
+    }
+    .cal-header-row { display: grid; grid-template-columns: repeat(7,1fr); background: var(--navy); }
+    .cal-day-name {
+      text-align: center; font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.75);
+      padding: 10px 4px; letter-spacing: .08em; text-transform: uppercase;
+    }
+    .cal-day-name:first-child { color: var(--gold); }
+    .cal-day-name:last-child  { color: var(--gold-light); }
+    .cal-body { display: grid; grid-template-columns: repeat(7,1fr); }
+    .cal-cell {
+      min-height: 110px; border-right: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100);
+      padding: 8px 8px 6px; display: flex; flex-direction: column; gap: 4px; position: relative; transition: background .12s;
+    }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-cell.empty    { background: var(--gray-50); }
+    .cal-cell.today    { background: var(--sky-pale); }
+    .cal-cell.today .cal-date-num { background: var(--blue); color: var(--white); }
+    .cal-date-num {
+      font-size: .8rem; font-weight: 700; color: var(--gray-600);
+      width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .cal-cell:not(.empty):hover .cal-date-num { background: var(--sky); color: var(--blue); }
+    .cal-cell.sunday   .cal-date-num { color: var(--red); }
+    .cal-cell.saturday .cal-date-num { color: #7c3aed; }
+
+    .cal-add-btn {
+      position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--blue); color: white; border: none; cursor: pointer; font-size: 14px;
+      display: none; align-items: center; justify-content: center; opacity: .8; transition: opacity .15s; line-height:1;
+    }
+    .cal-add-btn:hover { opacity: 1; }
+    body.admin-mode .cal-cell:not(.empty):hover .cal-add-btn { display: flex; }
+
+    .event-pill {
+      background: var(--sky); border-left: 3px solid var(--blue); border-radius: 0 4px 4px 0;
+      padding: 3px 6px; font-size: .68rem; line-height: 1.3; color: var(--navy);
+      cursor: pointer; position: relative; word-break: break-word; transition: background .12s, color .12s;
+    }
+    .event-pill:hover { background: var(--blue); color: var(--white); }
+    .event-time  { font-weight: 600; display: block; font-size: .64rem; opacity: .8; }
+    .event-title { display: block; }
+    .event-del {
+      display: none; position: absolute; top: 2px; right: 3px;
+      background: var(--red); color: white; border: none; border-radius: 3px;
+      font-size: .6rem; padding: 1px 4px; cursor: pointer; line-height: 1.4;
+    }
+    body.admin-mode .event-pill:hover .event-del { display: block; }
+
+    .event-koor        { border-color: #7c3aed; background: #f3f0ff; }
+    .event-ibadah      { border-color: var(--gold); background: #fffbeb; }
+    .event-rapat       { border-color: #0891b2; background: #ecfeff; }
+    .event-latihan     { border-color: #16a34a; background: #f0fdf4; }
+    .event-reversement { border-color: #db2777; background: #fdf2f8; }
+    .event-doa         { border-color: var(--blue-light); background: var(--sky-pale); }
+    .event-other       { border-color: var(--gray-400); background: var(--gray-100); }
+    .event-koor:hover        { background: #7c3aed; }
+    .event-ibadah:hover      { background: var(--gold); color: var(--navy); }
+    .event-rapat:hover       { background: #0891b2; }
+    .event-latihan:hover     { background: #16a34a; }
+    .event-reversement:hover { background: #db2777; }
+    .event-doa:hover         { background: var(--blue-light); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(10,31,68,.55); backdrop-filter: blur(3px);
+      z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--white); border-radius: 14px; width: 100%; max-width: 480px;
+      box-shadow: 0 20px 60px rgba(10,31,68,.3); transform: translateY(20px); transition: transform .2s; overflow: hidden;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header {
+      background: linear-gradient(135deg, var(--navy), var(--blue-mid)); padding: 18px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h2 { font-family: var(--font-serif); font-size: 1rem; color: var(--white); font-weight: 700; }
+    .modal-close {
+      background: rgba(255,255,255,.15); border: none; color: white; width: 28px; height: 28px;
+      border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.3); }
+    .modal-body   { padding: 22px; }
+    .modal-footer { padding: 14px 22px; background: var(--gray-50); border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 10px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; letter-spacing: .04em; text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 7px;
+      font-family: var(--font-sans); font-size: .88rem; color: var(--gray-800); background: var(--gray-50); transition: border-color .15s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); background: var(--white); }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    .login-badge {
+      display: inline-flex; align-items: center; gap: 5px; font-size: .72rem;
+      padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,.12); color: rgba(255,255,255,.8);
+    }
+    .login-badge.logged-in { background: rgba(201,162,39,.25); color: var(--gold-light); }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: var(--white);
+      padding: 12px 18px; border-radius: 8px; font-size: .85rem;
+      box-shadow: 0 4px 20px rgba(10,31,68,.3); transform: translateY(80px); opacity: 0;
+      transition: all .25s; z-index: 300; max-width: 320px; border-left: 4px solid var(--gold);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.err  { border-left-color: var(--red); }
+
+    .event-detail { background: var(--white); border-radius: 10px; padding: 18px; border: 1px solid var(--gray-200); }
+    .event-detail-date  { font-size: .75rem; color: var(--blue); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .event-detail-title { font-size: 1rem; font-weight: 600; color: var(--navy); }
+    .event-detail-time  { font-size: .82rem; color: var(--gray-600); margin-top: 4px; }
+
+    @media (max-width: 640px) {
+      .cal-cell { min-height: 70px; padding: 4px; }
+      .event-pill { font-size: .6rem; }
+      .cal-date-num { font-size: .7rem; width: 20px; height: 20px; }
+      .calendar-month-title { font-size: 1.2rem; }
+      main { padding: 16px 12px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+        <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+        <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+      </svg>
+      <div class="header-title">
+        <h1>Naposo HKBP Ujung Menteng</h1>
+        <p>Kalender Pelayanan 2026</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="login-badge" id="loginBadge">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm4 4a4 4 0 0 0-8 0h8z"/></svg>
+        <span id="loginBadgeText">Lihat saja</span>
+      </div>
+      <button class="btn btn-outline" id="loginBtn" onclick="openLoginModal()">🔒 Login Pengurus</button>
+    </div>
+  </div>
+</header>
+
+<div class="admin-bar" id="adminBar">
+  <svg viewBox="0 0 16 16" fill="#c9a227" width="14" height="14"><path d="M8 1l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5l3.5-.5z"/></svg>
+  <span class="admin-bar-text">Mode Pengurus Aktif — kamu bisa tambah, ubah, dan hapus event. Data sinkron ke semua pengguna.</span>
+  <div class="sync-badge load" id="syncBadge" style="margin-left:auto;">
+    <div class="sync-dot pulse" id="syncDot"></div>
+    <span id="syncText">Menghubungkan…</span>
+  </div>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:var(--gold-light);border:1px solid rgba(201,162,39,.4);" onclick="logout()">Logout</button>
+</div>
+
+<div class="year-nav">
+  <div class="year-nav-inner">
+    <span class="year-label">2026</span>
+    <div class="month-tabs" id="monthTabs"></div>
+  </div>
+</div>
+
+<main>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div>Koor</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>Ibadah / Pelayanan</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0891b2"></div>Rapat</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Latihan</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#db2777"></div>Reversement</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--blue-light)"></div>Doa</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gray-400)"></div>Lainnya</div>
+  </div>
+  <div id="calendarContainer">
+    <div class="loading-overlay"><div class="spinner"></div><p>Memuat data kalender…</p></div>
+  </div>
+</main>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="eventModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Tambah Event</h2>
+      <button class="modal-close" onclick="closeModal('eventModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Tanggal</label>
+        <input type="date" id="eventDate"/>
+      </div>
+      <div class="form-group">
+        <label>Judul Event</label>
+        <input type="text" id="eventTitle" placeholder="cth: Latihan Koor Naposo-1"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Waktu Mulai</label><input type="time" id="eventTimeStart"/></div>
+        <div class="form-group"><label>Waktu Selesai</label><input type="time" id="eventTimeEnd"/></div>
+      </div>
+      <div class="form-group">
+        <label>Kategori</label>
+        <select id="eventCategory">
+          <option value="ibadah">Ibadah / Pelayanan</option>
+          <option value="koor">Koor</option>
+          <option value="latihan">Latihan</option>
+          <option value="rapat">Rapat</option>
+          <option value="reversement">Reversement</option>
+          <option value="doa">Doa</option>
+          <option value="other">Lainnya</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Catatan (opsional)</label>
+        <textarea id="eventNote" rows="2" placeholder="Detail tambahan…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('eventModal')">Batal</button>
+      <button class="btn btn-success" id="saveBtn" onclick="saveEvent()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <h2>Login Pengurus</h2>
+      <button class="modal-close" onclick="closeModal('loginModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nama Pengurus</label>
+        <select id="loginName">
+          <option value="">-- Pilih nama --</option>
+          <option value="Daniel">Daniel</option>
+          <option value="Andre">Andre</option>
+          <option value="Tomy">Tomy</option>
+          <option value="Grace">Grace</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <p id="loginError" style="color:var(--red);font-size:.8rem;display:none;margin-top:-8px;">Password salah atau nama tidak dipilih.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('loginModal')">Batal</button>
+      <button class="btn btn-primary" onclick="doLogin()">Masuk</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2>Detail Event</h2>
+      <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer" id="detailFooter">
+      <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('detailModal')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const SUPA_URL = 'https://wejbubxrlqyazlodhbua.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
+
+// Password pengurus — ganti sesuai kebutuhan
+const PASSWORDS = {
+  Daniel: 'naposo2026dan',
+  Andre:  'naposo2026and',
+  Tomy:   'naposo2026tom',
+  Grace:  'naposo2026gra',
+};
+
+// ══════════════════════════════════════════
+//  SUPABASE HELPER
+// ══════════════════════════════════════════
+function sbFetch(path, opts = {}) {
+  return fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(opts.headers || {}),
+    },
+    ...opts,
+  });
+}
+
+async function dbSelect(table, query = '') {
+  const r = await sbFetch(`${table}?${query}`);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function dbInsert(table, data) {
+  const r = await sbFetch(table, { method: 'POST', body: JSON.stringify(data) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function dbUpdate(table, match, data) {
+  const r = await sbFetch(`${table}?${match}`, { method: 'PATCH', body: JSON.stringify(data) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function dbDelete(table, match) {
+  const r = await sbFetch(`${table}?${match}`, { method: 'DELETE' });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ══════════════════════════════════════════
+//  SEED DATA
+// ══════════════════════════════════════════
+const SEED = [
+  // APRIL
+  {id:'e1', date:'2026-04-02',title:'VG RN Passion III',time:'19:30–21:00',category:'ibadah',note:''},
+  {id:'e2', date:'2026-04-03',title:'Koor RN Jumat Agung',time:'10:00–12:00',category:'koor',note:''},
+  {id:'e3', date:'2026-04-04',title:'Paskah RN',time:'18:00',category:'ibadah',note:''},
+  {id:'e4', date:'2026-04-05',title:'Koor RN Paskah',time:'17:00–18:30',category:'koor',note:''},
+  {id:'e5', date:'2026-04-08',title:'Rapat BKR',time:'18:30–19:30',category:'rapat',note:''},
+  {id:'e6', date:'2026-04-10',title:'Rapat Program Pelayanan Naposo 2026',time:'',category:'rapat',note:''},
+  {id:'e7', date:'2026-04-11',title:'Pembekalan Pengurus Naposo Ke-1',time:'13:00–16:00',category:'ibadah',note:''},
+  {id:'e8', date:'2026-04-12',title:'Latihan Koor Naposo-1 (19 Apr)',time:'11:30–13:00',category:'latihan',note:''},
+  {id:'e9', date:'2026-04-17',title:'Evaluasi Paskah',time:'19:30–21:30',category:'rapat',note:''},
+  {id:'e10',date:'2026-04-17',title:'Latihan Koor Naposo-2 (19 Apr)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'e11',date:'2026-04-18',title:'Sosialisasi Program Pelayanan 2026–2028',time:'',category:'ibadah',note:''},
+  {id:'e12',date:'2026-04-19',title:'Koor Naposo-1',time:'09:30–11:00',category:'koor',note:''},
+  {id:'e13',date:'2026-04-20',title:'Reversement',time:'10:00',category:'reversement',note:''},
+  {id:'e14',date:'2026-04-20',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'e15',date:'2026-04-21',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
+  {id:'e16',date:'2026-04-24',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'e17',date:'2026-04-24',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'e18',date:'2026-04-25',title:'Ibadah Naposo Pertama',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'e19',date:'2026-04-26',title:'Latihan Koor Naposo-1 (3 Mei)',time:'11:30–13:00',category:'latihan',note:''},
+  {id:'e20',date:'2026-04-27',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
+  {id:'e21',date:'2026-04-27',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  // MEI
+  {id:'m1', date:'2026-05-01',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m2', date:'2026-05-01',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m3', date:'2026-05-02',title:'Latihan Koor Naposo-2 (3 Mei)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'m4', date:'2026-05-03',title:'Koor Naposo (3 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'m5', date:'2026-05-04',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
+  {id:'m6', date:'2026-05-04',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m7', date:'2026-05-08',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m8', date:'2026-05-08',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m9', date:'2026-05-09',title:'Latihan Koor Naposo-1 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m10',date:'2026-05-09',title:'Ibadah Naposo Kedua',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'m11',date:'2026-05-11',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m12',date:'2026-05-11',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m13',date:'2026-05-15',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m14',date:'2026-05-15',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m15',date:'2026-05-16',title:'Kesehatian x Kerohanian: Ibadah & Kunjungan RS',time:'',category:'ibadah',note:''},
+  {id:'m16',date:'2026-05-16',title:'Latihan Koor Naposo-2 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m17',date:'2026-05-17',title:'Koor Naposo (17 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'m18',date:'2026-05-18',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m19',date:'2026-05-18',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m20',date:'2026-05-19',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
+  {id:'m21',date:'2026-05-22',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m22',date:'2026-05-22',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m23',date:'2026-05-23',title:'Latihan Koor RN-1 (31 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m24',date:'2026-05-23',title:'Ibadah Naposo Ketiga',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'m25',date:'2026-05-25',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m26',date:'2026-05-25',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m27',date:'2026-05-29',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m28',date:'2026-05-29',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m29',date:'2026-05-29',title:'Evaluasi Pelayanan BPP',time:'',category:'rapat',note:''},
+  {id:'m30',date:'2026-05-30',title:'Latihan Koor Naposo-2 (31 Mei)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'m31',date:'2026-05-31',title:'Koor RN (31 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  // JUNI
+  {id:'j1', date:'2026-06-01',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j2', date:'2026-06-05',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j3', date:'2026-06-06',title:'Ibadah Naposo Ke-empat',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'j4', date:'2026-06-06',title:'Latihan Koor Naposo-1 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j5', date:'2026-06-08',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j6', date:'2026-06-12',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j7', date:'2026-06-13',title:'Kesehatian Naposo',time:'',category:'ibadah',note:''},
+  {id:'j8', date:'2026-06-13',title:'Latihan Koor Naposo-2 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j9', date:'2026-06-14',title:'Koor Naposo (14 Jun)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j10',date:'2026-06-15',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j11',date:'2026-06-19',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j12',date:'2026-06-20',title:'Latihan Koor RN-1 (28 Jun)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'j13',date:'2026-06-20',title:'Ibadah Naposo Kelima',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'j14',date:'2026-06-22',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j15',date:'2026-06-26',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j16',date:'2026-06-27',title:'Perayaan Ulang Tahun',time:'',category:'ibadah',note:''},
+  {id:'j17',date:'2026-06-27',title:'Latihan Koor RN-2 (28 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j18',date:'2026-06-28',title:'Koor RN (28 Jun)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j19',date:'2026-06-29',title:'Reversement (Bersama)',time:'',category:'reversement',note:''},
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const YEAR   = 2026;
+const TODAY  = new Date();
+
+let EVENTS       = [];
+let currentMonth = Math.min(Math.max(TODAY.getFullYear()===YEAR ? TODAY.getMonth() : 3, 0), 11);
+let isAdmin      = false;
+let editingId    = null;
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+async function init() {
+  buildTabs();
+  try {
+    // seed if empty
+    const check = await dbSelect('events', 'select=id&limit=1');
+    if (check.length === 0) {
+      await dbInsert('events', SEED);
+    }
+    EVENTS = await dbSelect('events', 'select=*&order=date.asc,created_at.asc');
+    renderCalendar();
+  } catch(e) {
+    document.getElementById('calendarContainer').innerHTML =
+      `<div class="loading-overlay" style="color:var(--red);">
+        ⚠️ Gagal memuat data dari server.<br><small style="display:block;margin-top:8px;opacity:.7;">${e.message}</small>
+       </div>`;
+  }
+}
+
+// ══════════════════════════════════════════
+//  TABS & RENDER
+// ══════════════════════════════════════════
+function buildTabs() {
+  document.getElementById('monthTabs').innerHTML = MONTHS.map((m,i) =>
+    `<button class="month-tab ${i===currentMonth?'active':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`
+  ).join('');
+}
+function switchMonth(i) { currentMonth=i; buildTabs(); renderCalendar(); }
+
+function renderCalendar() {
+  const c = document.getElementById('calendarContainer');
+  c.innerHTML = '';
+  c.appendChild(buildMonth(YEAR, currentMonth));
+}
+
+function buildMonth(year, month) {
+  const sec = document.createElement('div');
+  sec.className = 'calendar-section';
+  const firstDay   = new Date(year,month,1).getDay();
+  const totalDays  = new Date(year,month+1,0).getDate();
+
+  const hdr = document.createElement('div');
+  hdr.className = 'calendar-month-header';
+  hdr.innerHTML = `
+    <h2 class="calendar-month-title">${MONTHS[month]} <span>${year}</span></h2>
+    ${isAdmin ? `<button class="btn btn-primary btn-sm" onclick="openAddModal(null)">+ Tambah Event</button>` : ''}
+  `;
+  sec.appendChild(hdr);
+
+  const grid = document.createElement('div'); grid.className='cal-grid';
+  const dayRow = document.createElement('div'); dayRow.className='cal-header-row';
+  DAYS.forEach(d => { const el=document.createElement('div'); el.className='cal-day-name'; el.textContent=d; dayRow.appendChild(el); });
+  grid.appendChild(dayRow);
+
+  const body = document.createElement('div'); body.className='cal-body';
+  for (let i=0;i<firstDay;i++) { const e=document.createElement('div'); e.className='cal-cell empty'; body.appendChild(e); }
+
+  for (let d=1;d<=totalDays;d++) {
+    const dow    = new Date(year,month,d).getDay();
+    const ds     = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const today  = TODAY.getFullYear()===year && TODAY.getMonth()===month && TODAY.getDate()===d;
+    const cell   = document.createElement('div');
+    cell.className = `cal-cell${today?' today':''}${dow===0?' sunday':dow===6?' saturday':''}`;
+
+    const num = document.createElement('div'); num.className='cal-date-num'; num.textContent=d;
+    cell.appendChild(num);
+
+    if (isAdmin) {
+      const ab = document.createElement('button');
+      ab.className='cal-add-btn'; ab.textContent='+'; ab.title='Tambah event';
+      ab.onclick = e => { e.stopPropagation(); openAddModal(ds); };
+      cell.appendChild(ab);
+    }
+
+    EVENTS.filter(ev=>ev.date===ds).forEach(ev => {
+      const pill = document.createElement('div');
+      pill.className = `event-pill event-${ev.category||'other'}`;
+      pill.innerHTML = `
+        ${ev.time?`<span class="event-time">${ev.time}</span>`:''}
+        <span class="event-title">${ev.title}</span>
+        ${isAdmin?`<button class="event-del" onclick="confirmDel('${ev.id}',event)">✕</button>`:''}
+      `;
+      pill.onclick = () => openDetail(ev);
+      cell.appendChild(pill);
+    });
+    body.appendChild(cell);
+  }
+  grid.appendChild(body);
+  sec.appendChild(grid);
+  return sec;
+}
+
+// ══════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el =>
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); })
+);
+
+function openAddModal(ds) {
+  editingId=null;
+  document.getElementById('modalTitle').textContent = 'Tambah Event';
+  document.getElementById('eventDate').value    = ds||'';
+  document.getElementById('eventTitle').value   = '';
+  document.getElementById('eventTimeStart').value='';
+  document.getElementById('eventTimeEnd').value  ='';
+  document.getElementById('eventCategory').value ='ibadah';
+  document.getElementById('eventNote').value     ='';
+  openModal('eventModal');
+}
+function openEditModal(ev) {
+  editingId=ev.id;
+  document.getElementById('modalTitle').textContent='Ubah Event';
+  document.getElementById('eventDate').value     =ev.date;
+  document.getElementById('eventTitle').value    =ev.title;
+  const t=(ev.time||'').split('–');
+  document.getElementById('eventTimeStart').value=t[0]||'';
+  document.getElementById('eventTimeEnd').value  =t[1]||'';
+  document.getElementById('eventCategory').value =ev.category||'other';
+  document.getElementById('eventNote').value     =ev.note||'';
+  openModal('eventModal');
+}
+function openDetail(ev) {
+  const d=new Date(ev.date+'T00:00:00');
+  const lbl=d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('detailBody').innerHTML=`
+    <div class="event-detail">
+      <div class="event-detail-date">${lbl}</div>
+      <div class="event-detail-title">${ev.title}</div>
+      ${ev.time?`<div class="event-detail-time">⏰ ${ev.time}</div>`:''}
+      ${ev.note?`<p style="margin-top:10px;font-size:.85rem;color:var(--gray-600);line-height:1.5;">${ev.note}</p>`:''}
+      <div style="margin-top:12px;">
+        <span style="font-size:.72rem;padding:3px 8px;border-radius:20px;background:var(--sky);color:var(--blue);font-weight:600;text-transform:uppercase;">${ev.category||'other'}</span>
+      </div>
+    </div>`;
+  // Store current event for edit button
+  window._detailEv = ev;
+  document.getElementById('detailFooter').innerHTML=`
+    <button class="btn" style="color:var(--gray-600);border:1.5px solid var(--gray-200);" onclick="closeModal('detailModal')">Tutup</button>
+    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detailEv)">Edit</button>`:''}
+  `;
+  openModal('detailModal');
+}
+
+// ══════════════════════════════════════════
+//  CRUD
+// ══════════════════════════════════════════
+async function saveEvent() {
+  const date  = document.getElementById('eventDate').value;
+  const title = document.getElementById('eventTitle').value.trim();
+  const tS    = document.getElementById('eventTimeStart').value;
+  const tE    = document.getElementById('eventTimeEnd').value;
+  const cat   = document.getElementById('eventCategory').value;
+  const note  = document.getElementById('eventNote').value.trim();
+  if (!date||!title) { showToast('Tanggal dan judul harus diisi!','err'); return; }
+
+  const time = tS ? (tE ? `${tS}–${tE}` : tS) : '';
+  const btn  = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Menyimpan…';
+  setSyncBadge('load','Menyimpan…');
+
+  try {
+    if (editingId) {
+      await dbUpdate('events',`id=eq.${editingId}`,{date,title,time,category:cat,note});
+      const i=EVENTS.findIndex(e=>e.id===editingId);
+      if(i!==-1) EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note};
+      showToast('Event berhasil diubah ✓');
+    } else {
+      const id='ev_'+Date.now();
+      const [ins]=await dbInsert('events',{id,date,title,time,category:cat,note});
+      EVENTS.push(ins);
+      showToast('Event berhasil ditambah ✓');
+    }
+    closeModal('eventModal');
+    renderCalendar();
+    setSyncBadge('ok','Tersimpan di server');
+  } catch(e) {
+    showToast('Gagal menyimpan: '+e.message,'err');
+    setSyncBadge('err','Gagal tersimpan');
+  } finally {
+    btn.disabled=false; btn.textContent='Simpan';
+  }
+}
+
+async function confirmDel(id,e) {
+  e.stopPropagation();
+  if(!confirm('Hapus event ini?')) return;
+  setSyncBadge('load','Menghapus…');
+  try {
+    await dbDelete('events',`id=eq.${id}`);
+    EVENTS=EVENTS.filter(ev=>ev.id!==id);
+    renderCalendar();
+    showToast('Event dihapus.');
+    setSyncBadge('ok','Terhubung ke server');
+  } catch(err) {
+    showToast('Gagal menghapus: '+err.message,'err');
+    setSyncBadge('err','Gagal');
+  }
+}
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+function openLoginModal() {
+  document.getElementById('loginError').style.display='none';
+  document.getElementById('loginName').value='';
+  document.getElementById('loginPassword').value='';
+  openModal('loginModal');
+}
+function doLogin() {
+  const name=document.getElementById('loginName').value;
+  const pass=document.getElementById('loginPassword').value;
+  if(!name||PASSWORDS[name]!==pass) { document.getElementById('loginError').style.display='block'; return; }
+  isAdmin=true;
+  document.body.classList.add('admin-mode');
+  document.getElementById('adminBar').classList.add('visible');
+  document.getElementById('loginBadge').classList.add('logged-in');
+  document.getElementById('loginBadgeText').textContent=name+' (Pengurus)';
+  document.getElementById('loginBtn').textContent='✓ Mode Edit Aktif';
+  document.getElementById('loginBtn').disabled=true;
+  setSyncBadge('ok','Terhubung ke server');
+  closeModal('loginModal');
+  renderCalendar();
+  showToast(`Selamat datang, ${name}! Mode edit aktif.`);
+}
+function logout() {
+  isAdmin=false;
+  document.body.classList.remove('admin-mode');
+  document.getElementById('adminBar').classList.remove('visible');
+  document.getElementById('loginBadge').classList.remove('logged-in');
+  document.getElementById('loginBadgeText').textContent='Lihat saja';
+  document.getElementById('loginBtn').textContent='🔒 Login Pengurus';
+  document.getElementById('loginBtn').disabled=false;
+  renderCalendar();
+  showToast('Kamu sudah logout.');
+}
+function setSyncBadge(type,text) {
+  const b=document.getElementById('syncBadge');
+  const d=document.getElementById('syncDot');
+  b.className=`sync-badge ${type}`;
+  d.className=`sync-dot${type==='load'?' pulse':''}`;
+  document.getElementById('syncText').textContent=text;
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let _tt;
+function showToast(msg,type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show${type==='err'?' err':''}`;
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+init();
+</script>
+</body>
+</html>
