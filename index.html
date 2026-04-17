@@ -528,13 +528,13 @@ async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.
 
 /* ══ PASSWORDS ══ */
 const USERS={
-  Andre:'aNdRe2026nps',Catherine:'aNdRe2026nps',Daniel:'dAniEl2026nPs',
-  David:'dAniEl2026nPs',Dea:'dEa2026NapoSo',Eliza:'eLiZa26NpHkbp',
-  Frans:'fRaNs2026nPso',Grace:'gRaCe26NaPoSo',Gunawan:'gUnAwAn26nPs',
-  Lisken:'lIsKeN2026nPs',Mutiara:'lIsKeN2026nPs',Rut:'lIsKeN2026nPs',
-  Selfa:'lIsKeN2026nPs',Tomy:'tOmY2026naPso',
+  Andre:'and26naposo',Catherine:'naposo26cat',Daniel:'dan26naposo',
+  David:'naposo26dav',Dea:'dea26naposo',Eliza:'naposo26eli',
+  Frans:'fra26naposo',Grace:'naposo26gra',Gunawan:'gun26naposo',
+  Lisken:'naposo26lis',Mutiara:'mut26naposo',Rut:'naposo26rut',
+  Selfa:'sel26naposo',Tomy:'naposo26tom',
 };
-
+  
 /* ══ CATEGORIES ══ */
 const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
@@ -808,15 +808,29 @@ function renderCatMgrList(){
   const list=document.getElementById('catMgrList');list.innerHTML='';
   Object.keys(CATS).forEach(cat=>{
     const row=document.createElement('div');row.className='cat-list-item';const isBI=BUILT_IN.includes(cat);
-    row.innerHTML=`<div class="cat-swatch" style="background:${catColor(cat)}"></div><span class="cat-lbl">${catLabel(cat)}</span>${isBI?`<span class="cat-built">bawaan</span>`:`<button class="cat-del-btn" onclick="deleteCategory('${cat}')">×</button>`}`;
+    row.innerHTML=`
+      <input type="color" value="${catColor(cat)}" onchange="editCatColor('${cat}',this.value)" style="width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:1px;flex-shrink:0">
+      <input type="text" value="${catLabel(cat)}" onchange="editCatName('${cat}',this.value)" style="flex:1;padding:3px 6px;border:1px solid var(--border2);border-radius:5px;font-family:var(--font-b);font-size:.77rem;background:var(--surface);color:var(--text)">
+      ${isBI?`<span class="cat-built">bawaan</span>`:`<button class="cat-del-btn" onclick="deleteCategory('${cat}')">×</button>`}`;
     list.appendChild(row);
   });
 }
-function addCategory(){
+  function addCategory(){
   const name=document.getElementById('newCatName').value.trim();const color=document.getElementById('newCatColor').value;
   if(!name)return;const id='cat_'+Date.now();CATS[id]=color;CNAMES_ID[id]=name;CNAMES_EN[id]=name;
   saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
   document.getElementById('newCatName').value='';showToast(tx('catAdded'),'ok');
+}
+  function editCatColor(cat,color){
+  CATS[cat]=color;saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  if(EVENTS.length)renderCalendar();showToast('Warna diperbarui!','ok');
+}
+function editCatName(cat,name){
+  if(!name.trim())return;
+  if(BUILT_IN.includes(cat)){CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
+  else{CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
+  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  if(EVENTS.length)renderCalendar();showToast('Nama diperbarui!','ok');
 }
 function deleteCategory(cat){
   if(BUILT_IN.includes(cat))return;delete CATS[cat];delete CNAMES_ID[cat];delete CNAMES_EN[cat];
