@@ -597,8 +597,8 @@ footer strong{color:rgba(255,255,255,.75)}
       <button class="export-scope-btn" id="scopeBtnPick" onclick="selectExportScope('pick')">Pilih Bulan…</button>
       <button class="export-scope-btn" id="scopeBtnCat" onclick="selectExportScope('cat')">Kategori Aktif</button>
     </div>
-    <div id="monthPickerRow" style="display:none;margin-top:10px;flex-wrap:wrap;gap:6px;">
-      <select id="exportMonthPicker" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-b);font-size:.78rem;cursor:pointer;">
+    <div id="monthPickerRow" style="display:none;margin-top:10px;flex-wrap:wrap;gap:8px;align-items:center;">
+      <select id="exportMonthFrom" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-b);font-size:.78rem;cursor:pointer;">
         <option value="0">Januari</option>
         <option value="1">Februari</option>
         <option value="2">Maret</option>
@@ -612,6 +612,22 @@ footer strong{color:rgba(255,255,255,.75)}
         <option value="10">November</option>
         <option value="11">Desember</option>
       </select>
+      <span style="font-size:.78rem;color:var(--text2);font-weight:600;">s/d</span>
+      <select id="exportMonthTo" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-b);font-size:.78rem;cursor:pointer;">
+        <option value="0">Januari</option>
+        <option value="1">Februari</option>
+        <option value="2">Maret</option>
+        <option value="3">April</option>
+        <option value="4">Mei</option>
+        <option value="5">Juni</option>
+        <option value="6">Juli</option>
+        <option value="7">Agustus</option>
+        <option value="8">September</option>
+        <option value="9">Oktober</option>
+        <option value="10">November</option>
+        <option value="11">Desember</option>
+      </select>
+      <span id="monthRangeHint" style="font-size:.7rem;color:var(--text3);width:100%;margin-top:2px;"></span>
     </div>
     <!-- Progress -->
     <div class="export-progress" id="exportProgress">
@@ -1242,7 +1258,33 @@ function selectExportScope(scope){
   const picker=document.getElementById('monthPickerRow');
   if(picker) picker.style.display=scope==='pick'?'flex':'none';
   if(scope==='pick'){
-    document.getElementById('exportMonthPicker').value=currentMonth;
+    const fromEl=document.getElementById('exportMonthFrom');
+    const toEl=document.getElementById('exportMonthTo');
+    fromEl.value=0;
+    toEl.value=11;
+    updateMonthRangeHint();
+    fromEl.onchange=updateMonthRangeHint;
+    toEl.onchange=()=>{
+      const f=parseInt(fromEl.value), t=parseInt(toEl.value);
+      if(t<f) fromEl.value=t;
+      updateMonthRangeHint();
+    };
+  }
+}
+
+function updateMonthRangeHint(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const f=parseInt(document.getElementById('exportMonthFrom').value);
+  const t=parseInt(document.getElementById('exportMonthTo').value);
+  const evCount=EVENTS.filter(e=>{
+    const m=parseInt(e.date.slice(5,7))-1;
+    return m>=f && m<=t;
+  }).length;
+  const hint=document.getElementById('monthRangeHint');
+  if(f===t){
+    hint.textContent=`${MO[f]} — ${evCount} event`;
+  } else {
+    hint.textContent=`${MO[f]} s/d ${MO[t]} — ${evCount} event`;
   }
 }
 
@@ -1252,9 +1294,13 @@ function getExportEvents(){
     const monStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
     evs=evs.filter(e=>e.date.startsWith(monStr));
   } else if(exportScope==='pick'){
-    const pickedMonth=parseInt(document.getElementById('exportMonthPicker').value);
-    const monStr=`${YEAR}-${String(pickedMonth+1).padStart(2,'0')}`;
-    evs=evs.filter(e=>e.date.startsWith(monStr));
+    const f=parseInt(document.getElementById('exportMonthFrom').value);
+    const t=parseInt(document.getElementById('exportMonthTo').value);
+    const from=Math.min(f,t), to=Math.max(f,t);
+    evs=evs.filter(e=>{
+      const m=parseInt(e.date.slice(5,7))-1;
+      return m>=from && m<=to;
+    });
   } else if(exportScope==='cat' && filterCat!=='all'){
     evs=evs.filter(e=>e.category===filterCat);
   }
@@ -1286,8 +1332,9 @@ function exportCSV(){
     rows.push([ev.date, dayNames[d.getDay()], ev.title, ev.time||'', catLabel(ev.category), ev.note||'']);
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
-  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
   triggerDownload(blob,`Kalender_Naposo_2026${scopeLabel}.csv`);
   setExportProgress(100,'Selesai! File CSV siap diunduh.');
   showToast('Export CSV berhasil ✓','ok');
@@ -1325,7 +1372,9 @@ function exportICAL(){
     ical+='END:VEVENT\r\n';
   });
   ical+='END:VCALENDAR\r\n';
-  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
   const blob=new Blob([ical],{type:'text/calendar;charset=utf-8;'});
   triggerDownload(blob,`Kalender_Naposo_2026${scopeLabel}.ics`);
   setExportProgress(100,'Selesai! File .ics siap diunduh.');
@@ -1411,7 +1460,9 @@ async function exportPNG(){
     const target=document.getElementById('calWrap');
     const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--surface')||'#ffffff',logging:false});
     setExportProgress(85,'Menyimpan gambar…');
-    const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
+    const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+    const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+    const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
     canvas.toBlob(blob=>{
       triggerDownload(blob,`Kalender_Naposo_${MO[currentMonth]}_2026${scopeLabel}.png`);
       setExportProgress(100,'Selesai! Gambar PNG siap diunduh.');
