@@ -455,7 +455,7 @@ function renderPrograms(){
   visCats.forEach(cat=>{
     const upcoming=EVENTS.filter(e=>e.category===cat&&e.date>=todayStr).slice(0,3);
     const col=catColor(cat);
-    const card=document.createElement('a');card.className='prog-card';card.href='index.html';
+    const card=document.createElement('a');card.className='prog-card';card.removeAttribute('href');
     card.innerHTML=`
       <div class="prog-card-top">
         <div class="prog-dot" style="background:${col}"></div>
@@ -475,7 +475,7 @@ function renderPrograms(){
             </div>`;
           }).join('')}
       </div>
-      <div class="prog-card-foot">Lihat di kalender →</div>`;card.onclick=function(){window.location.href='kalender.html';};
+      <div class="prog-card-foot">Lihat di kalender →</div>`;card.style.pointerEvents='none';card.style.cursor='default';
     grid.appendChild(card);
   });
 }
