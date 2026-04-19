@@ -1386,7 +1386,9 @@ function exportICAL(){
 function exportPDF(){
   const evs=getExportEvents();
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
-  const scopeLabel=exportScope==='month'?` — ${MO[currentMonth]} ${YEAR}`:exportScope==='cat'&&filterCat!=='all'?` — ${catLabel(filterCat)}`:`— Semua Bulan`;
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?` — ${MO[currentMonth]} ${YEAR}`:exportScope==='pick'?` — ${MO[Math.min(f,t)]} s/d ${MO[Math.max(f,t)]} ${YEAR}`:exportScope==='cat'&&filterCat!=='all'?` — ${catLabel(filterCat)}`:`— Semua Bulan`;
   setExportProgress(30,'Menyiapkan dokumen PDF…');
   const w=window.open('','_blank');
   if(!w){showToast('Popup diblokir. Izinkan popup di browser.','err');return;}
@@ -1498,31 +1500,36 @@ function getPreviewBox(){
   return document.getElementById('event-preview');
 }
 
-function showPreview(e, eventData){
+function showPreview(e, ev){
   const previewBox = getPreviewBox();
   if(!previewBox) return;
-
+  const d = new Date(ev.date+'T00:00:00');
+  const dateStr = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
   previewBox.innerHTML = `
-    <strong>${eventData.title}</strong><br>
-    ${formatDate(eventData.start)}<br>
-    ${eventData.location ? '📍 '+eventData.location+'<br>' : ''}
-    ${eventData.notes ? eventData.notes.substring(0,120)+'...' : ''}
+    <strong>${ev.title}</strong><br>
+    📅 ${dateStr}<br>
+    ${ev.time ? '⏰ '+ev.time+'<br>' : ''}
+    ${ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : ''}
   `;
-
   previewBox.style.display = 'block';
   previewBox.classList.add('show');
   movePreview(e);
 }
 
 function movePreview(e){
+  const previewBox = getPreviewBox();
+  if(!previewBox) return;
   previewBox.style.left = (e.pageX + 15) + 'px';
   previewBox.style.top = (e.pageY + 15) + 'px';
 }
 
 function hidePreview(){
+  const previewBox = getPreviewBox();
+  if(!previewBox) return;
   previewBox.classList.remove('show');
   previewBox.style.display = 'none';
 }
+
 </script>
 <div id="event-preview" class="event-preview" style="display:none;"></div>
 </body>
