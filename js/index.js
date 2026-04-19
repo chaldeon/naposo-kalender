@@ -7,13 +7,8 @@ async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(
 async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
 
-const USERS={
-  Andre:'and26naposo',Catherine:'naposo26cat',Daniel:'dan26naposo',
-  David:'naposo26dav',Dea:'dea26naposo',Eliza:'naposo26eli',
-  Frans:'fra26naposo',Grace:'naposo26gra',Gunawan:'gun26naposo',
-  Lisken:'naposo26lis',Mutiara:'mut26naposo',Rut:'rut26naposo',
-  Selfa:'sel26naposo',Tomy:'naposo26tom',
-};
+const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza',
+  'Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
 
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
 const DEF_LABELS={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
@@ -61,11 +56,27 @@ function toggleLoginBox(){
 function buildLoginDropdown(){
   const sel=document.getElementById('loginName');
   sel.innerHTML='<option value="">-- Pilih --</option>';
-  Object.keys(USERS).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+  [...USER_NAMES].sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
 }
-function doLogin(){
+async function doLogin(){
   const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
-  if(!name||USERS[name]!==pw){document.getElementById('loginErr').style.display='block';return;}
+  if(!name||!pw){document.getElementById('loginErr').style.display='block';return;}
+  const btn=document.getElementById('loginBtn2');btn.disabled=true;btn.textContent='Memverifikasi…';
+  try{
+    const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},
+      body:JSON.stringify({username:name,password:pw})
+    });
+    const data=await res.json();
+    if(!data.success){
+      document.getElementById('loginErr').style.display='block';
+      btn.disabled=false;btn.textContent=tx('loginBtn2');return;
+    }
+  }catch(e){
+    document.getElementById('loginErr').style.display='block';
+    btn.disabled=false;btn.textContent=tx('loginBtn2');return;
+  }
   isAdmin=true;
   document.getElementById('loginBox').classList.remove('on');
   document.getElementById('adminBox').classList.add('on');
