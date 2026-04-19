@@ -61,7 +61,7 @@ function buildLoginDropdown(){
 async function doLogin(){
   const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
   if(!name||!pw){document.getElementById('loginErr').style.display='block';return;}
-  const btn=document.getElementById('loginBtn2');btn.disabled=true;btn.textContent='Memverifikasi…';
+  const btn=document.querySelector('[onclick*="doLogin"]');btn.disabled=true;btn.textContent='Memverifikasi…';
   try{
     const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
       method:'POST',
@@ -71,11 +71,11 @@ async function doLogin(){
     const data=await res.json();
     if(!data.success){
       document.getElementById('loginErr').style.display='block';
-      btn.disabled=false;btn.textContent=tx('loginBtn2');return;
+      btn.disabled=false;btn.textContent='Masuk';return;
     }
   }catch(e){
     document.getElementById('loginErr').style.display='block';
-    btn.disabled=false;btn.textContent=tx('loginBtn2');return;
+    btn.disabled=false;btn.textContent='Masuk';return;
   }
   isAdmin=true;
   document.getElementById('loginBox').classList.remove('on');
