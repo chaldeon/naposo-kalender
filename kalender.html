@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Kalender Pelayanan · Naposo HKBP Ujung Menteng</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/kalender.css">
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header style="position:sticky;top:0">
+<div class="hdr">
+  <div class="hdr-brand">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
+      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+    </svg>
+    <div class="hdr-title">
+      <h1>Naposo HKBP Ujung Menteng</h1>
+      <p id="hdrSub">Kalender Pelayanan 2026</p>
+    </div>
+  </div>
+
+  <!-- Desktop controls -->
+  <div class="hdr-right-desktop">
+    <label class="tog" title="Dark mode">
+      <span>🌙</span>
+      <div class="tog-track" id="darkTrack"><div class="tog-thumb"></div></div>
+      <input type="checkbox" id="darkCb" style="display:none" onchange="toggleDark()"/>
+    </label>
+    <label class="tog">
+      <span id="langLbl" style="font-size:.68rem;font-weight:700">EN</span>
+      <div class="tog-track" id="langTrack"><div class="tog-thumb"></div></div>
+      <input type="checkbox" id="langCb" style="display:none" onchange="toggleLang()"/>
+    </label>
+    <div class="login-badge" id="loginBadge">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm4 4a4 4 0 0 0-8 0h8z"/></svg>
+      <span id="loginBadgeTxt">Lihat saja</span>
+    </div>
+    <a class="btn btn-outline-w btn-sm" href="index.html" style="text-decoration:none">🏠 Home</a>
+    <button class="btn btn-outline btn-sm" id="loginBtn" onclick="openLoginModal()">🔒 <span id="loginBtnTxt">Login</span></button>
+  </div>
+
+  <!-- Mobile hamburger -->
+  <button class="hdr-menu-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Menu">
+    <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18"><path d="M2 5h16M2 10h16M2 15h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+  </button>
+</div>
+
+<!-- Mobile dropdown -->
+<div class="hdr-menu-panel" id="hdrMenuPanel">
+  <div class="hdr-menu-item" onclick="toggleDarkMobile()">
+    <div class="hdr-menu-label">🌙 <span id="darkModeLbl">Dark Mode</span></div>
+    <div class="tog-track" id="darkTrackMobile" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="hdr-menu-item" onclick="toggleLangMobile()">
+    <div class="hdr-menu-label">🌐 <span id="langModeLbl">Bahasa</span></div>
+    <div class="tog-track" id="langTrackMobile" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="hdr-menu-sep"></div>
+  <div class="hdr-login-row">
+    <div class="login-badge" id="loginBadgeMobile" style="margin-bottom:8px;justify-content:center">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm4 4a4 4 0 0 0-8 0h8z"/></svg>
+      <span id="loginBadgeMobileTxt">Lihat saja</span>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" id="loginBtnMobile" onclick="openLoginModal();closeHamburger()">🔒 <span id="loginBtnMobileTxt">Login Pengurus</span></button>
+  </div>
+</div>
+</header>
+
+<!-- ══ ADMIN BAR ══ -->
+<div class="admin-bar" id="adminBar">
+  <svg viewBox="0 0 16 16" fill="#c9a227" width="11" height="11"><path d="M8 1l1.5 3 3.5.5-2.5 2.5.6 3.5L8 9l-3.1 1.5.6-3.5L3 4.5l3.5-.5z"/></svg>
+  <span class="admin-bar-txt" id="adminBarTxt">Mode Pengurus Aktif</span>
+  <div class="sync-badge load" id="syncBadge" style="margin-left:auto">
+    <div class="sync-dot pulse" id="syncDot"></div>
+    <span id="syncTxt">…</span>
+  </div>
+  <button class="btn btn-sm" style="background:rgba(201,162,39,.18);color:var(--gold-lt);border:1px solid rgba(201,162,39,.4);" onclick="openExportModal()" id="exportBtn">
+    <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+    Export
+  </button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.2);" onclick="doLogout()" id="logoutBtn">Logout</button>
+</div>
+
+<!-- ══ TOOLBAR ══ -->
+<div class="toolbar">
+<div class="toolbar-inner">
+  <!-- Row 1: month tabs -->
+  <div class="month-row">
+    <span class="year-badge">2026</span>
+    <div class="month-tabs" id="monthTabs"></div>
+  </div>
+  <!-- Row 2: title + info btn + search + add -->
+  <div class="cal-header-row">
+    <h2 class="cal-title" id="calTitle">April <span>2026</span></h2>
+    <div style="position:relative;display:inline-flex;align-items:center;gap:6px">
+      <button class="today-btn" id="todayBtn" onclick="goToday()" style="font-size:.72rem;padding:3px 10px">Today</button>
+      <button class="info-btn" id="infoBtn" onclick="toggleStats()" title="Statistik">i</button>
+      <div class="stats-popup" id="statsPopup">
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblTotal">Total Event</span><span class="stat-row-val" id="stValTotal">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblMonth">Bulan ini</span><span class="stat-row-val" id="stValMonth">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblToday">Hari ini</span><span class="stat-row-val" id="stValToday">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblVisit">Total kunjungan</span><span class="stat-row-val" id="stValVisit">–</span></div>
+      </div>
+    </div>
+    <!-- (i) stats popup -->
+    <div style="position:relative">
+      
+      <div class="stats-popup" id="statsPopup">
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblTotal">Total Event</span><span class="stat-row-val" id="stValTotal">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblMonth">Bulan ini</span><span class="stat-row-val" id="stValMonth">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblToday">Hari ini</span><span class="stat-row-val" id="stValToday">–</span></div>
+        <div class="stat-row"><span class="stat-row-lbl" id="stLblVisit">Total kunjungan</span><span class="stat-row-val" id="stValVisit">–</span></div>
+      </div>
+    </div>
+    <!-- add (admin) -->
+    <button class="btn btn-primary btn-sm" id="addEventBtn" onclick="openAddModal(null)">+ <span id="addBtnTxt">Tambah</span></button>
+  </div>
+  <!-- Row 3: category filter dropdown -->
+  <div class="filter-row">
+    <!-- search -->
+    <div class="search-wrap" style="margin-left:0;margin-right:4px;position:relative">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);opacity:.38;pointer-events:none"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+      <input type="text" id="searchInput" placeholder="Cari event…" oninput="applyFilters()"/>
+    </div>
+    <div class="cat-filter-wrap" id="catFilterWrap">
+      <button class="cat-filter-btn" id="catFilterBtn" onclick="toggleCatFilter()">
+        <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
+        <span id="catFilterLabel">Semua Kategori</span>
+        <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
+      </button>
+      <div class="cat-filter-dropdown" id="catFilterDropdown"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<main>
+  <div id="calWrap"><div class="loading-box"><div class="spinner"></div><p>Memuat data…</p></div></div>
+  <div class="legend" id="legendWrap"></div>
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <strong>Naposo HKBP Ujung Menteng</strong> · Dibuat dengan ❤ untuk pelayanan bersama · © <span id="footerYear"></span>
+  &nbsp;·&nbsp; 👁 <span id="footerVisits">–</span> <span id="footerVisitLbl">kunjungan</span>
+</footer>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Event form -->
+<div class="overlay" id="eventModal">
+<div class="modal">
+  <div class="modal-hdr"><h2 id="evModalTitle">Tambah Event</h2><button class="modal-x" onclick="closeModal('eventModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g"><label id="lbDate">Tanggal</label><input type="date" id="evDate"/></div>
+    <div class="form-g"><label id="lbTitle">Judul Event</label><input type="text" id="evTitle" placeholder="cth: Latihan Koor Naposo-1"/></div>
+    <div class="form-row">
+      <div class="form-g"><label id="lbStart">Waktu Mulai</label><input type="time" id="evStart"/></div>
+      <div class="form-g"><label id="lbEnd">Waktu Selesai</label><input type="time" id="evEnd"/></div>
+    </div>
+    <div class="form-g">
+      <label id="lbCat">Kategori</label>
+      <div class="cat-row-inline">
+        <select id="evCat"></select>
+        <button type="button" class="cat-mgr-toggle" onclick="toggleCatMgr()" id="catMgrBtn">⚙ Kelola</button>
+      </div>
+      <div class="cat-mgr-panel" id="catMgrPanel">
+        <div id="catMgrList"></div>
+        <div class="cat-add-row">
+          <input type="text" id="newCatName" placeholder="Nama kategori baru…"/>
+          <input type="color" id="newCatColor" value="#6366f1" style="width:30px;height:30px;border:none;border-radius:5px;cursor:pointer;padding:2px"/>
+          <button class="btn btn-primary btn-sm" onclick="addCategory()">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-g"><label id="lbNote">Catatan (opsional)</label><textarea id="evNote" rows="2" placeholder="Detail tambahan…"></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('eventModal')" id="cancelBtn">Batal</button>
+    <button class="btn btn-success" id="evSaveBtn" onclick="saveEvent()">Simpan</button>
+  </div>
+</div>
+</div>
+
+<!-- Login -->
+<div class="overlay" id="loginModal">
+<div class="modal" style="max-width:350px">
+  <div class="modal-hdr"><h2 id="loginTitle">Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g">
+      <label id="lbName">Nama Pengurus</label>
+      <select id="loginName"><option value="">-- Pilih nama --</option></select>
+    </div>
+    <div class="form-g">
+      <label id="lbPw">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button class="pw-eye" type="button" onclick="togglePw('loginPw',this)">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="login-err" id="loginErr">Password salah atau nama tidak dipilih.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('loginModal')" id="cancelBtn2">Batal</button>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginBtn2">Masuk</button>
+  </div>
+</div>
+</div>
+
+<!-- Detail -->
+<div class="overlay" id="detailModal">
+<div class="modal" style="max-width:420px">
+  <div class="modal-hdr"><h2 id="detailTitle">Detail Event</h2><button class="modal-x" onclick="closeModal('detailModal')">×</button></div>
+  <div class="modal-body" id="detailBody"></div>
+  <div class="modal-foot" id="detailFoot"></div>
+</div>
+</div>
+
+<!-- Export Modal -->
+<div class="overlay" id="exportModal">
+<div class="modal export-modal">
+  <div class="modal-hdr">
+    <h2>📤 Export Kalender</h2>
+    <button class="modal-x" onclick="closeModal('exportModal')">×</button>
+  </div>
+  <div class="modal-body">
+    <!-- Format -->
+    <div class="export-section-title">Format Export</div>
+    <div class="export-grid">
+      <div class="export-card selected" id="expCardPdf" onclick="selectExportFormat('pdf')">
+        <div class="export-card-icon">📄</div>
+        <div class="export-card-title">PDF</div>
+        <div class="export-card-desc">Dokumen siap cetak, tabel rapi</div>
+      </div>
+      <div class="export-card" id="expCardPng" onclick="selectExportFormat('png')">
+        <div class="export-card-icon">🖼️</div>
+        <div class="export-card-title">PNG</div>
+        <div class="export-card-desc">Screenshot tampilan kalender</div>
+      </div>
+      <div class="export-card" id="expCardCsv" onclick="selectExportFormat('csv')">
+        <div class="export-card-icon">📊</div>
+        <div class="export-card-title">CSV / Excel</div>
+        <div class="export-card-desc">Data spreadsheet, bisa diedit</div>
+      </div>
+      <div class="export-card" id="expCardIcal" onclick="selectExportFormat('ical')">
+        <div class="export-card-icon">📅</div>
+        <div class="export-card-title">iCal (.ics)</div>
+        <div class="export-card-desc">Import ke Google / Apple Calendar</div>
+      </div>
+    </div>
+    <!-- Scope -->
+    <div class="export-section-title">Data yang Di-export</div>
+    <div class="export-scope-row">
+      <button class="export-scope-btn on" id="scopeBtnAll" onclick="selectExportScope('all')">Semua Bulan</button>
+      <button class="export-scope-btn" id="scopeBtnMonth" onclick="selectExportScope('month')">Bulan Ini Saja</button>
+      <button class="export-scope-btn" id="scopeBtnPick" onclick="selectExportScope('pick')">Pilih Bulan…</button>
+      <button class="export-scope-btn" id="scopeBtnCat" onclick="selectExportScope('cat')">Kategori Aktif</button>
+    </div>
+    <div id="monthPickerRow" style="display:none;margin-top:10px;flex-wrap:wrap;gap:8px;align-items:center;">
+      <select id="exportMonthFrom" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-b);font-size:.78rem;cursor:pointer;">
+        <option value="0">Januari</option>
+        <option value="1">Februari</option>
+        <option value="2">Maret</option>
+        <option value="3">April</option>
+        <option value="4">Mei</option>
+        <option value="5">Juni</option>
+        <option value="6">Juli</option>
+        <option value="7">Agustus</option>
+        <option value="8">September</option>
+        <option value="9">Oktober</option>
+        <option value="10">November</option>
+        <option value="11">Desember</option>
+      </select>
+      <span style="font-size:.78rem;color:var(--text2);font-weight:600;">s/d</span>
+      <select id="exportMonthTo" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--font-b);font-size:.78rem;cursor:pointer;">
+        <option value="0">Januari</option>
+        <option value="1">Februari</option>
+        <option value="2">Maret</option>
+        <option value="3">April</option>
+        <option value="4">Mei</option>
+        <option value="5">Juni</option>
+        <option value="6">Juli</option>
+        <option value="7">Agustus</option>
+        <option value="8">September</option>
+        <option value="9">Oktober</option>
+        <option value="10">November</option>
+        <option value="11">Desember</option>
+      </select>
+      <span id="monthRangeHint" style="font-size:.7rem;color:var(--text3);width:100%;margin-top:2px;"></span>
+    </div>
+    <!-- Progress -->
+    <div class="export-progress" id="exportProgress">
+      <div class="export-progress-bar"><div class="export-progress-fill" id="exportProgressFill"></div></div>
+      <div class="export-progress-txt" id="exportProgressTxt">Menyiapkan…</div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('exportModal')">Batal</button>
+    <button class="btn btn-primary" id="doExportBtn" onclick="doExport()">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+      Export Sekarang
+    </button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ SUPABASE ══ */
+const SUPA_URL='https://wejbubxrlqyazlodhbua.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
+function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(o.headers||{})},...o});}
+async function dbGet(t,q=''){const r=await sb(`${t}?${q}`);if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
+
+/* ══ PASSWORDS ══ */
+const USERS={
+  Andre:'and26naposo',Catherine:'cat26naposo',Daniel:'dan26naposo',
+  David:'dav26naposo',Dea:'dea26naposo',Eliza:'eli26naposo',
+  Frans:'fra26naposo',Grace:'gra26naposo',Gunawan:'gun26naposo',
+  Lisken:'lis26naposo',Mutiara:'mut26naposo',Rut:'rut26naposo',
+  Selfa:'sel26naposo',Tomy:'tom26naposo',
+};
+  
+/* ══ CATEGORIES ══ */
+const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
+const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
+const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const DEF_LBL_EN={koor:'Choir',ibadah:'Worship / Service',rapat:'Meeting',latihan:'Practice',reversement:'Reversement',doa:'Prayer',other:'Other'};
+let CATS={...DEF_COLORS},CNAMES_ID={...DEF_LBL_ID},CNAMES_EN={...DEF_LBL_EN};
+function catLabel(c){return(lang==='en'?CNAMES_EN:CNAMES_ID)[c]||CNAMES_ID[c]||c;}
+function catColor(c){return CATS[c]||'#94a3b8';}
+function saveCatsLocal(){const co={},ni={},ne={};Object.keys(CATS).forEach(k=>{if(!BUILT_IN.includes(k)){co[k]=CATS[k];ni[k]=CNAMES_ID[k];ne[k]=CNAMES_EN[k]||CNAMES_ID[k];}});localStorage.setItem('naposo_cats',JSON.stringify({co,ni,ne}));}
+function loadCatsLocal(){const s=JSON.parse(localStorage.getItem('naposo_cats')||'null');if(s){Object.assign(CATS,s.co);Object.assign(CNAMES_ID,s.ni);Object.assign(CNAMES_EN,s.ne||s.ni);}}
+
+/* ══ I18N ══ */
+const T={
+  id:{hdrSub:'Kalender Pelayanan 2026',loginBadgeView:'Lihat saja',loginBtnTxt:'Login',
+    adminBarTxt:'Mode Pengurus Aktif — tambah, ubah, hapus, atau drag-drop event.',logoutBtn:'Logout',
+    addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Event',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
+    lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
+    loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
+    lbPw:'Password',loginErr:'Password salah atau nama tidak dipilih.',
+    loginBtn2:'Masuk',detailTitle:'Detail Event',closeBtn:'Tutup',editBtn:'Edit',
+    evModalAdd:'Tambah Event',evModalEdit:'Ubah Event',
+    connecting:'Menghubungkan…',connected:'Terhubung',saving:'Menyimpan…',
+    saved:'Tersimpan ✓',deleted:'Event dihapus.',saveFail:'Gagal menyimpan',delFail:'Gagal menghapus',
+    fieldReq:'Tanggal dan judul harus diisi!',dragMoved:'Event dipindahkan ✓',
+    deleteConfirm:'Hapus event ini?',catAdded:'Kategori ditambahkan!',catDeleted:'Kategori dihapus.',
+    welcome:'Selamat datang',modeActive:'Mode edit aktif.',
+    searchPlaceholder:'Cari event…',allCats:'Semua Kategori',
+    statTotal:'Total Event',statMonth:'Bulan ini',statToday:'Hari ini',statVisit:'Total kunjungan',
+    footerVisit:'kunjungan',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
+    moreEventsLabel:(n)=>`+${n} lagi`,catMgrBtn:'⚙ Kelola',
+  },
+  en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',
+    adminBarTxt:'Admin Mode Active — add, edit, delete, or drag-drop events.',logoutBtn:'Logout',
+    addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
+    lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
+    loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
+    lbPw:'Password',loginErr:'Wrong password or name not selected.',
+    loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',
+    evModalAdd:'Add Event',evModalEdit:'Edit Event',
+    connecting:'Connecting…',connected:'Connected',saving:'Saving…',
+    saved:'Saved ✓',deleted:'Event deleted.',saveFail:'Save failed',delFail:'Delete failed',
+    fieldReq:'Date and title are required!',dragMoved:'Event moved ✓',
+    deleteConfirm:'Delete this event?',catAdded:'Category added!',catDeleted:'Category deleted.',
+    welcome:'Welcome',modeActive:'Edit mode active.',
+    searchPlaceholder:'Search events…',allCats:'All Categories',
+    statTotal:'Total Events',statMonth:'This month',statToday:'Today',statVisit:'Total visits',
+    footerVisit:'visits',darkModeLbl:'Dark Mode',langModeLbl:'Language',
+    moreEventsLabel:(n)=>`+${n} more`,catMgrBtn:'⚙ Manage',
+  }
+};
+function tx(k,...a){const fn=(T[lang]||T.id)[k]||T.id[k]||k;return typeof fn==='function'?fn(...a):fn;}
+
+/* ══ CONSTANTS & STATE ══ */
+const MONTHS_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const MONTHS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_ID=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const DAYS_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const YEAR=2026,TODAY=new Date();
+const MAX_VISIBLE=3; // max pills shown per cell before "+N more"
+let EVENTS=[],lang=localStorage.getItem('naposo_lang')||'id',darkMode=localStorage.getItem('naposo_dark')==='1';
+let isAdmin=false,editingId=null,filterCat='all';
+let currentMonth=Math.min(Math.max(TODAY.getFullYear()===YEAR?TODAY.getMonth():3,0),11);
+
+/* ══ SEED ══ */
+const SEED=[
+  {id:'e1',date:'2026-04-02',title:'VG RN Passion III',time:'19:30–21:00',category:'ibadah',note:''},
+  {id:'e2',date:'2026-04-03',title:'Koor RN Jumat Agung',time:'10:00–12:00',category:'koor',note:''},
+  {id:'e3',date:'2026-04-04',title:'Paskah RN',time:'18:00',category:'ibadah',note:''},
+  {id:'e4',date:'2026-04-05',title:'Koor RN Paskah',time:'17:00–18:30',category:'koor',note:''},
+  {id:'e5',date:'2026-04-08',title:'Rapat BKR',time:'18:30–19:30',category:'rapat',note:''},
+  {id:'e6',date:'2026-04-10',title:'Rapat Program Pelayanan Naposo 2026',time:'',category:'rapat',note:''},
+  {id:'e7',date:'2026-04-11',title:'Pembekalan Pengurus Naposo Ke-1',time:'13:00–16:00',category:'ibadah',note:''},
+  {id:'e8',date:'2026-04-12',title:'Latihan Koor Naposo-1 (19 Apr)',time:'11:30–13:00',category:'latihan',note:''},
+  {id:'e9',date:'2026-04-17',title:'Evaluasi Paskah',time:'19:30–21:30',category:'rapat',note:''},
+  {id:'e10',date:'2026-04-17',title:'Latihan Koor Naposo-2 (19 Apr)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'e11',date:'2026-04-18',title:'Sosialisasi Program Pelayanan 2026–2028',time:'',category:'ibadah',note:''},
+  {id:'e12',date:'2026-04-19',title:'Koor Naposo-1',time:'09:30–11:00',category:'koor',note:''},
+  {id:'e13',date:'2026-04-20',title:'Reversement',time:'10:00',category:'reversement',note:''},
+  {id:'e14',date:'2026-04-20',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'e15',date:'2026-04-21',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
+  {id:'e16',date:'2026-04-24',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'e17',date:'2026-04-24',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'e18',date:'2026-04-25',title:'Ibadah Naposo Pertama',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'e19',date:'2026-04-26',title:'Latihan Koor Naposo-1 (3 Mei)',time:'11:30–13:00',category:'latihan',note:''},
+  {id:'e20',date:'2026-04-27',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
+  {id:'e21',date:'2026-04-27',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m1',date:'2026-05-01',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m2',date:'2026-05-01',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m3',date:'2026-05-02',title:'Latihan Koor Naposo-2 (3 Mei)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'m4',date:'2026-05-03',title:'Koor Naposo (3 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'m5',date:'2026-05-04',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
+  {id:'m6',date:'2026-05-04',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m7',date:'2026-05-08',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m8',date:'2026-05-08',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m9',date:'2026-05-09',title:'Latihan Koor Naposo-1 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m10',date:'2026-05-09',title:'Ibadah Naposo Kedua',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'m11',date:'2026-05-11',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m12',date:'2026-05-11',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m13',date:'2026-05-15',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m14',date:'2026-05-15',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m15',date:'2026-05-16',title:'Kesehatian x Kerohanian: Ibadah & Kunjungan RS',time:'',category:'ibadah',note:''},
+  {id:'m16',date:'2026-05-16',title:'Latihan Koor Naposo-2 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m17',date:'2026-05-17',title:'Koor Naposo (17 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'m18',date:'2026-05-18',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m19',date:'2026-05-18',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m20',date:'2026-05-19',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
+  {id:'m21',date:'2026-05-22',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m22',date:'2026-05-22',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m23',date:'2026-05-23',title:'Latihan Koor RN-1 (31 Mei)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'m24',date:'2026-05-23',title:'Ibadah Naposo Ketiga',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'m25',date:'2026-05-25',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'m26',date:'2026-05-25',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m27',date:'2026-05-29',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'m28',date:'2026-05-29',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
+  {id:'m29',date:'2026-05-29',title:'Evaluasi Pelayanan BPP',time:'',category:'rapat',note:''},
+  {id:'m30',date:'2026-05-30',title:'Latihan Koor Naposo-2 (31 Mei)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'m31',date:'2026-05-31',title:'Koor RN (31 Mei)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j1',date:'2026-06-01',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j2',date:'2026-06-05',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j3',date:'2026-06-06',title:'Ibadah Naposo Ke-empat',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'j4',date:'2026-06-06',title:'Latihan Koor Naposo-1 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j5',date:'2026-06-08',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j6',date:'2026-06-12',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j7',date:'2026-06-13',title:'Kesehatian Naposo',time:'',category:'ibadah',note:''},
+  {id:'j8',date:'2026-06-13',title:'Latihan Koor Naposo-2 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j9',date:'2026-06-14',title:'Koor Naposo (14 Jun)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j10',date:'2026-06-15',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j11',date:'2026-06-19',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j12',date:'2026-06-20',title:'Latihan Koor RN-1 (28 Jun)',time:'19:00–20:30',category:'latihan',note:''},
+  {id:'j13',date:'2026-06-20',title:'Ibadah Naposo Kelima',time:'19:00–20:30',category:'ibadah',note:''},
+  {id:'j14',date:'2026-06-22',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
+  {id:'j15',date:'2026-06-26',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
+  {id:'j16',date:'2026-06-27',title:'Perayaan Ulang Tahun',time:'',category:'ibadah',note:''},
+  {id:'j17',date:'2026-06-27',title:'Latihan Koor RN-2 (28 Jun)',time:'20:00–21:30',category:'latihan',note:''},
+  {id:'j18',date:'2026-06-28',title:'Koor RN (28 Jun)',time:'09:30–11:00',category:'koor',note:''},
+  {id:'j19',date:'2026-06-29',title:'Reversement (Bersama)',time:'',category:'reversement',note:''},
+];
+
+/* ══ TRAFFIC ══ */
+function trackVisit(){const k='naposo_visits_v2';let d=JSON.parse(localStorage.getItem(k)||'{}');d.total=(d.total||0)+1;localStorage.setItem(k,JSON.stringify(d));return d;}
+
+/* ══ INIT ══ */
+async function init(){
+  applyDark();loadCatsLocal();
+  const visits=trackVisit();
+  document.getElementById('footerYear').textContent=new Date().getFullYear();
+  document.getElementById('footerVisits').textContent=visits.total||1;
+  document.getElementById('stValVisit').textContent=visits.total||1;
+  applyLangUI();buildLoginDropdown();buildCatFilterDropdown();buildLegend();buildTabs();
+  // close dropdowns on outside click
+  document.addEventListener('click',e=>{
+    if(!document.getElementById('catFilterWrap').contains(e.target)) document.getElementById('catFilterDropdown').classList.remove('open');
+    if(!document.getElementById('infoBtn').parentElement.contains(e.target)) document.getElementById('statsPopup').classList.remove('open');
+    if(!document.getElementById('hamburgerBtn').contains(e.target)&&!document.getElementById('hdrMenuPanel').contains(e.target)) closeHamburger();
+  });
+  try{
+    const chk=await dbGet('events','select=id&limit=1');
+    if(chk.length===0) await dbIns('events',SEED);
+    EVENTS=await dbGet('events','select=*&order=date.asc,created_at.asc');
+    renderCalendar();renderStats();
+  }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;}
+}
+
+/* ══ DARK MODE ══ */
+function applyDark(){
+  document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  ['darkTrack','darkTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',darkMode);});
+  const cb=document.getElementById('darkCb');if(cb)cb.checked=darkMode;
+}
+function toggleDark(){darkMode=document.getElementById('darkCb').checked;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+function toggleDarkMobile(){darkMode=!darkMode;const cb=document.getElementById('darkCb');if(cb)cb.checked=darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+
+/* ══ LANGUAGE ══ */
+function applyLangUI(){
+  const isEn=lang==='en';
+  ['langCb'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=isEn;});
+  ['langTrack','langTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',isEn);});
+  document.getElementById('langLbl').textContent=isEn?'ID':'EN';
+  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',adminBarTxt:'adminBarTxt',logoutBtn:'logoutBtn',
+    addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
+    lbCat:'lbCat',lbNote:'lbNote',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
+    loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
+    loginBtn2:'loginBtn2',detailTitle:'detailTitle',cancelBtn2:'cancelBtn',
+    catMgrBtn:'catMgrBtn',footerVisitLbl:'footerVisit',
+    darkModeLbl:'darkModeLbl',langModeLbl:'langModeLbl',
+    loginBtnMobileTxt:'loginBtnTxt',
+  };
+  Object.entries(ids).forEach(([el,key])=>{const e=document.getElementById(el);if(e)e.textContent=tx(key);});
+  const si=document.getElementById('searchInput');if(si)si.placeholder=tx('searchPlaceholder');
+  if(!isAdmin){
+    ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
+  }
+  document.getElementById('stLblTotal').textContent=tx('statTotal');
+  document.getElementById('stLblMonth').textContent=tx('statMonth');
+  document.getElementById('stLblToday').textContent=tx('statToday');
+  document.getElementById('stLblVisit').textContent=tx('statVisit');
+  buildCatFilterDropdown();buildLegend();buildTabs();buildCatSelect();
+  if(EVENTS.length){renderCalendar();renderStats();}
+}
+function toggleLang(){lang=document.getElementById('langCb').checked?'en':'id';localStorage.setItem('naposo_lang',lang);applyLangUI();}
+function toggleLangMobile(){lang=lang==='en'?'id':'en';const cb=document.getElementById('langCb');if(cb)cb.checked=lang==='en';localStorage.setItem('naposo_lang',lang);applyLangUI();}
+
+/* ══ HAMBURGER ══ */
+function toggleHamburger(){document.getElementById('hdrMenuPanel').classList.toggle('open');}
+function closeHamburger(){document.getElementById('hdrMenuPanel').classList.remove('open');}
+
+/* ══ TABS ══ */
+function buildTabs(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  document.getElementById('monthTabs').innerHTML=MO.map((m,i)=>`<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`).join('');
+}
+function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
+function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.add('dim');}
+
+/* ══ STATS ══ */
+function renderStats(){
+  const todayStr=new Date().toISOString().slice(0,10);
+  const monStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  document.getElementById('calTitle').innerHTML=`${MO[currentMonth]} <span>${YEAR}</span>`;
+  document.getElementById('stValTotal').textContent=EVENTS.length;
+  document.getElementById('stValMonth').textContent=EVENTS.filter(e=>e.date.startsWith(monStr)).length;
+  document.getElementById('stValToday').textContent=EVENTS.filter(e=>e.date===todayStr).length;
+}
+function toggleStats(){
+  const p=document.getElementById('statsPopup');p.classList.toggle('open');
+  renderStats();
+}
+
+/* ══ CAT FILTER DROPDOWN ══ */
+function buildCatFilterDropdown(){
+  const dd=document.getElementById('catFilterDropdown');dd.innerHTML='';
+  const allOpt=document.createElement('div');
+  allOpt.className=`cat-filter-opt${filterCat==='all'?' on':''}`;
+  allOpt.innerHTML=`<div class="cat-filter-dot" style="background:var(--blue)"></div>${tx('allCats')}`;
+  allOpt.onclick=()=>setCatFilter('all');dd.appendChild(allOpt);
+  Object.keys(CATS).forEach(cat=>{
+    const opt=document.createElement('div');opt.className=`cat-filter-opt${filterCat===cat?' on':''}`;
+    opt.innerHTML=`<div class="cat-filter-dot" style="background:${catColor(cat)}"></div>${catLabel(cat)}`;
+    opt.onclick=()=>setCatFilter(cat);dd.appendChild(opt);
+  });
+  // update button label & style
+  const btn=document.getElementById('catFilterBtn');
+  if(filterCat==='all'){btn.classList.remove('active');document.getElementById('catFilterLabel').textContent=tx('allCats');}
+  else{btn.classList.add('active');document.getElementById('catFilterLabel').textContent=catLabel(filterCat);}
+}
+function toggleCatFilter(){document.getElementById('catFilterDropdown').classList.toggle('open');}
+function setCatFilter(cat){filterCat=cat;buildCatFilterDropdown();document.getElementById('catFilterDropdown').classList.remove('open');applyFilters();}
+
+/* ══ LEGEND ══ */
+function buildLegend(){
+  const w=document.getElementById('legendWrap');w.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{
+    const it=document.createElement('div');it.className='leg-item';
+    it.innerHTML=`<div class="leg-dot" style="background:${catColor(cat)}"></div>${catLabel(cat)}`;
+    w.appendChild(it);
+  });
+}
+
+/* ══ CATEGORY SELECT (in form) ══ */
+function buildCatSelect(){
+  const sel=document.getElementById('evCat');if(!sel)return;
+  const cur=sel.value;sel.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{const o=document.createElement('option');o.value=cat;o.textContent=catLabel(cat);sel.appendChild(o);});
+  if(cur)sel.value=cur;
+}
+
+/* ══ CAT MANAGER (inline in form) ══ */
+function toggleCatMgr(){document.getElementById('catMgrPanel').classList.toggle('open');renderCatMgrList();}
+function renderCatMgrList(){
+  const list=document.getElementById('catMgrList');list.innerHTML='';
+  Object.keys(CATS).forEach(cat=>{
+    const row=document.createElement('div');row.className='cat-list-item';const isBI=BUILT_IN.includes(cat);
+    row.innerHTML=`
+      <input type="color" value="${catColor(cat)}" onchange="editCatColor('${cat}',this.value)" style="width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:1px;flex-shrink:0">
+      <input type="text" value="${catLabel(cat)}" onchange="editCatName('${cat}',this.value)" style="flex:1;padding:3px 6px;border:1px solid var(--border2);border-radius:5px;font-family:var(--font-b);font-size:.77rem;background:var(--surface);color:var(--text)">
+      ${isBI?`<span class="cat-built">bawaan</span>`:`<button class="cat-del-btn" onclick="deleteCategory('${cat}')">×</button>`}`;
+    list.appendChild(row);
+  });
+}
+  function addCategory(){
+  const name=document.getElementById('newCatName').value.trim();const color=document.getElementById('newCatColor').value;
+  if(!name)return;const id='cat_'+Date.now();CATS[id]=color;CNAMES_ID[id]=name;CNAMES_EN[id]=name;
+  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  document.getElementById('newCatName').value='';showToast(tx('catAdded'),'ok');
+}
+  function editCatColor(cat,color){
+  CATS[cat]=color;saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  if(EVENTS.length)renderCalendar();showToast('Warna diperbarui!','ok');
+}
+function editCatName(cat,name){
+  if(!name.trim())return;
+  if(BUILT_IN.includes(cat)){CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
+  else{CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
+  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  if(EVENTS.length)renderCalendar();showToast('Nama diperbarui!','ok');
+}
+function deleteCategory(cat){
+  if(BUILT_IN.includes(cat))return;delete CATS[cat];delete CNAMES_ID[cat];delete CNAMES_EN[cat];
+  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();showToast(tx('catDeleted'));
+}
+
+/* ══ FILTERS ══ */
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  document.querySelectorAll('.event-pill').forEach(pill=>{
+    const ev=EVENTS.find(e=>e.id===pill.dataset.evid);if(!ev)return;
+    const catOk=filterCat==='all'||ev.category===filterCat;
+    const qOk=!q||(ev.title.toLowerCase().includes(q)||(ev.note||'').toLowerCase().includes(q));
+    pill.style.display=(catOk&&qOk)?'':'none';
+    pill.classList.toggle('ev-hl',catOk&&qOk&&!!q);
+  });
+  // update "+N more" buttons visibility
+  document.querySelectorAll('.cal-cell:not(.empty)').forEach(cell=>{
+    const allPills=[...cell.querySelectorAll('.event-pill')];
+    const visible=allPills.filter(p=>p.style.display!=='none');
+    // show/hide more btn
+    const moreBtn=cell.querySelector('.ev-more');
+    if(moreBtn){
+      const ds=cell.dataset.date;
+      const hidden=allPills.filter(p=>p.dataset.overflow==='1'&&p.style.display!=='none').length;
+      moreBtn.style.display=hidden>0?'':'none';
+      moreBtn.textContent=tx('moreEventsLabel',hidden);
+    }
+    cell.classList.toggle('no-match',visible.length===0&&!!q);
+  });
+}
+
+/* ══ RENDER ══ */
+function renderCalendar(){
+  const w=document.getElementById('calWrap');w.innerHTML='';w.appendChild(buildMonth(YEAR,currentMonth));applyFilters();
+}
+function buildMonth(year,month){
+  const DAYS=lang==='en'?DAYS_EN:DAYS_ID;
+  const sec=document.createElement('div');sec.className='cal-section';
+  const first=new Date(year,month,1).getDay();const total=new Date(year,month+1,0).getDate();
+  const grid=document.createElement('div');grid.className='cal-grid';
+  const names=document.createElement('div');names.className='cal-names';
+  DAYS.forEach(d=>{const el=document.createElement('div');el.className='cal-name';el.textContent=d;names.appendChild(el);});
+  grid.appendChild(names);
+  const body=document.createElement('div');body.className='cal-body';
+  for(let i=0;i<first;i++){const c=document.createElement('div');c.className='cal-cell empty';body.appendChild(c);}
+  for(let d=1;d<=total;d++){
+    const dow=new Date(year,month,d).getDay();
+    const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=TODAY.getFullYear()===year&&TODAY.getMonth()===month&&TODAY.getDate()===d;
+    const cell=document.createElement('div');
+    cell.className=`cal-cell${isToday?' today':''}${dow===0?' sunday':dow===6?' saturday':''}`;
+    cell.dataset.date=ds;
+    if(isAdmin){
+      cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
+      cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
+      cell.addEventListener('drop',e=>{e.preventDefault();cell.classList.remove('drag-over');dropEv(e,ds);});
+    }
+    const num=document.createElement('div');num.className='cal-num';num.textContent=d;cell.appendChild(num);
+    if(isAdmin){const ab=document.createElement('button');ab.className='cal-add';ab.textContent='+';ab.onclick=e=>{e.stopPropagation();openAddModal(ds);};cell.appendChild(ab);}
+    const dayEvs=EVENTS.filter(ev=>ev.date===ds);
+    dayEvs.forEach((ev,idx)=>{
+      const pill=makePill(ev);
+      if(idx>=MAX_VISIBLE){pill.dataset.overflow='1';pill.style.display='none';}
+      cell.appendChild(pill);
+    });
+    // "+N more" button
+    if(dayEvs.length>MAX_VISIBLE){
+      const more=document.createElement('button');more.className='ev-more';
+      const hidden=dayEvs.length-MAX_VISIBLE;
+      more.textContent=tx('moreEventsLabel',hidden);
+      more.onclick=()=>showDayPopup(ds,dayEvs);
+      cell.appendChild(more);
+    }
+    body.appendChild(cell);
+  }
+  grid.appendChild(body);sec.appendChild(grid);return sec;
+}
+
+/* ── SINGLE-LINE PILL (Apple Cal style) ── */
+function makePill(ev){
+  const pill=document.createElement('div');
+  const catClass=BUILT_IN.includes(ev.category)?`ev-${ev.category}`:'ev-other';
+  pill.className=`event-pill ${catClass}`;pill.dataset.evid=ev.id;
+  const col=catColor(ev.category);
+  const dot=document.createElement('div');dot.className='ev-dot';dot.style.background=col;
+  const lbl=document.createElement('span');lbl.className='ev-label';lbl.textContent=ev.title;
+  pill.appendChild(dot);pill.appendChild(lbl);
+  if(ev.time){const t=document.createElement('span');t.className='ev-time-inline';t.textContent=ev.time.split('–')[0];pill.appendChild(t);}
+  if(isAdmin){
+    const del=document.createElement('button');del.className='ev-del';del.textContent='✕';
+    del.onclick=e=>{e.stopPropagation();confirmDel(ev.id,e);};pill.appendChild(del);
+  }
+  pill.onclick=()=>openDetail(ev);
+  if(!BUILT_IN.includes(ev.category)){pill.style.background=col+'22';pill.style.color=col;}
+  if(isAdmin){
+    pill.draggable=true;
+    pill.addEventListener('dragstart',e=>{e.dataTransfer.setData('evId',ev.id);pill.classList.add('dragging');});
+    pill.addEventListener('dragend',()=>pill.classList.remove('dragging'));
+  }
+  /* ===== HOVER PREVIEW ===== */
+
+  pill.addEventListener('mouseenter', (e) => {
+    console.log("HOVER MASUK", ev.title);
+    showPreview(e, ev);
+  });
+
+  pill.addEventListener('mousemove', (e) => {
+    movePreview(e);
+  });
+
+  pill.addEventListener('mouseleave', () => {
+    hidePreview();
+  });
+
+  /* ===== END HOVER PREVIEW ===== */
+  return pill;
+}
+
+/* ── DAY POPUP (shows all events for a date) ── */
+function showDayPopup(ds,evs){
+  window._detEv=null;
+  const d=new Date(ds+'T00:00:00');
+  const lbl=d.toLocaleDateString(lang==='en'?'en-US':'id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('detailTitle').textContent=lbl;
+  const body=document.getElementById('detailBody');body.innerHTML='';
+  evs.forEach(ev=>{
+    const item=document.createElement('div');
+    item.style.cssText='display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer';
+    item.innerHTML=`<div style="width:9px;height:9px;border-radius:50%;background:${catColor(ev.category)};flex-shrink:0;margin-top:5px"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:600;color:var(--text)">${ev.title}</div>
+        ${ev.time?`<div style="font-size:.74rem;color:var(--text2)">⏰ ${ev.time}</div>`:''}
+      </div>`;
+    item.onclick=()=>openDetail(ev);
+    body.appendChild(item);
+  });
+  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-ghost" onclick="closeModal('detailModal')">${tx('closeBtn')}</button>`;
+  openModal('detailModal');
+}
+
+/* ══ DRAG & DROP ══ */
+async function dropEv(e,newDate){
+  const evId=e.dataTransfer.getData('evId');if(!evId)return;
+  const ev=EVENTS.find(x=>x.id===evId);if(!ev||ev.date===newDate)return;
+  setSyncBadge('load',tx('saving'));
+  try{await dbUpd('events',`id=eq.${evId}`,{date:newDate});ev.date=newDate;renderCalendar();renderStats();showToast(tx('dragMoved'),'ok');setSyncBadge('ok',tx('connected'));}
+  catch(err){showToast(tx('dragFail'),'err');setSyncBadge('err','Error');}
+}
+
+/* ══ MODALS ══ */
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');if(id==='eventModal'){const p=document.getElementById('catMgrPanel');if(p)p.classList.remove('open');}}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
+
+function openAddModal(ds){
+  editingId=null;document.getElementById('evModalTitle').textContent=tx('evModalAdd');
+  document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
+  document.getElementById('evStart').value='';document.getElementById('evEnd').value='';document.getElementById('evNote').value='';
+  buildCatSelect();openModal('eventModal');
+}
+function openEditModal(ev){
+  editingId=ev.id;document.getElementById('evModalTitle').textContent=tx('evModalEdit');
+  document.getElementById('evDate').value=ev.date;document.getElementById('evTitle').value=ev.title;
+  const ts=(ev.time||'').split('–');
+  document.getElementById('evStart').value=ts[0]||'';document.getElementById('evEnd').value=ts[1]||'';
+  document.getElementById('evNote').value=ev.note||'';
+  buildCatSelect();document.getElementById('evCat').value=ev.category||'other';openModal('eventModal');
+}
+function openDetail(ev){
+  window._detEv=ev;
+  const d=new Date(ev.date+'T00:00:00');
+  const lbl=d.toLocaleDateString(lang==='en'?'en-US':'id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const col=catColor(ev.category);
+  document.getElementById('detailTitle').textContent=tx('detailTitle');
+  document.getElementById('detailBody').innerHTML=`<div class="det-card">
+    <div class="det-date">${lbl}</div>
+    <div class="det-title">${ev.title}</div>
+    ${ev.time?`<div class="det-time">⏰ ${ev.time}</div>`:''}
+    ${ev.note?`<div class="det-note">${ev.note}</div>`:''}
+    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
+  </div>`;
+  document.getElementById('detailFoot').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal('detailModal')">${tx('closeBtn')}</button>
+    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">${tx('editBtn')}</button>`:''}`;
+  openModal('detailModal');
+}
+
+/* ══ CRUD ══ */
+async function saveEvent(){
+  const date=document.getElementById('evDate').value,title=document.getElementById('evTitle').value.trim();
+  const tS=document.getElementById('evStart').value,tE=document.getElementById('evEnd').value;
+  const cat=document.getElementById('evCat').value,note=document.getElementById('evNote').value.trim();
+  if(!date||!title){showToast(tx('fieldReq'),'err');return;}
+  const time=tS?(tE?`${tS}–${tE}`:tS):'';
+  const btn=document.getElementById('evSaveBtn');btn.disabled=true;btn.textContent=tx('saving');setSyncBadge('load',tx('saving'));
+  try{
+    if(editingId){
+      await dbUpd('events',`id=eq.${editingId}`,{date,title,time,category:cat,note});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note};
+    }else{const id='ev_'+Date.now();const[ins]=await dbIns('events',{id,date,title,time,category:cat,note});EVENTS.push(ins);}
+    closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
+  }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
+  finally{btn.disabled=false;btn.textContent=tx('saveBtn');}
+}
+async function confirmDel(id,e){
+  e.stopPropagation();if(!confirm(tx('deleteConfirm')))return;setSyncBadge('load',tx('saving'));
+  try{await dbDel('events',`id=eq.${id}`);EVENTS=EVENTS.filter(ev=>ev.id!==id);renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));}
+  catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
+}
+
+/* ══ AUTH ══ */
+function openLoginModal(){
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginName').value='';document.getElementById('loginPw').value='';
+  buildLoginDropdown();openModal('loginModal');
+}
+function buildLoginDropdown(){
+  const sel=document.getElementById('loginName');sel.innerHTML=`<option value="">${tx('selectName')}</option>`;
+  Object.keys(USERS).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+}
+function doLogin(){
+  const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
+  if(!name||USERS[name]!==pw){document.getElementById('loginErr').style.display='block';return;}
+  isAdmin=true;document.body.classList.add('admin-mode');
+  document.getElementById('adminBar').classList.add('on');
+  ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.add('on'));
+  ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
+  document.getElementById('loginBtn').textContent=`✓ ${name}`;document.getElementById('loginBtn').disabled=true;
+  document.getElementById('loginBtnMobile').textContent=`✓ ${name}`;document.getElementById('loginBtnMobile').disabled=true;
+  document.getElementById('addEventBtn').style.display='';
+  setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();
+  showToast(`${tx('welcome')}, ${name}! ${tx('modeActive')}`,'ok');
+}
+function doLogout(){
+  isAdmin=false;document.body.classList.remove('admin-mode');
+  document.getElementById('adminBar').classList.remove('on');
+  ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
+  document.getElementById('loginBtn').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtn').disabled=false;
+  document.getElementById('loginBtnMobile').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
+  document.getElementById('addEventBtn').style.display='none';
+  renderCalendar();showToast(tx('logoutBtn'));
+}
+
+/* ══ PASSWORD TOGGLE ══ */
+function togglePw(id,btn){
+  const inp=document.getElementById(id);const isT=inp.type==='text';inp.type=isT?'password':'text';
+  btn.innerHTML=isT?`<svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>`:
+  `<svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/><path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/></svg>`;
+}
+
+/* ══ SYNC BADGE ══ */
+function setSyncBadge(type,txt){
+  const b=document.getElementById('syncBadge'),d=document.getElementById('syncDot');
+  b.className=`sync-badge ${type}`;d.className=`sync-dot${type==='load'?' pulse':''}`;
+  document.getElementById('syncTxt').textContent=txt;
+}
+
+/* ══ TOAST ══ */
+let _tt;
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');el.textContent=msg;
+  el.className=`toast on${type==='err'?' err':type==='ok'?' ok':''}`;
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3200);
+}
+
+/* ══ EXPORT ══ */
+let exportFormat='pdf', exportScope='all';
+
+function openExportModal(){
+  if(!isAdmin){showToast('Fitur export hanya untuk pengurus yang login.','err');return;}
+  selectExportFormat('pdf');selectExportScope('all');
+  document.getElementById('exportProgress').classList.remove('on');
+  document.getElementById('doExportBtn').disabled=false;
+  document.getElementById('doExportBtn').innerHTML=`<svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg> Export Sekarang`;
+  openModal('exportModal');
+}
+
+function selectExportFormat(fmt){
+  exportFormat=fmt;
+  ['pdf','png','csv','ical'].forEach(f=>{
+    const el=document.getElementById(`expCard${f.charAt(0).toUpperCase()+f.slice(1)}`);
+    if(el) el.classList.toggle('selected', f===fmt);
+  });
+}
+
+function selectExportScope(scope){
+  exportScope=scope;
+  ['all','month','pick','cat'].forEach(s=>{
+    const el=document.getElementById(`scopeBtn${s.charAt(0).toUpperCase()+s.slice(1)}`);
+    if(el) el.classList.toggle('on', s===scope);
+  });
+  const picker=document.getElementById('monthPickerRow');
+  if(picker) picker.style.display=scope==='pick'?'flex':'none';
+  if(scope==='pick'){
+    const fromEl=document.getElementById('exportMonthFrom');
+    const toEl=document.getElementById('exportMonthTo');
+    fromEl.value=0;
+    toEl.value=11;
+    updateMonthRangeHint();
+    fromEl.onchange=updateMonthRangeHint;
+    toEl.onchange=()=>{
+      const f=parseInt(fromEl.value), t=parseInt(toEl.value);
+      if(t<f) fromEl.value=t;
+      updateMonthRangeHint();
+    };
+  }
+}
+
+function updateMonthRangeHint(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const f=parseInt(document.getElementById('exportMonthFrom').value);
+  const t=parseInt(document.getElementById('exportMonthTo').value);
+  const evCount=EVENTS.filter(e=>{
+    const m=parseInt(e.date.slice(5,7))-1;
+    return m>=f && m<=t;
+  }).length;
+  const hint=document.getElementById('monthRangeHint');
+  if(f===t){
+    hint.textContent=`${MO[f]} — ${evCount} event`;
+  } else {
+    hint.textContent=`${MO[f]} s/d ${MO[t]} — ${evCount} event`;
+  }
+}
+
+function getExportEvents(){
+  let evs=[...EVENTS];
+  if(exportScope==='month'){
+    const monStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
+    evs=evs.filter(e=>e.date.startsWith(monStr));
+  } else if(exportScope==='pick'){
+    const f=parseInt(document.getElementById('exportMonthFrom').value);
+    const t=parseInt(document.getElementById('exportMonthTo').value);
+    const from=Math.min(f,t), to=Math.max(f,t);
+    evs=evs.filter(e=>{
+      const m=parseInt(e.date.slice(5,7))-1;
+      return m>=from && m<=to;
+    });
+  } else if(exportScope==='cat' && filterCat!=='all'){
+    evs=evs.filter(e=>e.category===filterCat);
+  }
+  return evs.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function setExportProgress(pct, txt){
+  document.getElementById('exportProgress').classList.add('on');
+  document.getElementById('exportProgressFill').style.width=pct+'%';
+  document.getElementById('exportProgressTxt').textContent=txt;
+}
+
+function doExport(){
+  if(exportFormat==='pdf') exportPDF();
+  else if(exportFormat==='png') exportPNG();
+  else if(exportFormat==='csv') exportCSV();
+  else if(exportFormat==='ical') exportICAL();
+}
+
+/* ── CSV ── */
+function exportCSV(){
+  setExportProgress(40,'Membuat spreadsheet…');
+  const evs=getExportEvents();
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const rows=[['Tanggal','Hari','Judul Event','Waktu','Kategori','Catatan']];
+  const dayNames=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  evs.forEach(ev=>{
+    const d=new Date(ev.date+'T00:00:00');
+    rows.push([ev.date, dayNames[d.getDay()], ev.title, ev.time||'', catLabel(ev.category), ev.note||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  triggerDownload(blob,`Kalender_Naposo_2026${scopeLabel}.csv`);
+  setExportProgress(100,'Selesai! File CSV siap diunduh.');
+  showToast('Export CSV berhasil ✓','ok');
+  setTimeout(()=>{document.getElementById('doExportBtn').disabled=false;},1200);
+}
+
+/* ── iCAL ── */
+function exportICAL(){
+  setExportProgress(40,'Membuat file kalender…');
+  const evs=getExportEvents();
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  let ical='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Naposo HKBP Ujung Menteng//Kalender Pelayanan 2026//ID\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:Kalender Pelayanan Naposo HKBP Ujung Menteng\r\nX-WR-TIMEZONE:Asia/Jakarta\r\n';
+  evs.forEach(ev=>{
+    const uid=ev.id+'@naposo-hkbp-ujung-menteng';
+    const dateStr=ev.date.replace(/-/g,'');
+    let dtStart, dtEnd;
+    if(ev.time && ev.time.includes('–')){
+      const [ts,te]=ev.time.split('–');
+      dtStart=`${dateStr}T${ts.replace(':','')}00`;
+      dtEnd=`${dateStr}T${te.replace(':','')}00`;
+    } else if(ev.time){
+      dtStart=`${dateStr}T${ev.time.replace(':','')}00`;
+      dtEnd=`${dateStr}T${(parseInt(ev.time.split(':')[0])+1).toString().padStart(2,'0')}${ev.time.split(':')[1]}00`;
+    } else {
+      dtStart=dateStr; dtEnd=dateStr;
+    }
+    const isAllDay=!ev.time;
+    ical+='BEGIN:VEVENT\r\n';
+    ical+=`UID:${uid}\r\n`;
+    ical+=`SUMMARY:${ev.title}\r\n`;
+    if(isAllDay){ical+=`DTSTART;VALUE=DATE:${dtStart}\r\n`;ical+=`DTEND;VALUE=DATE:${dtEnd}\r\n`;}
+    else{ical+=`DTSTART;TZID=Asia/Jakarta:${dtStart}\r\n`;ical+=`DTEND;TZID=Asia/Jakarta:${dtEnd}\r\n`;}
+    if(ev.note) ical+=`DESCRIPTION:${ev.note.replace(/\n/g,'\\n')}\r\n`;
+    ical+=`CATEGORIES:${catLabel(ev.category)}\r\n`;
+    ical+='END:VEVENT\r\n';
+  });
+  ical+='END:VCALENDAR\r\n';
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
+  const blob=new Blob([ical],{type:'text/calendar;charset=utf-8;'});
+  triggerDownload(blob,`Kalender_Naposo_2026${scopeLabel}.ics`);
+  setExportProgress(100,'Selesai! File .ics siap diunduh.');
+  showToast('Export iCal berhasil ✓','ok');
+}
+
+/* ── PDF ── */
+function exportPDF(){
+  const evs=getExportEvents();
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+  const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+  const scopeLabel=exportScope==='month'?` — ${MO[currentMonth]} ${YEAR}`:exportScope==='pick'?` — ${MO[Math.min(f,t)]} s/d ${MO[Math.max(f,t)]} ${YEAR}`:exportScope==='cat'&&filterCat!=='all'?` — ${catLabel(filterCat)}`:`— Semua Bulan`;
+  setExportProgress(30,'Menyiapkan dokumen PDF…');
+  const w=window.open('','_blank');
+  if(!w){showToast('Popup diblokir. Izinkan popup di browser.','err');return;}
+  const groupByMonth={};
+  evs.forEach(ev=>{
+    const m=ev.date.slice(0,7);
+    if(!groupByMonth[m]) groupByMonth[m]=[];
+    groupByMonth[m].push(ev);
+  });
+  const dayNames=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  let tableRows='';
+  Object.keys(groupByMonth).sort().forEach(ym=>{
+    const [y,m]=ym.split('-');
+    const mName=MO[parseInt(m)-1];
+    tableRows+=`<tr class="month-header"><td colspan="5">${mName} ${y}</td></tr>`;
+    groupByMonth[ym].forEach((ev,i)=>{
+      const d=new Date(ev.date+'T00:00:00');
+      const col=catColor(ev.category);
+      tableRows+=`<tr class="${i%2===1?'odd':''}">
+        <td>${ev.date}</td>
+        <td>${dayNames[d.getDay()]}</td>
+        <td>${ev.title}</td>
+        <td>${ev.time||'—'}</td>
+        <td><span class="cat-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${catLabel(ev.category)}</span></td>
+      </tr>`;
+    });
+  });
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  <title>Kalender Pelayanan Naposo HKBP Ujung Menteng 2026</title>
+  <link rel="stylesheet" href="css/kalender.css"></head><body>
+  <div class="cover">
+    <h1>Kalender Pelayanan Naposo HKBP Ujung Menteng</h1>
+    <p>Diekspor pada ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
+    <span class="scope">📅 ${scopeLabel}</span>
+  </div>
+  <table>
+    <thead><tr><th>Tanggal</th><th>Hari</th><th>Judul Event</th><th>Waktu</th><th>Kategori</th></tr></thead>
+    <tbody>${tableRows}</tbody>
+  </table>
+  <div class="footer">Naposo HKBP Ujung Menteng · Kalender Pelayanan 2026 · Total ${evs.length} event</div>
+  </body></html>`;
+  setExportProgress(80,'Membuka jendela cetak…');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print();setExportProgress(100,'Selesai!');showToast('PDF siap dicetak ✓','ok');},600);
+}
+
+/* ── PNG (html2canvas) ── */
+async function exportPNG(){
+  setExportProgress(20,'Memuat library screenshot…');
+  document.getElementById('doExportBtn').disabled=true;
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  setExportProgress(50,'Mengambil screenshot kalender…');
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  try{
+    const target=document.getElementById('calWrap');
+    const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--surface')||'#ffffff',logging:false});
+    setExportProgress(85,'Menyimpan gambar…');
+    const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
+    const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
+    const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCat!=='all'?`_${catLabel(filterCat)}`:'';
+    canvas.toBlob(blob=>{
+      triggerDownload(blob,`Kalender_Naposo_${MO[currentMonth]}_2026${scopeLabel}.png`);
+      setExportProgress(100,'Selesai! Gambar PNG siap diunduh.');
+      showToast('Export PNG berhasil ✓','ok');
+      document.getElementById('doExportBtn').disabled=false;
+    },'image/png');
+  }catch(err){
+    showToast('Gagal export PNG: '+err.message,'err');
+    document.getElementById('doExportBtn').disabled=false;
+  }
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+function triggerDownload(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  init();
+});
+
+function getPreviewBox(){
+  return document.getElementById('event-preview');
+}
+
+function showPreview(e, ev){
+  const previewBox = getPreviewBox();
+  if(!previewBox) return;
+  const d = new Date(ev.date+'T00:00:00');
+  const dateStr = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  previewBox.innerHTML = `
+    <strong>${ev.title}</strong><br>
+    📅 ${dateStr}<br>
+    ${ev.time ? '⏰ '+ev.time+'<br>' : ''}
+    ${ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : ''}
+  `;
+  previewBox.style.display = 'block';
+  previewBox.classList.add('show');
+  movePreview(e);
+}
+
+function movePreview(e){
+  const previewBox = getPreviewBox();
+  if(!previewBox) return;
+  previewBox.style.left = (e.pageX + 15) + 'px';
+  previewBox.style.top = (e.pageY + 15) + 'px';
+}
+
+function hidePreview(){
+  const previewBox = getPreviewBox();
+  if(!previewBox) return;
+  previewBox.classList.remove('show');
+  previewBox.style.display = 'none';
+}
+
+</script>
+<div id="event-preview" class="event-preview" style="display:none;"></div>
+</body>
+</html>

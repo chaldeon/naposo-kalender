@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Naposo HKBP Ujung Menteng</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+<header>
+<div class="hdr">
+  <div class="hdr-brand">
+    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
+      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+    </svg>
+    <div class="hdr-title">
+      <h1>Naposo HKBP Ujung Menteng</h1>
+      <p>naposo.my.id</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <label class="tog">
+      <span style="font-size:.8rem">🌙</span>
+      <div class="tog-track" id="darkTrack"><div class="tog-thumb"></div></div>
+      <input type="checkbox" id="darkCb" style="display:none" onchange="toggleDark()"/>
+    </label>
+    <a class="btn btn-outline-w btn-sm" href="kalender.html">📅 Kalender</a>
+    <button class="btn btn-gold btn-sm" id="adminBtn" onclick="toggleLoginBox()">🔒 Pengurus</button>
+  </div>
+</div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-icon">
+    <svg viewBox="0 0 56 56" fill="none">
+      <circle cx="28" cy="28" r="26" stroke="rgba(201,162,39,.5)" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="24" y="10" width="8" height="36" rx="2" fill="#c9a227"/>
+      <rect x="12" y="21" width="32" height="8" rx="2" fill="#c9a227"/>
+    </svg>
+  </div>
+  <h2>Naposo HKBP Ujung Menteng</h2>
+  <p>Selamat datang. Temukan program pelayanan dan informasi kegiatan kami di sini.</p>
+  <div class="hero-btns">
+    <a class="btn btn-gold" href="kalender.html">📅 Lihat Kalender Lengkap →</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="wrap">
+
+  <!-- Login box -->
+  <div class="login-box" id="loginBox">
+    <h3>🔒 Login Pengurus</h3>
+    <div class="login-row">
+      <div class="fg">
+        <label>Nama</label>
+        <select id="loginName"><option value="">-- Pilih --</option></select>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPw" placeholder="Password…" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <button class="pw-eye" onclick="togglePw()">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="doLogin()" style="height:35px;margin-bottom:0">Masuk</button>
+    </div>
+    <p class="login-err" id="loginErr">Password salah atau nama tidak dipilih.</p>
+  </div>
+
+  <!-- Admin panel -->
+  <div class="admin-box" id="adminBox">
+    <div class="admin-box-title">
+      ⚙ Panel Pengurus
+      <span id="adminNameLbl" style="font-weight:400;color:var(--blue);text-transform:none;letter-spacing:0;font-size:.78rem"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="margin-left:auto">Logout</button>
+    </div>
+    <div class="admin-tabs">
+      <button class="atab on" onclick="switchTab('vis',this)">👁 Tampilkan Program</button>
+      <button class="atab" onclick="switchTab('docs',this)">📄 Kelola Dokumen</button>
+    </div>
+    <div class="atab-content on" id="tab-vis">
+      <p style="font-size:.77rem;color:var(--text2);margin-bottom:10px">Pilih kategori yang ditampilkan di halaman ini.</p>
+      <div class="vis-list" id="visList"><div class="spinner"></div></div>
+      <button class="btn btn-success btn-sm" style="margin-top:11px" onclick="saveVisibility()">💾 Simpan</button>
+    </div>
+    <div class="atab-content" id="tab-docs">
+      <p style="font-size:.77rem;color:var(--text2);margin-bottom:11px">Tambah dokumen via link Google Drive. Pastikan sudah di-share "Anyone with the link can view".</p>
+      <div class="drow">
+        <div class="dfg"><label>Nama Dokumen</label><input type="text" id="docTitle" placeholder="cth: Proposal Program 2026"/></div>
+        <div class="dfg"><label>Akses</label>
+          <select id="docCat"><option value="publik">Publik</option><option value="pengurus">Pengurus saja</option></select>
+        </div>
+      </div>
+      <div class="dfg">
+        <label>Link Google Drive</label>
+        <input type="text" id="docLink" placeholder="https://drive.google.com/file/d/…"/>
+        <p class="dfg-hint">Buka file di Drive → Share → Copy link → paste di sini.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addDoc()">+ Tambah</button>
+      <div class="doc-adm-list" id="docAdmList"></div>
+    </div>
+  </div>
+
+  <!-- PROGRAMS -->
+  <div class="sec-hd">
+    <div class="sec-title">Program Pelayanan</div>
+    <div class="sec-sub">Event terdekat per kategori · klik untuk lihat di kalender</div>
+  </div>
+  <div class="prog-grid" id="progGrid"><div class="spinner"></div></div>
+  <div class="view-all">
+    <a class="btn btn-ghost" href="kalender.html" style="font-size:.8rem">📅 Kalender Lengkap →</a>
+  </div>
+
+  <div class="sec-divider"></div>
+
+  <!-- DOCUMENTS -->
+  <div class="sec-hd">
+    <div class="sec-title">Dokumen</div>
+    <div class="sec-sub">Dokumen resmi Naposo HKBP Ujung Menteng</div>
+  </div>
+  <div class="doc-grid" id="docGrid"><p class="doc-empty">Belum ada dokumen.</p></div>
+
+</div>
+
+<footer>
+  <strong>Naposo HKBP Ujung Menteng</strong> · Dibuat dengan ❤ untuk pelayanan bersama · © <span id="fyear"></span>
+</footer>
+
+<!-- DOC VIEWER -->
+<div class="overlay" id="docOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="docModalTitle">Dokumen</h2>
+      <button class="modal-x" onclick="closeDoc()">×</button>
+    </div>
+    <iframe class="doc-frame" id="docFrame" src="" allowfullscreen></iframe>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/index.js" defer></script>
+</body>
+</html>
