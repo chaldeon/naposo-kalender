@@ -61,7 +61,7 @@ function buildLoginDropdown(){
 async function doLogin(){
   const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
   if(!name||!pw){document.getElementById('loginErr').style.display='block';return;}
-  const btn=document.querySelector('[onclick*="doLogin"]');btn.disabled=true;btn.textContent='Memverifikasi…';
+  const btn=document.getElementById('loginSubmitBtn');btn.disabled=true;btn.textContent='Memverifikasi…';
   try{
     const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
       method:'POST',
