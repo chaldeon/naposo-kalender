@@ -77,6 +77,7 @@ async function doLogin(){
     document.getElementById('loginErr').style.display='block';
     btn.disabled=false;btn.textContent='Masuk';return;
   }
+  btn.disabled=false;btn.textContent='Masuk';
   isAdmin=true;
   document.getElementById('loginBox').classList.remove('on');
   document.getElementById('adminBox').classList.add('on');
