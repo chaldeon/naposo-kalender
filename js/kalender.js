@@ -7,6 +7,18 @@ async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(
 async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
 
+let adminToken=null;
+async function dbWrite(table,method,data,match){
+  const r=await fetch(`${SUPA_URL}/functions/v1/db-write`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`,'x-admin-token':adminToken||''},
+    body:JSON.stringify({table,method,data,match})
+  });
+  const json=await r.json();
+  if(!r.ok)throw new Error(json.error||'Write failed');
+  return json.data||[];
+}
+
 /* ══ PASSWORDS ══ */
 const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza',
   'Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
@@ -16,6 +28,31 @@ const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
 const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
 const DEF_LBL_EN={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const CAT_EXTRA={
+  'Koor':               {key:'judul_lagu',     label:'Judul Lagu'},
+  'Ibadah / Pelayanan': {key:'tema_acara',      label:'Tema Acara'},
+  'Olahraga':           {key:'jenis_olahraga',  label:'Jenis Olahraga'},
+};
+function getExtraField(catId){
+  const lbl=CNAMES_ID[catId]||catId;
+  return CAT_EXTRA[lbl]||null;
+}
+function updateExtraField(){
+  const cat=document.getElementById('evCat')?.value;
+  const wrap=document.getElementById('extraFieldWrap');
+  const lbl=document.getElementById('extraFieldLabel');
+  const inp=document.getElementById('extraFieldInput');
+  if(!wrap||!lbl||!inp) return;
+  const extra=getExtraField(cat);
+  if(extra){
+    lbl.textContent=extra.label;
+    wrap.style.display='block';
+  } else {
+    wrap.style.display='none';
+    inp.value='';
+  }
+}
+
 let CATS={...DEF_COLORS},CNAMES_ID={...DEF_LBL_ID},CNAMES_EN={...DEF_LBL_EN};
 function catLabel(c){return(lang==='en'?CNAMES_EN:CNAMES_ID)[c]||CNAMES_ID[c]||c;}
 function catColor(c){return CATS[c]||'#94a3b8';}
@@ -26,15 +63,15 @@ async function loadCatsFromDB(){
   }catch(e){console.warn('Gagal load kategori:',e.message);}
 }
 async function saveCatToDB(id,color,label){
-  try{await dbIns('categories',[{id,color,label_id:label,label_en:label}]);}
+  try{await dbWrite('categories','INSERT',{id,color,label_id:label,label_en:label});}
   catch(e){console.warn('Gagal simpan kategori:',e.message);}
 }
 async function deleteCatFromDB(id){
-  try{await dbDel('categories',`id=eq.${id}`);}
+  try{await dbWrite('categories','DELETE',null,{id});}
   catch(e){console.warn('Gagal hapus kategori:',e.message);}
 }
 async function updateCatInDB(id,fields){
-  try{await dbUpd('categories',`id=eq.${id}`,fields);}
+  try{await dbWrite('categories','UPDATE',fields,{id});}
   catch(e){console.warn('Gagal update kategori:',e.message);}
 }
 
@@ -85,7 +122,7 @@ const DAYS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const YEAR=2026,TODAY=new Date();
 const MAX_VISIBLE=3; // max pills shown per cell before "+N more"
 let EVENTS=[],lang=localStorage.getItem('naposo_lang')||'id',darkMode=localStorage.getItem('naposo_dark')==='1';
-let isAdmin=false,editingId=null,filterCat='all';
+let isAdmin=false,editingId=null,filterCat='all',currentView='grid';
 let undoStack=[];
 let copiedEvent=null;
 function pushUndo(action){undoStack.push(action);}
@@ -95,16 +132,16 @@ async function undoLast(){
   const action=undoStack.pop();
   try{
     if(action.type==='add'){
-      await dbDel('events',`id=eq.${action.ev.id}`);
+      await dbWrite('events','DELETE',null,{id:action.ev.id});
       EVENTS=EVENTS.filter(e=>e.id!==action.ev.id);
     } else if(action.type==='delete'){
-      await dbIns('events',[action.ev]);
+      await dbWrite('events','INSERT',action.ev);
       EVENTS.push(action.ev);EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
     } else if(action.type==='edit'){
-      await dbUpd('events',`id=eq.${action.prev.id}`,action.prev);
+      await dbWrite('events','UPDATE',action.prev,{id:action.prev.id});
       EVENTS=EVENTS.map(e=>e.id===action.prev.id?action.prev:e);
     } else if(action.type==='move'){
-      await dbUpd('events',`id=eq.${action.ev.id}`,{date:action.oldDate});
+      await dbWrite('events','UPDATE',{date:action.oldDate},{id:action.ev.id});
       EVENTS=EVENTS.map(e=>e.id===action.ev.id?{...e,date:action.oldDate}:e);
     }
     renderCalendar();renderStats();
@@ -208,8 +245,6 @@ async function init(){
   try{
     await loadCatsFromDB();
     buildCatFilterDropdown();buildLegend();buildTabs();
-    const chk=await dbGet('events','select=id&limit=1');
-    if(chk.length===0) await dbIns('events',SEED);
     EVENTS=await dbGet('events','select=*&order=date.asc,created_at.asc');
     renderCalendar();renderStats();
     startRealtime();
@@ -227,7 +262,7 @@ function startRealtime(){
       const localIds=EVENTS.map(e=>e.id).sort().join(',');
       const remoteIds=newEvs.map(e=>e.id).sort().join(',');
       if(localIds!==remoteIds||JSON.stringify(EVENTS)!==JSON.stringify(newEvs)){
-        EVENTS=newEvs;renderCalendar();renderStats();
+        EVENTS=newEvs;renderCalendar();renderStats();if(currentView==='agenda')renderAgenda();
       }
       // sync categories
       const customCats=newCats.filter(r=>!BUILT_IN.includes(r.id));
@@ -289,8 +324,8 @@ function buildTabs(){
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   document.getElementById('monthTabs').innerHTML=MO.map((m,i)=>`<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`).join('');
 }
-function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
-function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();const tb=document.getElementById('todayBtn');if(tb)tb.classList.add('dim');}
+function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();if(currentView==='agenda')renderAgenda();const tb=document.getElementById('todayBtn');if(tb)tb.classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
+function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();if(currentView==='agenda')renderAgenda();const tb=document.getElementById('todayBtn');if(tb)tb.classList.add('dim');}
 
 /* ══ STATS ══ */
 function renderStats(){
@@ -325,7 +360,7 @@ function buildCatFilterDropdown(){
   else{btn.classList.add('active');document.getElementById('catFilterLabel').textContent=catLabel(filterCat);}
 }
 function toggleCatFilter(){document.getElementById('catFilterDropdown').classList.toggle('open');}
-function setCatFilter(cat){filterCat=cat;buildCatFilterDropdown();document.getElementById('catFilterDropdown').classList.remove('open');applyFilters();}
+function setCatFilter(cat){filterCat=cat;buildCatFilterDropdown();document.getElementById('catFilterDropdown').classList.remove('open');applyFilters();if(currentView==='agenda')renderAgenda();}
 
 /* ══ LEGEND ══ */
 function buildLegend(){
@@ -343,6 +378,8 @@ function buildCatSelect(){
   const cur=sel.value;sel.innerHTML='';
   Object.keys(CATS).forEach(cat=>{const o=document.createElement('option');o.value=cat;o.textContent=catLabel(cat);sel.appendChild(o);});
   if(cur)sel.value=cur;
+  sel.removeEventListener('change',updateExtraField);
+  sel.addEventListener('change',updateExtraField);
 }
 
 /* ══ CAT MANAGER (inline in form) ══ */
@@ -409,13 +446,75 @@ function applyFilters(){
       moreBtn.textContent=tx('moreEventsLabel',hidden);
     }
     cell.classList.toggle('no-match',visible.length===0&&!!q);
-  });
+    });
+    if(currentView==='agenda')renderAgenda(q);
 }
 
 /* ══ RENDER ══ */
 function renderCalendar(){
   const w=document.getElementById('calWrap');w.innerHTML='';w.appendChild(buildMonth(YEAR,currentMonth));applyFilters();
 }
+
+function switchView(v){
+  currentView=v;
+  document.getElementById('btnGrid').classList.toggle('on',v==='grid');
+  document.getElementById('btnAgenda').classList.toggle('on',v==='agenda');
+  document.getElementById('calSection').style.display=v==='grid'?'':'none';
+  const aw=document.getElementById('agendaWrap');
+  if(v==='agenda'){aw.classList.add('on');renderAgenda();}
+  else{aw.classList.remove('on');}
+}
+
+function renderAgenda(q){
+  q=q||'';
+  const aw=document.getElementById('agendaWrap');
+  if(!aw)return;
+  const DAYS_FULL=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const monthStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
+  let evs=EVENTS.filter(e=>e.date.startsWith(monthStr));
+  if(filterCat!=='all') evs=evs.filter(e=>e.category===filterCat);
+  if(q) evs=evs.filter(e=>e.title.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q));
+  if(!evs.length){aw.innerHTML=`<div class="agenda-empty">Tidak ada event di bulan ini.</div>`;return;}
+  evs.sort((a,b)=>a.date.localeCompare(b.date));
+  const todayStr=new Date().toISOString().slice(0,10);
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  let html=`<div class="agenda-month-block">`;
+  html+=`<div class="agenda-month-hdr">${MO[currentMonth]} ${YEAR} <span>${evs.length} event</span></div>`;
+  html+=`<table class="agenda-table">`;
+  evs.forEach(ev=>{
+    const d=new Date(ev.date+'T00:00:00');
+    const dow=DAYS_FULL[d.getDay()];
+    const isToday=ev.date===todayStr;
+    const col=catColor(ev.category);
+    const lbl=catLabel(ev.category);
+    const ef=getExtraField(ev.category);
+    const extraVal=ef&&ev.extra?ev.extra[ef.key]:'';
+    html+=`<tr onclick="openDetail(EVENTS.find(e=>e.id==='${ev.id}'))" class="agenda-row">
+      <td class="ag-date${isToday?' today-row':''}">
+        <span class="ag-date-num">${d.getDate()}</span>
+        <span class="ag-date-day">${dow}</span>
+      </td>
+      <td class="ag-cat">
+        <span class="ag-cat-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">
+          <span style="width:6px;height:6px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
+          ${lbl}
+        </span>
+      </td>
+      <td>
+        <div class="ag-title">${ev.title}</div>
+        ${ev.time?`<div class="ag-time">⏰ ${ev.time}</div>`:''}
+        ${extraVal?`<div class="ag-extra">📌 ${ef.label}: <span>${extraVal}</span></div>`:''}
+        ${ev.note?`<div class="ag-note">${ev.note.substring(0,80)}${ev.note.length>80?'…':''}</div>`:''}
+      </td>
+      <td class="ag-actions">
+        ${isAdmin?`<button class="ag-del-btn" onclick="event.stopPropagation();confirmDel('${ev.id}',event)">✕</button>`:''}
+      </td>
+    </tr>`;
+  });
+  html+=`</table></div>`;
+  aw.innerHTML=html;
+}
+
 function buildMonth(year,month){
   const DAYS=lang==='en'?DAYS_EN:DAYS_ID;
   const sec=document.createElement('div');sec.className='cal-section';
@@ -545,14 +644,14 @@ async function dropEv(e,newDate){
   try{
     if(isCopy){
       const newEv={...ev,id:'ev_'+Date.now(),date:newDate};
-      const[ins]=await dbIns('events',newEv);
+      const[ins]=await dbWrite('events','INSERT',newEv);
       EVENTS.push(ins||newEv);EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
       pushUndo({type:'add',ev:ins||newEv});
       renderCalendar();renderStats();showToast('Event diduplikat ✓','ok');setSyncBadge('ok',tx('connected'));return;
     }
     if(ev.date===newDate)return;
     const oldDate=ev.date;
-    await dbUpd('events',`id=eq.${evId}`,{date:newDate});
+    await dbWrite('events','UPDATE',{date:newDate},{id:evId});
     ev.date=newDate;
     pushUndo({type:'move',ev:{...ev},oldDate});
     renderCalendar();renderStats();showToast(tx('dragMoved'),'ok');setSyncBadge('ok',tx('connected'));
@@ -570,7 +669,7 @@ function openAddModal(ds){
   document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
   document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
   document.getElementById('evNote').value='';
-  buildCatSelect();openModal('eventModal');
+  buildCatSelect();updateExtraField();openModal('eventModal');
 }
 
 function openEditModal(ev){
@@ -579,7 +678,14 @@ function openEditModal(ev){
   const ts=(ev.time||'').split('–');
   document.getElementById('evStart').value=ts[0]||'';document.getElementById('evEnd').value=ts[1]||'';
   document.getElementById('evNote').value=ev.note||'';
-  buildCatSelect();document.getElementById('evCat').value=ev.category||'other';openModal('eventModal');
+  buildCatSelect();document.getElementById('evCat').value=ev.category||'other';
+  updateExtraField();
+  setTimeout(()=>{
+    const extraField=getExtraField(ev.category);
+    const inp=document.getElementById('extraFieldInput');
+    if(extraField&&inp&&ev.extra) inp.value=ev.extra[extraField.key]||'';
+  },30);
+  openModal('eventModal');
 }
 
 function openDetail(ev){
@@ -593,8 +699,8 @@ function openDetail(ev){
     <div class="det-title">${ev.title}</div>
     ${ev.time?`<div class="det-time">⏰ ${ev.time}</div>`:''}
     ${ev.link?`<div class="det-link"><a href="${ev.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${ev.link}</a></div>`:''}
-    ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
-    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
+    ${(()=>{const ef=getExtraField(ev.category);const ev2=ev;const val=ef&&ev2.extra?ev2.extra[ef.key]:'';return val?`<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${ef.label}:</span> <span style="font-size:.82rem;font-weight:600">${val}</span></div>`:''})()}
+    ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
     <button class="btn btn-ghost" onclick="closeModal('detailModal')">${tx('closeBtn')}</button>
@@ -612,16 +718,19 @@ async function saveEvent(){
   const time=tS?(tE?`${tS}–${tE}`:tS):'';
   const btn=document.getElementById('evSaveBtn');btn.disabled=true;btn.textContent=tx('saving');setSyncBadge('load',tx('saving'));
   try{
+    const extraField=getExtraField(cat);
+    const extraVal=document.getElementById('extraFieldInput')?.value.trim()||'';
+    const extra=extraField&&extraVal?{[extraField.key]:extraVal}:{};
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
-      await dbUpd('events',`id=eq.${editingId}`,{date,title,time,category:cat,note,link});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link};
+      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra},{id:editingId});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra};
       pushUndo({type:'edit',prev});
     }else{
       const id='ev_'+Date.now();
-      const[ins]=await dbIns('events',{id,date,title,time,category:cat,note,link});
-      EVENTS.push(ins);
-      pushUndo({type:'add',ev:ins});
+      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra});
+      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra});
+      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra}});
     }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
@@ -631,7 +740,7 @@ async function confirmDel(id,e){
   e.stopPropagation();if(!confirm(tx('deleteConfirm')))return;setSyncBadge('load',tx('saving'));
   try{
     const deleted={...EVENTS.find(ev=>ev.id===id)};
-    await dbDel('events',`id=eq.${id}`);
+    await dbWrite('events','DELETE',null,{id});
     EVENTS=EVENTS.filter(ev=>ev.id!==id);
     pushUndo({type:'delete',ev:deleted});
     renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));
@@ -654,13 +763,14 @@ async function doLogin(){
   const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
   if(!name||!pw){document.getElementById('loginErr').style.display='block';return;}
   const btn=document.getElementById('loginBtn2');btn.disabled=true;btn.textContent='Memverifikasi…';
+  let data;
   try{
     const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},
       body:JSON.stringify({username:name,password:pw})
     });
-    const data=await res.json();
+    data=await res.json();
     if(!data.success){
       document.getElementById('loginErr').style.display='block';
       btn.disabled=false;btn.textContent=tx('loginBtn2');return;
@@ -669,7 +779,8 @@ async function doLogin(){
     document.getElementById('loginErr').style.display='block';
     btn.disabled=false;btn.textContent=tx('loginBtn2');return;
   }
- isAdmin=true;resetUndo();document.body.classList.add('admin-mode');
+  adminToken=data.token||null;
+  isAdmin=true;resetUndo();document.body.classList.add('admin-mode');
   document.getElementById('adminBar').classList.add('on');
   ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.add('on'));
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
@@ -695,12 +806,12 @@ function pasteEvent(){
     document.getElementById('evStart').value=copiedEvent.time?copiedEvent.time.split('–')[0]:'';
     document.getElementById('evEnd').value=copiedEvent.time?copiedEvent.time.split('–')[1]||'':'';
     document.getElementById('evCat').value=copiedEvent.category;
-    document.getElementById('evLink').value=copiedEvent.link||'';
     document.getElementById('evNote').value=copiedEvent.note||'';
   },50);
 }
 
 function doLogout(){
+  adminToken=null;
   isAdmin=false;document.body.classList.remove('admin-mode');
   document.getElementById('adminBar').classList.remove('on');
   ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.remove('on'));
@@ -829,11 +940,13 @@ function exportCSV(){
   setExportProgress(40,'Membuat spreadsheet…');
   const evs=getExportEvents();
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
-  const rows=[['Tanggal','Hari','Judul Event','Waktu','Kategori','Catatan']];
+  const rows=[['Tanggal','Hari','Judul Event','Waktu','Kategori','Info Tambahan','Catatan']];
   const dayNames=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   evs.forEach(ev=>{
     const d=new Date(ev.date+'T00:00:00');
-    rows.push([ev.date, dayNames[d.getDay()], ev.title, ev.time||'', catLabel(ev.category), ev.note||'']);
+    const ef=getExtraField(ev.category);
+    const extraVal=ef&&ev.extra?ev.extra[ef.key]||'':'';
+    rows.push([ev.date, dayNames[d.getDay()], ev.title, ev.time||'', catLabel(ev.category), extraVal, ev.note||'']);
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
@@ -906,16 +1019,19 @@ function exportPDF(){
   Object.keys(groupByMonth).sort().forEach(ym=>{
     const [y,m]=ym.split('-');
     const mName=MO[parseInt(m)-1];
-    tableRows+=`<tr class="month-header"><td colspan="5">${mName} ${y}</td></tr>`;
+    tableRows+=`<tr class="month-header"><td colspan="6">${mName} ${y}</td></tr>`;
     groupByMonth[ym].forEach((ev,i)=>{
       const d=new Date(ev.date+'T00:00:00');
       const col=catColor(ev.category);
+      const ef=getExtraField(ev.category);
+      const xv=ef&&ev.extra?ev.extra[ef.key]||'—':'—';
       tableRows+=`<tr class="${i%2===1?'odd':''}">
         <td>${ev.date}</td>
         <td>${dayNames[d.getDay()]}</td>
         <td>${ev.title}</td>
         <td>${ev.time||'—'}</td>
         <td><span class="cat-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">${catLabel(ev.category)}</span></td>
+        <td>${xv}</td>
       </tr>`;
     });
   });
@@ -928,7 +1044,7 @@ function exportPDF(){
     <span class="scope">📅 ${scopeLabel}</span>
   </div>
   <table>
-    <thead><tr><th>Tanggal</th><th>Hari</th><th>Judul Event</th><th>Waktu</th><th>Kategori</th></tr></thead>
+    <thead><tr><th>Tanggal</th><th>Hari</th><th>Judul Event</th><th>Waktu</th><th>Kategori</th><th>Info Tambahan</th></tr></thead>
     <tbody>${tableRows}</tbody>
   </table>
   <div class="footer">Naposo HKBP Ujung Menteng · Kalender Pelayanan 2026 · Total ${evs.length} event</div>
@@ -994,10 +1110,13 @@ function showPreview(e, ev){
   const dateStr = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
   const noteRaw = ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : '';
   const noteFmt = linkify(noteRaw.replace(/\r\n|\r|\n/g,'<br>'));
+  const extraField=getExtraField(ev.category);
+  const extraVal=extraField&&ev.extra?ev.extra[extraField.key]:'';
   previewBox.innerHTML = `
     <strong>${ev.title}</strong><br>
     📅 ${dateStr}<br>
     ${ev.time ? '⏰ '+ev.time+'<br>' : ''}
+    ${extraVal?`<div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,.75)">📌 ${extraField.label}: ${extraVal}</div>`:''}
     ${noteFmt ? '<div style="margin-top:5px;border-top:1px solid rgba(255,255,255,.15);padding-top:5px">'+noteFmt+'</div>' : ''}
   `
   previewBox.style.display = 'block';
