@@ -20,7 +20,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh}
 
 /* ══ HEADER ══ */
 header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue-mid) 60%,var(--blue) 100%);
@@ -139,23 +139,23 @@ header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue-mid) 60%,var(
 .login-badge.on{background:rgba(201,162,39,.25);color:var(--gold-lt)}
 
 /* ══ CALENDAR ══ */
-main{max-width:1400px;margin:0 auto;padding:14px 16px 60px}
+main{max-width:1400px;margin:0 auto;padding:14px 28px 60px;overflow-x:hidden}
 .cal-section{animation:fadeUp .3s ease both}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .cal-grid{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--border);transition:background .25s;width:100%;table-layout:fixed}
 .cal-names{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--navy);width:100%}
 [data-theme="dark"] .cal-names{background:#0d1b2a}
-.cal-name{text-align:center;font-size:.64rem;font-weight:600;color:rgba(255,255,255,.7);padding:7px 2px;letter-spacing:.06em;text-transform:uppercase}
+.cal-name{text-align:center;font-size:.75rem;font-weight:600;color:rgba(255,255,255,.7);padding:8px 2px;letter-spacing:.06em;text-transform:uppercase}
 .cal-name:first-child{color:var(--gold)}.cal-name:last-child{color:var(--gold-lt)}
 .cal-body{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));width:100%}
-.cal-cell{min-height:96px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
-  padding:5px 4px 4px;display:flex;flex-direction:column;gap:2px;position:relative;transition:background .12s}
+.cal-cell{min-height:108px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:6px 5px 5px;display:flex;flex-direction:column;gap:2px;position:relative;transition:background .12s;overflow:hidden}
 .cal-cell:nth-child(7n){border-right:none}
 .cal-cell.empty{background:var(--surface2)}
 .cal-cell.today{background:var(--sky-pale)}
 [data-theme="dark"] .cal-cell.today{background:#162033}
 .cal-cell.today .cal-num{background:var(--blue);color:#fff}
-.cal-num{font-size:.75rem;font-weight:700;color:var(--text2);width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;line-height:1;margin-bottom:1px}
+.cal-num{font-size:.85rem;font-weight:700;color:var(--text2);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;line-height:1;margin-bottom:1px}
 .cal-cell.sunday .cal-num{color:var(--red)}.cal-cell.saturday .cal-num{color:var(--purple)}
 .cal-cell:not(.empty):hover .cal-num{background:var(--sky);color:var(--blue)}
 .cal-add{position:absolute;top:3px;right:3px;width:17px;height:17px;border-radius:50%;background:var(--blue);color:#fff;border:none;cursor:pointer;font-size:13px;display:none;align-items:center;justify-content:center;opacity:.7;line-height:1}
@@ -163,8 +163,8 @@ main{max-width:1400px;margin:0 auto;padding:14px 16px 60px}
 body.admin-mode .cal-cell:not(.empty):hover .cal-add{display:flex}
 
 /* ── EVENT PILL (Apple Cal style: single line, colored dot) ── */
-.event-pill{display:flex;align-items:center;gap:3px;border-radius:4px;padding:1px 5px;
-  font-size:.65rem;line-height:1.45;cursor:pointer;position:relative;
+.event-pill{display:flex;align-items:center;gap:3px;border-radius:4px;padding:2px 6px;
+  font-size:.74rem;line-height:1.5;cursor:pointer;position:relative;
   overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
   background:var(--surface2);color:var(--text);border:none;
   transition:filter .12s;user-select:none;min-width:0}
@@ -188,16 +188,20 @@ body.admin-mode .cal-cell:not(.empty):hover .cal-add{display:flex}
 [data-theme="dark"] .ev-doa        {background:#1e3a5f;color:#93c5fd}
 [data-theme="dark"] .ev-other      {background:#21262d;color:#8b949e}
 /* admin delete on hover */
-.ev-del{display:none;position:absolute;right:2px;top:50%;transform:translateY(-50%);background:var(--red);color:#fff;border:none;border-radius:3px;font-size:.56rem;padding:1px 4px;cursor:pointer;z-index:2;line-height:1.4}
-body.admin-mode .event-pill:hover .ev-del{display:block}
-body.admin-mode .event-pill:hover .ev-label{padding-right:18px}
+.ev-del{display:none;background:var(--red);color:#fff;border:none;border-radius:3px;
+  font-size:.56rem;padding:1px 5px;cursor:pointer;line-height:1.4;flex-shrink:0;margin-left:auto}
+body.admin-mode .event-pill:hover .ev-del{display:flex;align-items:center}
+body.admin-mode .event-pill:hover .ev-time-inline{display:none}
 /* drag */
 .event-pill[draggable="true"]{cursor:grab}
 .event-pill.dragging{opacity:.35}
 .cal-cell.drag-over{background:var(--sky)!important;outline:2px dashed var(--blue);outline-offset:-2px}
 /* more indicator */
-.ev-more{font-size:.6rem;color:var(--text3);padding:1px 4px;cursor:pointer;text-align:left;background:none;border:none;font-family:var(--font-b)}
+.ev-more{font-size:.68rem;color:var(--text3);padding:1px 4px;cursor:pointer;text-align:left;background:none;border:none;font-family:var(--font-b)}
 .ev-more:hover{color:var(--blue)}
+.ev-copy{display:none;background:var(--blue);color:#fff;border:none;border-radius:3px;
+  font-size:.56rem;padding:1px 5px;cursor:pointer;line-height:1.4;flex-shrink:0}
+body.admin-mode .event-pill:hover .ev-copy{display:flex;align-items:center}
 /* search dim */
 .cal-cell.no-match{opacity:.2}
 .ev-hl{outline:2px solid var(--gold)!important;outline-offset:1px}
@@ -315,20 +319,65 @@ footer strong{color:rgba(255,255,255,.75)}
   .cal-name{font-size:.55rem}
 }
 .event-preview{
-  position:absolute;
+  position:fixed;
   background:#1f2937;
   color:#fff;
   padding:10px 12px;
   border-radius:8px;
   font-size:13px;
   width:240px;
+  max-width:calc(100vw - 32px);
   box-shadow:0 8px 24px rgba(0,0,0,0.25);
   z-index:9999;
   pointer-events:none;
   opacity:0;
   transition:opacity .15s ease;
+  overflow-wrap:break-word;
+  word-break:break-all;
+  overflow:hidden;
 }
 
 .event-preview.show{
   opacity:1;
 }
+
+/* ══ NAVBAR PILLS (match index.html) ══ */
+.hdr-nav-sep{width:1px;height:22px;background:rgba(255,255,255,.2);margin:0 4px;flex-shrink:0}
+.navbar-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;
+  font-size:12.5px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-b);
+  text-decoration:none;transition:opacity .2s,transform .15s;white-space:nowrap}
+.navbar-pill:hover{opacity:.88;transform:translateY(-1px)}
+.pill-home{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}
+.pill-home:hover{background:rgba(255,255,255,.22)}
+.pill-login{background:var(--gold);color:var(--navy)}
+
+/* ══ ICON TOGGLE BUTTONS ══ */
+.icon-toggle{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  color:rgba(255,255,255,.85);font-size:14px;padding:4px 9px;border-radius:6px;
+  cursor:pointer;font-family:var(--font-b);font-weight:600;
+  transition:background .2s,color .2s;line-height:1}
+.icon-toggle:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* disable theme transition */
+html[data-theme] *{
+  transition:filter .12s,opacity .2s,transform .15s!important;
+}
+
+.hdr-brand{transition:opacity .2s;color:#fff;text-decoration:none}
+.hdr-brand:hover{opacity:.82}
+
+/* ── Link icon di pill ── */
+.ev-link-icon {
+  display: none;
+  background: var(--gold-lt);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  font-size: .56rem;
+  padding: 1px 5px;
+  cursor: pointer;
+  line-height: 1.4;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.event-pill:hover .ev-link-icon { display: flex; align-items: center; }

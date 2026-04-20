@@ -1,152 +1,1102 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Naposo HKBP Ujung Menteng</title>
-<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="css/index.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Naposo HKBP Ujung Menteng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* =============================================
+       CSS VARIABLES — DESIGN TOKENS
+    ============================================= */
+    :root {
+      --navy:       #0a1f44;
+      --navy-mid:   #112b5e;
+      --blue-mid:   #1a4a8a;
+      --blue:       #2563be;
+      --blue-light: #3b82f6;
+      --gold:       #c9a227;
+      --gold-light: #e8c45a;
+      --gold-pale:  #fdf6e3;
+
+      --surface:    #ffffff;
+      --surface-2:  #f8fafc;
+      --surface-3:  #f1f5f9;
+      --border:     #e2e8f0;
+      --text:       #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+
+      --font-s: 'Libre Baskerville', Georgia, serif;
+      --font-b: 'DM Sans', sans-serif;
+
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow:    0 4px 16px rgba(0,0,0,0.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
+
+      /* Kategori warna */
+      --c-koor:        #7c3aed;
+      --c-ibadah:      #c9a227;
+      --c-rapat:       #0891b2;
+      --c-latihan:     #16a34a;
+      --c-reversement: #db2777;
+      --c-doa:         #4a90d9;
+      --c-other:       #94a3b8;
+    }
+
+    [data-theme="dark"] {
+      --surface:    #0f172a;
+      --surface-2:  #1e293b;
+      --surface-3:  #334155;
+      --border:     #334155;
+      --text:       #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-light: #64748b;
+    }
+
+    /* =============================================
+       RESET & BASE
+    ============================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-b);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--surface);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    ul { list-style: none; }
+    button { cursor: pointer; font-family: var(--font-b); border: none; outline: none; }
+
+    /* =============================================
+       NAVBAR
+    ============================================= */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 54px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue-mid) 60%, var(--navy) 100%);
+      border-bottom: 1px solid rgba(201,162,39,0.25);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .navbar-cross {
+      font-size: 22px;
+      color: var(--gold);
+      filter: drop-shadow(0 0 6px rgba(201,162,39,0.5));
+      line-height: 1;
+    }
+    .navbar-title {
+      font-family: var(--font-s);
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    .navbar-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+    }
+    .navbar-links a {
+      color: rgba(255,255,255,0.78);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      transition: color 0.2s, background 0.2s;
+    }
+    .navbar-links a:hover, .navbar-links a.active {
+      color: #fff;
+      background: rgba(255,255,255,0.10);
+    }
+
+    .navbar-sep {
+      width: 1px;
+      height: 22px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 6px;
+      flex-shrink: 0;
+    }
+
+    .navbar-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 13px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      transition: opacity 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .navbar-pill:hover { opacity: 0.88; transform: translateY(-1px); }
+    .pill-kalender {
+      background: var(--blue-light);
+      color: #fff;
+    }
+    .pill-login {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 4.5px;
+      background: none;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+
+    /* Mobile menu */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 54px;
+      left: 0; right: 0;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(201,162,39,0.2);
+      padding: 16px 20px;
+      z-index: 99;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+    .mobile-menu a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .mobile-menu-pills {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .mobile-menu-pills .navbar-pill { flex: 1; justify-content: center; }
+
+    /* =============================================
+       HERO
+    ============================================= */
+    .hero {
+      background: linear-gradient(160deg, var(--navy) 0%, var(--blue-mid) 50%, var(--navy-mid) 100%);
+      position: relative;
+      overflow: hidden;
+      padding: 56px 24px 52px;
+      text-align: center;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, var(--surface));
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      margin: 0 auto;
+      animation: fadeUp 0.7s ease both;
+    }
+    .hero-cross {
+      font-size: 60px;
+      color: var(--gold);
+      filter: drop-shadow(0 0 18px rgba(201,162,39,0.45));
+      line-height: 1;
+      margin-bottom: 18px;
+      display: block;
+    }
+    .hero-title {
+      font-family: var(--font-s);
+      font-size: clamp(20px, 4vw, 30px);
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+    .hero-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 400;
+      line-height: 1.7;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    /* =============================================
+       MAIN CONTENT
+    ============================================= */
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    /* =============================================
+       SECTION HEADER
+    ============================================= */
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--font-s);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    [data-theme="dark"] .section-title { color: #e2eaf8; }
+    .section-link {
+      font-size: 12px;
+      color: var(--blue);
+      font-weight: 500;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .section-link:hover { opacity: 1; }
+
+    /* =============================================
+       TOP GRID — EVENT TERDEKAT + MINI KALENDER
+    ============================================= */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.45fr;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .card-head-title {
+      font-family: var(--font-s);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    [data-theme="dark"] .card-head-title { color: #e2eaf8; }
+    .card-head-link {
+      font-size: 11.5px;
+      color: var(--blue);
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .card-head-link:hover { opacity: 0.75; }
+
+    /* Event Terdekat */
+    .event-list { padding: 8px 0; }
+    .event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 16px;
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    .event-item:hover { background: var(--surface-2); }
+
+    .event-date-badge {
+      flex-shrink: 0;
+      width: 42px;
+      text-align: center;
+      background: var(--surface-3);
+      border-radius: var(--radius-sm);
+      padding: 5px 4px;
+      border: 0.5px solid var(--border);
+    }
+    .event-date-badge .day {
+      font-family: var(--font-s);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      display: block;
+    }
+    [data-theme="dark"] .event-date-badge .day { color: #e2eaf8; }
+    .event-date-badge .month-abbr {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .event-info { flex: 1; min-width: 0; }
+    .event-title-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .event-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: 20px;
+      color: #fff;
+    }
+    .event-time-text {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* =============================================
+       MINI KALENDER
+    ============================================= */
+    .mini-cal { padding: 12px 14px 14px; }
+    .mini-cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .mini-cal-month {
+      font-family: var(--font-s);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    [data-theme="dark"] .mini-cal-month { color: #e2eaf8; }
+    .mini-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .mini-cal-day-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-muted);
+      padding-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .mini-cal-day-label:first-child { color: #e44; }
+    .mini-cal-day-label:last-child  { color: var(--c-koor); }
+
+    .mini-cell {
+      position: relative;
+      text-align: center;
+      padding: 3px 1px 4px;
+      border-radius: 5px;
+      min-height: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .mini-cell.empty { }
+    .mini-cell.today .mini-num {
+      background: var(--blue);
+      color: #fff;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-num {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1;
+    }
+    .mini-cell.sun .mini-num { color: #e44; }
+    .mini-cell.sat .mini-num { color: var(--c-koor); }
+    .mini-dots {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .mini-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* =============================================
+       PROGRAM PELAYANAN
+    ============================================= */
+    .program-section { margin-bottom: 36px; }
+    .program-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .program-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .program-card:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+    .program-card-head {
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .program-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .program-cat-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+    .program-events { padding: 0 0 4px; }
+    .program-event-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px;
+      border-top: 0.5px solid var(--border);
+    }
+    .program-event-date {
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      width: 42px;
+    }
+    .program-event-name {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .program-footer {
+      padding: 8px 14px 10px;
+      border-top: 0.5px solid var(--border);
+    }
+    .program-footer a {
+      font-size: 11.5px;
+      color: var(--blue);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+    .program-footer a:hover { opacity: 0.75; }
+
+    /* =============================================
+       RECAP KEGIATAN
+    ============================================= */
+    .recap-section { margin-bottom: 36px; }
+    .recap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .recap-card {
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .recap-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .recap-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+    }
+    .recap-color-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.55;
+    }
+    .recap-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,31,68,0.92) 0%, rgba(10,31,68,0.2) 55%, transparent 100%);
+    }
+    /* SVG pattern overlay */
+    .recap-pattern {
+      position: absolute;
+      inset: 0;
+      opacity: 0.07;
+      background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='2'/%3E%3Ccircle cx='23' cy='23' r='2'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .recap-content {
+      position: relative;
+      z-index: 1;
+      padding: 14px 16px;
+    }
+    .recap-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 5px;
+      background: rgba(255,255,255,0.12);
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+    .recap-title {
+      font-family: var(--font-s);
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .recap-meta {
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+    }
+
+    /* =============================================
+       FOOTER
+    ============================================= */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(201,162,39,0.2);
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.8;
+    }
+    .footer-brand {
+      font-family: var(--font-s);
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .footer-soli {
+      color: rgba(255,255,255,0.3);
+      font-style: italic;
+    }
+
+    /* =============================================
+       DARK MODE TOGGLE
+    ============================================= */
+    .dark-toggle {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.75);
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+      margin-left: 4px;
+    }
+    .dark-toggle:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+    /* =============================================
+       ANIMATIONS
+    ============================================= */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .anim-1 { animation: fadeUp 0.55s 0.05s ease both; }
+    .anim-2 { animation: fadeUp 0.55s 0.15s ease both; }
+    .anim-3 { animation: fadeUp 0.55s 0.25s ease both; }
+    .anim-4 { animation: fadeUp 0.55s 0.35s ease both; }
+
+    /* =============================================
+       RESPONSIVE
+    ============================================= */
+    @media (max-width: 768px) {
+      .navbar-links { display: none; }
+      .hamburger { display: flex; }
+      .top-grid { grid-template-columns: 1fr; }
+      .program-grid { grid-template-columns: 1fr 1fr; }
+      .recap-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .program-grid { grid-template-columns: 1fr; }
+      .recap-grid { grid-template-columns: 1fr; }
+      .hero { padding: 40px 16px 36px; }
+      .wrap { padding: 24px 14px 40px; }
+    }
+  </style>
 </head>
 <body>
 
-<header>
-<div class="hdr">
-  <div class="hdr-brand">
-    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
-      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
-      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
-      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
-    </svg>
-    <div class="hdr-title">
-      <h1>Naposo HKBP Ujung Menteng</h1>
-      <p>naposo.my.id</p>
+  <!-- ======================== NAVBAR ======================== -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="navbar-cross">✝</span>
+      <span class="navbar-title">Naposo HKBP Ujung Menteng</span>
+    </div>
+
+    <div class="navbar-links">
+      <a href="#" class="active">Home</a>
+      <a href="#kegiatan">Kegiatan</a>
+      <a href="#tentang">Tentang</a>
+      <a href="#dokumen">Dokumen</a>
+      <span class="navbar-sep"></span>
+      <a href="kalender.html" class="navbar-pill pill-kalender">📅 Kalender</a>
+      <a href="#" onclick="openLogin()" class="navbar-pill pill-login">🔐 Login</a>
+      <button class="dark-toggle" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
+    </div>
+
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#">Home</a>
+    <a href="#kegiatan">Kegiatan</a>
+    <a href="#tentang">Tentang</a>
+    <a href="#dokumen">Dokumen</a>
+    <div class="mobile-menu-pills">
+      <a href="kalender.html" class="navbar-pill pill-kalender">📅 Kalender</a>
+      <a href="#" onclick="openLogin()" class="navbar-pill pill-login">🔐 Login</a>
     </div>
   </div>
-  <div class="hdr-right">
-    <label class="tog">
-      <span style="font-size:.8rem">🌙</span>
-      <div class="tog-track" id="darkTrack"><div class="tog-thumb"></div></div>
-      <input type="checkbox" id="darkCb" style="display:none" onchange="toggleDark()"/>
-    </label>
-    <a class="btn btn-outline-w btn-sm" href="kalender.html">📅 Kalender</a>
-    <button class="btn btn-gold btn-sm" id="adminBtn" onclick="toggleLoginBox()">🔒 Pengurus</button>
-  </div>
-</div>
-</header>
 
-<!-- HERO -->
-<div class="hero">
-  <div class="hero-icon">
-    <svg viewBox="0 0 56 56" fill="none">
-      <circle cx="28" cy="28" r="26" stroke="rgba(201,162,39,.5)" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
-      <rect x="24" y="10" width="8" height="36" rx="2" fill="#c9a227"/>
-      <rect x="12" y="21" width="32" height="8" rx="2" fill="#c9a227"/>
-    </svg>
-  </div>
-  <h2>Naposo HKBP Ujung Menteng</h2>
-  <p>Selamat datang. Temukan program pelayanan dan informasi kegiatan kami di sini.</p>
-  <div class="hero-btns">
-    <a class="btn btn-gold" href="kalender.html">📅 Lihat Kalender Lengkap →</a>
-  </div>
-</div>
+  <!-- ======================== HERO ======================== -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="hero-cross">✝</span>
+      <h1 class="hero-title">Naposo HKBP Ujung Menteng</h1>
+      <p class="hero-sub">Selamat datang Naps! Kamu bisa cek jadwal kegiatan, program pelayanan, dan informasi terkini tentang Naposo HKBP Ujung Menteng.</p>
+    </div>
+  </section>
 
-<!-- MAIN -->
-<div class="wrap">
+  <!-- ======================== MAIN ======================== -->
+  <main class="wrap">
 
-  <!-- Login box -->
-  <div class="login-box" id="loginBox">
-    <h3>🔒 Login Pengurus</h3>
-    <div class="login-row">
-      <div class="fg">
-        <label>Nama</label>
-        <select id="loginName"><option value="">-- Pilih --</option></select>
-      </div>
-      <div class="fg">
-        <label>Password</label>
-        <div class="pw-wrap">
-          <input type="password" id="loginPw" placeholder="Password…" onkeydown="if(event.key==='Enter')doLogin()"/>
-          <button class="pw-eye" onclick="togglePw()">
-            <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
-          </button>
+    <!-- TOP: Event Terdekat + Mini Kalender -->
+    <div class="top-grid anim-1">
+
+      <!-- Event Terdekat -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title">Event Terdekat</span>
+          <a href="kalender.html" class="card-head-link">Kalender lengkap →</a>
+        </div>
+        <div class="event-list" id="eventList">
+          <!-- Dirender oleh JS -->
         </div>
       </div>
-      <button class="btn btn-primary btn-sm" id="loginSubmitBtn" onclick="doLogin()" style="height:35px;margin-bottom:0">Masuk</button>
-    </div>
-    <p class="login-err" id="loginErr">Password salah atau nama tidak dipilih.</p>
-  </div>
 
-  <!-- Admin panel -->
-  <div class="admin-box" id="adminBox">
-    <div class="admin-box-title">
-      ⚙ Panel Pengurus
-      <span id="adminNameLbl" style="font-weight:400;color:var(--blue);text-transform:none;letter-spacing:0;font-size:.78rem"></span>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="margin-left:auto">Logout</button>
-    </div>
-    <div class="admin-tabs">
-      <button class="atab on" onclick="switchTab('vis',this)">👁 Tampilkan Program</button>
-      <button class="atab" onclick="switchTab('docs',this)">📄 Kelola Dokumen</button>
-    </div>
-    <div class="atab-content on" id="tab-vis">
-      <p style="font-size:.77rem;color:var(--text2);margin-bottom:10px">Pilih kategori yang ditampilkan di halaman ini.</p>
-      <div class="vis-list" id="visList"><div class="spinner"></div></div>
-      <button class="btn btn-success btn-sm" style="margin-top:11px" onclick="saveVisibility()">💾 Simpan</button>
-    </div>
-    <div class="atab-content" id="tab-docs">
-      <p style="font-size:.77rem;color:var(--text2);margin-bottom:11px">Tambah dokumen via link Google Drive. Pastikan sudah di-share "Anyone with the link can view".</p>
-      <div class="drow">
-        <div class="dfg"><label>Nama Dokumen</label><input type="text" id="docTitle" placeholder="cth: Proposal Program 2026"/></div>
-        <div class="dfg"><label>Akses</label>
-          <select id="docCat"><option value="publik">Publik</option><option value="pengurus">Pengurus saja</option></select>
+      <!-- Mini Kalender -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-head-title" id="miniCalTitle">April 2026</span>
+          <a href="kalender.html" class="card-head-link">Kalender lengkap →</a>
+        </div>
+        <div class="mini-cal" id="miniCal">
+          <!-- Dirender oleh JS -->
         </div>
       </div>
-      <div class="dfg">
-        <label>Link Google Drive</label>
-        <input type="text" id="docLink" placeholder="https://drive.google.com/file/d/…"/>
-        <p class="dfg-hint">Buka file di Drive → Share → Copy link → paste di sini.</p>
+
+    </div><!-- /top-grid -->
+
+    <!-- PROGRAM PELAYANAN -->
+    <section class="program-section anim-2" id="kegiatan">
+      <div class="section-header">
+        <h2 class="section-title">Program Pelayanan</h2>
+        <a href="kalender.html" class="section-link">Lihat kalender lengkap →</a>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="addDoc()">+ Tambah</button>
-      <div class="doc-adm-list" id="docAdmList"></div>
-    </div>
-  </div>
+      <div class="program-grid" id="programGrid">
+        <!-- Dirender oleh JS -->
+      </div>
+    </section>
 
-  <!-- PROGRAMS -->
-  <div class="sec-hd">
-    <div class="sec-title">Program Pelayanan</div>
-    <div class="sec-sub">Event terdekat per kategori · klik untuk lihat di kalender</div>
-  </div>
-  <div class="prog-grid" id="progGrid"><div class="spinner"></div></div>
-  <div class="view-all">
-    <a class="btn btn-ghost" href="kalender.html" style="font-size:.8rem">📅 Kalender Lengkap →</a>
-  </div>
+    <!-- RECAP KEGIATAN -->
+    <section class="recap-section anim-3">
+      <div class="section-header">
+        <h2 class="section-title">Recap Kegiatan Terbaru</h2>
+        <a href="kalender.html" class="section-link">Lihat semua →</a>
+      </div>
+      <div class="recap-grid" id="recapGrid">
+        <!-- Dirender oleh JS -->
+      </div>
+    </section>
 
-  <div class="sec-divider"></div>
+  </main><!-- /wrap -->
 
-  <!-- DOCUMENTS -->
-  <div class="sec-hd">
-    <div class="sec-title">Dokumen</div>
-    <div class="sec-sub">Dokumen resmi Naposo HKBP Ujung Menteng</div>
-  </div>
-  <div class="doc-grid" id="docGrid"><p class="doc-empty">Belum ada dokumen.</p></div>
+  <!-- ======================== FOOTER ======================== -->
+  <footer>
+    <span class="footer-brand">Naposo HKBP Ujung Menteng</span>
+    <span class="footer-text">
+      © 2026 · <span class="footer-soli"></span> v2.0 · Apr 2026
+    </span>
+  </footer>
 
-</div>
+  <!-- ======================== SCRIPT ======================== -->
+  <script>
+    /* =============================================
+       DATA — ganti/sambungkan ke Supabase nanti
+    ============================================= */
+    const YEAR = 2026;
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
+                    'Juli','Agustus','September','Oktober','November','Desember'];
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-<footer>
-  <strong>Naposo HKBP Ujung Menteng</strong> · Dibuat dengan ❤ untuk pelayanan bersama · © <span id="fyear"></span>
-</footer>
+    const CATS = {
+      koor:        { label: 'Koor',               color: '#7c3aed' },
+      ibadah:      { label: 'Ibadah / Pelayanan', color: '#c9a227' },
+      rapat:       { label: 'Rapat',              color: '#0891b2' },
+      latihan:     { label: 'Latihan',            color: '#16a34a' },
+      reversement: { label: 'Reversement',        color: '#db2777' },
+      doa:         { label: 'Doa',                color: '#4a90d9' },
+      other:       { label: 'Lainnya',            color: '#94a3b8' },
+    };
 
-<!-- DOC VIEWER -->
-<div class="overlay" id="docOverlay">
-  <div class="modal">
-    <div class="modal-hdr">
-      <h2 id="docModalTitle">Dokumen</h2>
-      <button class="modal-x" onclick="closeDoc()">×</button>
-    </div>
-    <iframe class="doc-frame" id="docFrame" src="" allowfullscreen></iframe>
-  </div>
-</div>
+    // Event April–Juni 2026 (seed — sama dengan kalender.js)
+    const EVENTS = [
+      { date:'2026-04-20', title:'Ibadah Naposo', category:'ibadah', time:'10:00' },
+      { date:'2026-04-21', title:'Latihan Koor Paskah', category:'koor', time:'15:00' },
+      { date:'2026-04-24', title:'Pokok Doa Bersama', category:'doa', time:'19:00' },
+      { date:'2026-04-26', title:'Koor Naposo - Latihan 1', category:'koor', time:'14:00' },
+      { date:'2026-04-27', title:'Rapat BPP Bulanan', category:'rapat', time:'18:00' },
+      { date:'2026-04-28', title:'Pokok Doa Mingguan', category:'doa', time:'19:00' },
+      { date:'2026-05-03', title:'Koor Naposo', category:'koor', time:'14:00' },
+      { date:'2026-05-10', title:'Ibadah Pertama Mei', category:'ibadah', time:'08:00' },
+      { date:'2026-05-17', title:'Koor (Latihan)', category:'koor', time:'15:00' },
+      { date:'2026-05-18', title:'PKN – Family Love', category:'ibadah', time:'10:00' },
+      { date:'2026-05-24', title:'Ibadah Kedua Mei', category:'ibadah', time:'10:00' },
+      { date:'2026-05-25', title:'Evaluasi BPP', category:'rapat', time:'18:00' },
+      { date:'2026-06-01', title:'Pembekalan Pengurus (1)', category:'rapat', time:'09:00' },
+      { date:'2026-06-07', title:'Ibadah Naposo Juni', category:'ibadah', time:'10:00' },
+      { date:'2026-06-14', title:'Latihan Koor Juni', category:'koor', time:'14:00' },
+      { date:'2026-06-28', title:'Evaluasi 3 Bulan', category:'rapat', time:'18:00' },
+    ];
 
-<div class="toast" id="toast"></div>
+    // Recap kegiatan (bisa disambungkan ke tabel recap di Supabase)
+    const RECAP = [
+      {
+        category: 'reversement',
+        title: 'Retreat Pemuda 2026',
+        meta: '15–17 Mar · Puncak, Bogor',
+        bgColor: '#db2777',
+      },
+      {
+        category: 'ibadah',
+        title: 'Perayaan Paskah Naposo',
+        meta: '20 Apr 2026 · Gereja Utama',
+        bgColor: '#c9a227',
+      },
+      {
+        category: 'rapat',
+        title: 'Evaluasi Triwulan I',
+        meta: '5 Apr 2026 · Ruang Serbaguna',
+        bgColor: '#0891b2',
+      },
+    ];
 
-<script src="js/index.js" defer></script>
+    /* =============================================
+       HELPERS
+    ============================================= */
+    function getToday() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function parseDate(str) {
+      // parse tanpa timezone shift
+      const [y,m,d] = str.split('-').map(Number);
+      return new Date(y, m-1, d);
+    }
+    function catColor(cat) {
+      return CATS[cat]?.color || '#94a3b8';
+    }
+
+    /* =============================================
+       RENDER EVENT TERDEKAT
+    ============================================= */
+    function renderEvents() {
+      const today = getToday();
+      const upcoming = EVENTS
+        .filter(e => e.date >= today)
+        .sort((a,b) => a.date.localeCompare(b.date))
+        .slice(0, 5);
+
+      const el = document.getElementById('eventList');
+      if (!upcoming.length) {
+        el.innerHTML = '<div style="padding:20px 16px;color:var(--text-muted);font-size:13px;text-align:center;">Tidak ada event mendatang.</div>';
+        return;
+      }
+      el.innerHTML = upcoming.map(ev => {
+        const d = parseDate(ev.date);
+        const day = d.getDate();
+        const mon = MONTHS_SHORT[d.getMonth()];
+        const color = catColor(ev.category);
+        const catLabel = CATS[ev.category]?.label || ev.category;
+        return `
+          <div class="event-item" onclick="window.location='kalender.html'">
+            <div class="event-date-badge">
+              <span class="day">${day}</span>
+              <span class="month-abbr">${mon}</span>
+            </div>
+            <div class="event-info">
+              <div class="event-title-text">${ev.title}</div>
+              <div class="event-meta">
+                <span class="event-tag" style="background:${color}">${catLabel}</span>
+                ${ev.time ? `<span class="event-time-text">⏰ ${ev.time}</span>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    /* =============================================
+       RENDER MINI KALENDER
+    ============================================= */
+    function renderMiniCal() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const today = now.getDate();
+
+      document.getElementById('miniCalTitle').textContent = `${MONTHS[month]} ${year}`;
+
+      // event bulan ini
+      const monthStr = `${year}-${String(month+1).padStart(2,'0')}`;
+      const eventsThisMonth = EVENTS.filter(e => e.date.startsWith(monthStr));
+
+      // group by day
+      const byDay = {};
+      eventsThisMonth.forEach(ev => {
+        const d = parseInt(ev.date.split('-')[2]);
+        if (!byDay[d]) byDay[d] = [];
+        byDay[d].push(ev);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+
+      const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+      let html = DAYS.map((d,i) => `<div class="mini-cal-day-label">${d}</div>`).join('');
+
+      // empty cells
+      for (let i = 0; i < firstDay; i++) html += `<div class="mini-cell empty"></div>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month, d);
+        const dow = date.getDay();
+        const isToday = d === today;
+        const evs = byDay[d] || [];
+        const dots = evs.slice(0,3).map(ev => `<span class="mini-dot" style="background:${catColor(ev.category)}"></span>`).join('');
+
+        let cls = 'mini-cell';
+        if (isToday) cls += ' today';
+        if (dow === 0) cls += ' sun';
+        if (dow === 6) cls += ' sat';
+
+        html += `
+          <div class="${cls}">
+            <span class="mini-num">${d}</span>
+            ${evs.length ? `<div class="mini-dots">${dots}</div>` : ''}
+          </div>`;
+      }
+
+      document.getElementById('miniCal').innerHTML = `<div class="mini-cal-grid">${html}</div>`;
+    }
+
+    /* =============================================
+       RENDER PROGRAM PELAYANAN
+    ============================================= */
+    function renderPrograms() {
+      const today = getToday();
+      const showCats = ['koor', 'ibadah', 'rapat'];
+
+      const html = showCats.map(cat => {
+        const color = catColor(cat);
+        const label = CATS[cat].label;
+        const evs = EVENTS
+          .filter(e => e.category === cat && e.date >= today)
+          .sort((a,b) => a.date.localeCompare(b.date))
+          .slice(0, 3);
+
+        const rows = evs.map(ev => {
+          const d = parseDate(ev.date);
+          const dateStr = `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+          return `
+            <div class="program-event-row">
+              <span class="program-event-date">${dateStr}</span>
+              <span class="program-event-name">${ev.title}</span>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="program-card">
+            <div class="program-card-head" style="border-bottom:2px solid ${color}18;background:${color}08">
+              <span class="program-dot" style="background:${color}"></span>
+              <span class="program-cat-label">${label}</span>
+            </div>
+            <div class="program-events">${rows || '<div class="program-event-row" style="color:var(--text-muted);font-size:12px;">—</div>'}</div>
+            <div class="program-footer">
+              <a href="kalender.html">Lihat di kalender →</a>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('programGrid').innerHTML = html;
+    }
+
+    /* =============================================
+       RENDER RECAP
+    ============================================= */
+    function renderRecap() {
+      const html = RECAP.map(r => {
+        const color = r.bgColor;
+        const catLabel = CATS[r.category]?.label || r.category;
+        return `
+          <div class="recap-card" onclick="window.location='kalender.html'">
+            <div class="recap-bg"></div>
+            <div class="recap-color-overlay" style="background:${color}"></div>
+            <div class="recap-pattern"></div>
+            <div class="recap-gradient"></div>
+            <div class="recap-content">
+              <span class="recap-tag">• ${catLabel.toUpperCase()}</span>
+              <div class="recap-title">${r.title}</div>
+              <div class="recap-meta">${r.meta}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('recapGrid').innerHTML = html;
+    }
+
+    /* =============================================
+       DARK MODE
+    ============================================= */
+    function toggleDark() {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('naposo_dark', isDark ? '' : '1');
+    }
+    if (localStorage.getItem('naposo_dark') === '1') {
+      document.documentElement.setAttribute('data-theme','dark');
+    }
+
+    /* =============================================
+       HAMBURGER MENU
+    ============================================= */
+    function toggleMenu() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+    }
+    // tutup menu jika klik di luar
+    document.addEventListener('click', e => {
+      const menu = document.getElementById('mobileMenu');
+      const btn = document.getElementById('hamburger');
+      if (!menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.classList.remove('open');
+      }
+    });
+
+    /* =============================================
+       LOGIN (placeholder — sambungkan ke index.js)
+    ============================================= */
+    function openLogin() {
+      alert('Modal login — sambungkan ke implementasi doLogin() di index.js');
+    }
+
+    /* =============================================
+       INIT
+    ============================================= */
+    renderEvents();
+    renderMiniCal();
+    renderPrograms();
+    renderRecap();
+  </script>
 </body>
 </html>

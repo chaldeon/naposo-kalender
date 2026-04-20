@@ -15,17 +15,32 @@ const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza',
 const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
 const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
-const DEF_LBL_EN={koor:'Choir',ibadah:'Worship / Service',rapat:'Meeting',latihan:'Practice',reversement:'Reversement',doa:'Prayer',other:'Other'};
+const DEF_LBL_EN={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
 let CATS={...DEF_COLORS},CNAMES_ID={...DEF_LBL_ID},CNAMES_EN={...DEF_LBL_EN};
 function catLabel(c){return(lang==='en'?CNAMES_EN:CNAMES_ID)[c]||CNAMES_ID[c]||c;}
 function catColor(c){return CATS[c]||'#94a3b8';}
-function saveCatsLocal(){const co={},ni={},ne={};Object.keys(CATS).forEach(k=>{if(!BUILT_IN.includes(k)){co[k]=CATS[k];ni[k]=CNAMES_ID[k];ne[k]=CNAMES_EN[k]||CNAMES_ID[k];}});localStorage.setItem('naposo_cats',JSON.stringify({co,ni,ne}));}
-function loadCatsLocal(){const s=JSON.parse(localStorage.getItem('naposo_cats')||'null');if(s){Object.assign(CATS,s.co);Object.assign(CNAMES_ID,s.ni);Object.assign(CNAMES_EN,s.ne||s.ni);}}
+async function loadCatsFromDB(){
+  try{
+    const rows=await dbGet('categories','select=*&order=created_at.asc');
+    rows.forEach(r=>{CATS[r.id]=r.color;CNAMES_ID[r.id]=r.label_id;CNAMES_EN[r.id]=r.label_en;});
+  }catch(e){console.warn('Gagal load kategori:',e.message);}
+}
+async function saveCatToDB(id,color,label){
+  try{await dbIns('categories',[{id,color,label_id:label,label_en:label}]);}
+  catch(e){console.warn('Gagal simpan kategori:',e.message);}
+}
+async function deleteCatFromDB(id){
+  try{await dbDel('categories',`id=eq.${id}`);}
+  catch(e){console.warn('Gagal hapus kategori:',e.message);}
+}
+async function updateCatInDB(id,fields){
+  try{await dbUpd('categories',`id=eq.${id}`,fields);}
+  catch(e){console.warn('Gagal update kategori:',e.message);}
+}
 
 /* ══ I18N ══ */
 const T={
-  id:{hdrSub:'Kalender Pelayanan 2026',loginBadgeView:'Lihat saja',loginBtnTxt:'Login',
-    adminBarTxt:'Mode Pengurus Aktif — tambah, ubah, hapus, atau drag-drop event.',logoutBtn:'Logout',
+  id:{hdrSub:'Kalender Pelayanan 2026',loginBadgeView:'Lihat saja',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Event',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
     lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
@@ -42,8 +57,7 @@ const T={
     footerVisit:'kunjungan',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
     moreEventsLabel:(n)=>`+${n} lagi`,catMgrBtn:'⚙ Kelola',
   },
-  en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',
-    adminBarTxt:'Admin Mode Active — add, edit, delete, or drag-drop events.',logoutBtn:'Logout',
+  en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
     lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
@@ -66,12 +80,38 @@ function tx(k,...a){const fn=(T[lang]||T.id)[k]||T.id[k]||k;return typeof fn==='
 /* ══ CONSTANTS & STATE ══ */
 const MONTHS_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const MONTHS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAYS_ID=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-const DAYS_EN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS_ID=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+const DAYS_EN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const YEAR=2026,TODAY=new Date();
 const MAX_VISIBLE=3; // max pills shown per cell before "+N more"
 let EVENTS=[],lang=localStorage.getItem('naposo_lang')||'id',darkMode=localStorage.getItem('naposo_dark')==='1';
 let isAdmin=false,editingId=null,filterCat='all';
+let undoStack=[];
+let copiedEvent=null;
+function pushUndo(action){undoStack.push(action);}
+function resetUndo(){undoStack=[];}
+async function undoLast(){
+  if(!undoStack.length){showToast('Tidak ada yang bisa di-undo.','err');return;}
+  const action=undoStack.pop();
+  try{
+    if(action.type==='add'){
+      await dbDel('events',`id=eq.${action.ev.id}`);
+      EVENTS=EVENTS.filter(e=>e.id!==action.ev.id);
+    } else if(action.type==='delete'){
+      await dbIns('events',[action.ev]);
+      EVENTS.push(action.ev);EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
+    } else if(action.type==='edit'){
+      await dbUpd('events',`id=eq.${action.prev.id}`,action.prev);
+      EVENTS=EVENTS.map(e=>e.id===action.prev.id?action.prev:e);
+    } else if(action.type==='move'){
+      await dbUpd('events',`id=eq.${action.ev.id}`,{date:action.oldDate});
+      EVENTS=EVENTS.map(e=>e.id===action.ev.id?{...e,date:action.oldDate}:e);
+    }
+    renderCalendar();renderStats();
+    showToast('Undo berhasil ✓','ok');
+  } catch(e){showToast('Undo gagal: '+e.message,'err');}
+}
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();if(isAdmin)undoLast();}});
 let currentMonth=Math.min(Math.max(TODAY.getFullYear()===YEAR?TODAY.getMonth():3,0),11);
 
 /* ══ SEED ══ */
@@ -154,42 +194,68 @@ function trackVisit(){const k='naposo_visits_v2';let d=JSON.parse(localStorage.g
 
 /* ══ INIT ══ */
 async function init(){
-  applyDark();loadCatsLocal();
+  applyDark();
   const visits=trackVisit();
   document.getElementById('footerYear').textContent=new Date().getFullYear();
   document.getElementById('footerVisits').textContent=visits.total||1;
   document.getElementById('stValVisit').textContent=visits.total||1;
   applyLangUI();buildLoginDropdown();buildCatFilterDropdown();buildLegend();buildTabs();
-  // close dropdowns on outside click
   document.addEventListener('click',e=>{
     if(!document.getElementById('catFilterWrap').contains(e.target)) document.getElementById('catFilterDropdown').classList.remove('open');
     if(!document.getElementById('infoBtn').parentElement.contains(e.target)) document.getElementById('statsPopup').classList.remove('open');
     if(!document.getElementById('hamburgerBtn').contains(e.target)&&!document.getElementById('hdrMenuPanel').contains(e.target)) closeHamburger();
   });
   try{
+    await loadCatsFromDB();
+    buildCatFilterDropdown();buildLegend();buildTabs();
     const chk=await dbGet('events','select=id&limit=1');
     if(chk.length===0) await dbIns('events',SEED);
     EVENTS=await dbGet('events','select=*&order=date.asc,created_at.asc');
     renderCalendar();renderStats();
+    startRealtime();
   }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;}
+}
+
+function startRealtime(){
+  const evtSource=new EventSource(`${SUPA_URL}/realtime/v1/sse?apikey=${SUPA_KEY}&x-client-info=supabase-js/0`);
+  // Gunakan polling ringan sebagai fallback realtime
+  setInterval(async()=>{
+    try{
+      const newEvs=await dbGet('events','select=*&order=date.asc,created_at.asc');
+      const newCats=await dbGet('categories','select=*&order=created_at.asc');
+      // sync events
+      const localIds=EVENTS.map(e=>e.id).sort().join(',');
+      const remoteIds=newEvs.map(e=>e.id).sort().join(',');
+      if(localIds!==remoteIds||JSON.stringify(EVENTS)!==JSON.stringify(newEvs)){
+        EVENTS=newEvs;renderCalendar();renderStats();
+      }
+      // sync categories
+      const customCats=newCats.filter(r=>!BUILT_IN.includes(r.id));
+      customCats.forEach(r=>{CATS[r.id]=r.color;CNAMES_ID[r.id]=r.label_id;CNAMES_EN[r.id]=r.label_en;});
+      // hapus kategori kustom yang sudah dihapus di DB
+      Object.keys(CATS).filter(k=>!BUILT_IN.includes(k)).forEach(k=>{
+        if(!customCats.find(r=>r.id===k)){delete CATS[k];delete CNAMES_ID[k];delete CNAMES_EN[k];}
+      });
+      buildCatFilterDropdown();buildLegend();
+    }catch(_){}
+  },15000); // poll tiap 15 detik
 }
 
 /* ══ DARK MODE ══ */
 function applyDark(){
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
-  ['darkTrack','darkTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',darkMode);});
-  const cb=document.getElementById('darkCb');if(cb)cb.checked=darkMode;
+  ['darkTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',darkMode);});
+  const btn=document.getElementById('darkToggleBtn');if(btn)btn.textContent=darkMode?'☀️':'🌙';
 }
-function toggleDark(){darkMode=document.getElementById('darkCb').checked;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
-function toggleDarkMobile(){darkMode=!darkMode;const cb=document.getElementById('darkCb');if(cb)cb.checked=darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+function toggleDarkMobile(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
 
 /* ══ LANGUAGE ══ */
 function applyLangUI(){
   const isEn=lang==='en';
-  ['langCb'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=isEn;});
-  ['langTrack','langTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',isEn);});
-  document.getElementById('langLbl').textContent=isEn?'ID':'EN';
-  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',adminBarTxt:'adminBarTxt',logoutBtn:'logoutBtn',
+  ['langTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',isEn);});
+  const langBtn=document.getElementById('langToggleBtn');if(langBtn)langBtn.textContent=isEn?'ID':'EN';
+  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',adminBarTxt:'adminBarTxt',
     addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
     lbCat:'lbCat',lbNote:'lbNote',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
     loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
@@ -199,6 +265,7 @@ function applyLangUI(){
     loginBtnMobileTxt:'loginBtnTxt',
   };
   Object.entries(ids).forEach(([el,key])=>{const e=document.getElementById(el);if(e)e.textContent=tx(key);});
+  const todayBtn=document.getElementById('todayBtn');if(todayBtn)todayBtn.textContent=lang==='en'?'Today':'Hari ini';
   const si=document.getElementById('searchInput');if(si)si.placeholder=tx('searchPlaceholder');
   if(!isAdmin){
     ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
@@ -210,8 +277,8 @@ function applyLangUI(){
   buildCatFilterDropdown();buildLegend();buildTabs();buildCatSelect();
   if(EVENTS.length){renderCalendar();renderStats();}
 }
-function toggleLang(){lang=document.getElementById('langCb').checked?'en':'id';localStorage.setItem('naposo_lang',lang);applyLangUI();}
-function toggleLangMobile(){lang=lang==='en'?'id':'en';const cb=document.getElementById('langCb');if(cb)cb.checked=lang==='en';localStorage.setItem('naposo_lang',lang);applyLangUI();}
+function toggleLang(){lang=lang==='en'?'id':'en';localStorage.setItem('naposo_lang',lang);applyLangUI();}
+function toggleLangMobile(){lang=lang==='en'?'id':'en';localStorage.setItem('naposo_lang',lang);applyLangUI();}
 
 /* ══ HAMBURGER ══ */
 function toggleHamburger(){document.getElementById('hdrMenuPanel').classList.toggle('open');}
@@ -291,26 +358,32 @@ function renderCatMgrList(){
     list.appendChild(row);
   });
 }
-  function addCategory(){
+async function addCategory(){
   const name=document.getElementById('newCatName').value.trim();const color=document.getElementById('newCatColor').value;
-  if(!name)return;const id='cat_'+Date.now();CATS[id]=color;CNAMES_ID[id]=name;CNAMES_EN[id]=name;
-  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  if(!name)return;const id='cat_'+Date.now();
+  CATS[id]=color;CNAMES_ID[id]=name;CNAMES_EN[id]=name;
+  await saveCatToDB(id,color,name);
+  buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
   document.getElementById('newCatName').value='';showToast(tx('catAdded'),'ok');
 }
-  function editCatColor(cat,color){
-  CATS[cat]=color;saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+async function editCatColor(cat,color){
+  CATS[cat]=color;
+  if(!BUILT_IN.includes(cat)) await updateCatInDB(cat,{color});
+  buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
   if(EVENTS.length)renderCalendar();showToast('Warna diperbarui!','ok');
 }
-function editCatName(cat,name){
+async function editCatName(cat,name){
   if(!name.trim())return;
-  if(BUILT_IN.includes(cat)){CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
-  else{CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;}
-  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
+  CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;
+  if(!BUILT_IN.includes(cat)) await updateCatInDB(cat,{label_id:name,label_en:name});
+  buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
   if(EVENTS.length)renderCalendar();showToast('Nama diperbarui!','ok');
 }
-function deleteCategory(cat){
-  if(BUILT_IN.includes(cat))return;delete CATS[cat];delete CNAMES_ID[cat];delete CNAMES_EN[cat];
-  saveCatsLocal();buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();showToast(tx('catDeleted'));
+async function deleteCategory(cat){
+  if(BUILT_IN.includes(cat))return;
+  delete CATS[cat];delete CNAMES_ID[cat];delete CNAMES_EN[cat];
+  await deleteCatFromDB(cat);
+  buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();showToast(tx('catDeleted'));
 }
 
 /* ══ FILTERS ══ */
@@ -346,7 +419,9 @@ function renderCalendar(){
 function buildMonth(year,month){
   const DAYS=lang==='en'?DAYS_EN:DAYS_ID;
   const sec=document.createElement('div');sec.className='cal-section';
-  const first=new Date(year,month,1).getDay();const total=new Date(year,month+1,0).getDate();
+  const rawFirst=new Date(year,month,1).getDay();
+  const first=(rawFirst===0?6:rawFirst-1);
+  const total=new Date(year,month+1,0).getDate();
   const grid=document.createElement('div');grid.className='cal-grid';
   const names=document.createElement('div');names.className='cal-names';
   DAYS.forEach(d=>{const el=document.createElement('div');el.className='cal-name';el.textContent=d;names.appendChild(el);});
@@ -396,15 +471,28 @@ function makePill(ev){
   const lbl=document.createElement('span');lbl.className='ev-label';lbl.textContent=ev.title;
   pill.appendChild(dot);pill.appendChild(lbl);
   if(ev.time){const t=document.createElement('span');t.className='ev-time-inline';t.textContent=ev.time.split('–')[0];pill.appendChild(t);}
+  if(hasLink(ev.note)){
+    const firstUrl=(ev.note.match(/https?:\/\/[^\s<]+/)||[])[0];
+    const lnk=document.createElement('a');lnk.className='ev-link-icon';lnk.textContent='🔗';
+    lnk.href=firstUrl;lnk.target='_blank';lnk.rel='noopener';lnk.title=firstUrl;
+    lnk.onclick=e=>e.stopPropagation();
+    pill.appendChild(lnk);
+  }
   if(isAdmin){
     const del=document.createElement('button');del.className='ev-del';del.textContent='✕';
     del.onclick=e=>{e.stopPropagation();confirmDel(ev.id,e);};pill.appendChild(del);
+    const cp=document.createElement('button');cp.className='ev-copy';cp.textContent='⧉';cp.title='Salin event';
+    cp.onclick=e=>{e.stopPropagation();copyEvent(ev);};pill.appendChild(cp);
   }
   pill.onclick=()=>openDetail(ev);
   if(!BUILT_IN.includes(ev.category)){pill.style.background=col+'22';pill.style.color=col;}
   if(isAdmin){
     pill.draggable=true;
-    pill.addEventListener('dragstart',e=>{e.dataTransfer.setData('evId',ev.id);pill.classList.add('dragging');});
+    pill.addEventListener('dragstart',e=>{
+      e.dataTransfer.setData('evId',ev.id);
+      e.dataTransfer.setData('evCopy',e.ctrlKey||e.metaKey?'1':'0');
+      pill.classList.add('dragging');
+    });
     pill.addEventListener('dragend',()=>pill.classList.remove('dragging'));
   }
   /* ===== HOVER PREVIEW ===== */
@@ -451,9 +539,24 @@ function showDayPopup(ds,evs){
 /* ══ DRAG & DROP ══ */
 async function dropEv(e,newDate){
   const evId=e.dataTransfer.getData('evId');if(!evId)return;
-  const ev=EVENTS.find(x=>x.id===evId);if(!ev||ev.date===newDate)return;
+  const isCopy=e.dataTransfer.getData('evCopy')==='1';
+  const ev=EVENTS.find(x=>x.id===evId);if(!ev)return;
   setSyncBadge('load',tx('saving'));
-  try{await dbUpd('events',`id=eq.${evId}`,{date:newDate});ev.date=newDate;renderCalendar();renderStats();showToast(tx('dragMoved'),'ok');setSyncBadge('ok',tx('connected'));}
+  try{
+    if(isCopy){
+      const newEv={...ev,id:'ev_'+Date.now(),date:newDate};
+      const[ins]=await dbIns('events',newEv);
+      EVENTS.push(ins||newEv);EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
+      pushUndo({type:'add',ev:ins||newEv});
+      renderCalendar();renderStats();showToast('Event diduplikat ✓','ok');setSyncBadge('ok',tx('connected'));return;
+    }
+    if(ev.date===newDate)return;
+    const oldDate=ev.date;
+    await dbUpd('events',`id=eq.${evId}`,{date:newDate});
+    ev.date=newDate;
+    pushUndo({type:'move',ev:{...ev},oldDate});
+    renderCalendar();renderStats();showToast(tx('dragMoved'),'ok');setSyncBadge('ok',tx('connected'));
+  }
   catch(err){showToast(tx('dragFail'),'err');setSyncBadge('err','Error');}
 }
 
@@ -465,9 +568,11 @@ document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=
 function openAddModal(ds){
   editingId=null;document.getElementById('evModalTitle').textContent=tx('evModalAdd');
   document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
-  document.getElementById('evStart').value='';document.getElementById('evEnd').value='';document.getElementById('evNote').value='';
+  document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
+  document.getElementById('evNote').value='';
   buildCatSelect();openModal('eventModal');
 }
+
 function openEditModal(ev){
   editingId=ev.id;document.getElementById('evModalTitle').textContent=tx('evModalEdit');
   document.getElementById('evDate').value=ev.date;document.getElementById('evTitle').value=ev.title;
@@ -476,6 +581,7 @@ function openEditModal(ev){
   document.getElementById('evNote').value=ev.note||'';
   buildCatSelect();document.getElementById('evCat').value=ev.category||'other';openModal('eventModal');
 }
+
 function openDetail(ev){
   window._detEv=ev;
   const d=new Date(ev.date+'T00:00:00');
@@ -486,7 +592,8 @@ function openDetail(ev){
     <div class="det-date">${lbl}</div>
     <div class="det-title">${ev.title}</div>
     ${ev.time?`<div class="det-time">⏰ ${ev.time}</div>`:''}
-    ${ev.note?`<div class="det-note">${ev.note}</div>`:''}
+    ${ev.link?`<div class="det-link"><a href="${ev.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${ev.link}</a></div>`:''}
+    ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
     <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
@@ -500,21 +607,35 @@ async function saveEvent(){
   const date=document.getElementById('evDate').value,title=document.getElementById('evTitle').value.trim();
   const tS=document.getElementById('evStart').value,tE=document.getElementById('evEnd').value;
   const cat=document.getElementById('evCat').value,note=document.getElementById('evNote').value.trim();
+  const link='';
   if(!date||!title){showToast(tx('fieldReq'),'err');return;}
   const time=tS?(tE?`${tS}–${tE}`:tS):'';
   const btn=document.getElementById('evSaveBtn');btn.disabled=true;btn.textContent=tx('saving');setSyncBadge('load',tx('saving'));
   try{
     if(editingId){
-      await dbUpd('events',`id=eq.${editingId}`,{date,title,time,category:cat,note});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note};
-    }else{const id='ev_'+Date.now();const[ins]=await dbIns('events',{id,date,title,time,category:cat,note});EVENTS.push(ins);}
+      const prev={...EVENTS.find(e=>e.id===editingId)};
+      await dbUpd('events',`id=eq.${editingId}`,{date,title,time,category:cat,note,link});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link};
+      pushUndo({type:'edit',prev});
+    }else{
+      const id='ev_'+Date.now();
+      const[ins]=await dbIns('events',{id,date,title,time,category:cat,note,link});
+      EVENTS.push(ins);
+      pushUndo({type:'add',ev:ins});
+    }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
   finally{btn.disabled=false;btn.textContent=tx('saveBtn');}
 }
 async function confirmDel(id,e){
   e.stopPropagation();if(!confirm(tx('deleteConfirm')))return;setSyncBadge('load',tx('saving'));
-  try{await dbDel('events',`id=eq.${id}`);EVENTS=EVENTS.filter(ev=>ev.id!==id);renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));}
+  try{
+    const deleted={...EVENTS.find(ev=>ev.id===id)};
+    await dbDel('events',`id=eq.${id}`);
+    EVENTS=EVENTS.filter(ev=>ev.id!==id);
+    pushUndo({type:'delete',ev:deleted});
+    renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));
+  }
   catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
 }
 
@@ -548,7 +669,7 @@ async function doLogin(){
     document.getElementById('loginErr').style.display='block';
     btn.disabled=false;btn.textContent=tx('loginBtn2');return;
   }
-  isAdmin=true;document.body.classList.add('admin-mode');
+ isAdmin=true;resetUndo();document.body.classList.add('admin-mode');
   document.getElementById('adminBar').classList.add('on');
   ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.add('on'));
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
@@ -558,6 +679,25 @@ async function doLogin(){
   btn.disabled=false;btn.textContent=tx('loginBtn2');
   setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();
   showToast(`${tx('welcome')}, ${name}! ${tx('modeActive')}`,'ok');
+}
+
+function copyEvent(ev){
+  copiedEvent={...ev};
+  showToast('Event disalin: '+ev.title,'ok');
+  document.getElementById('pasteBtn').style.opacity='1';
+  document.getElementById('pasteBtn').disabled=false;
+}
+function pasteEvent(){
+  if(!copiedEvent){showToast('Belum ada event yang disalin.','err');return;}
+  openAddModal(null);
+  setTimeout(()=>{
+    document.getElementById('evTitle').value=copiedEvent.title;
+    document.getElementById('evStart').value=copiedEvent.time?copiedEvent.time.split('–')[0]:'';
+    document.getElementById('evEnd').value=copiedEvent.time?copiedEvent.time.split('–')[1]||'':'';
+    document.getElementById('evCat').value=copiedEvent.category;
+    document.getElementById('evLink').value=copiedEvent.link||'';
+    document.getElementById('evNote').value=copiedEvent.note||'';
+  },50);
 }
 
 function doLogout(){
@@ -852,12 +992,14 @@ function showPreview(e, ev){
   if(!previewBox) return;
   const d = new Date(ev.date+'T00:00:00');
   const dateStr = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  const noteRaw = ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : '';
+  const noteFmt = linkify(noteRaw.replace(/\r\n|\r|\n/g,'<br>'));
   previewBox.innerHTML = `
     <strong>${ev.title}</strong><br>
     📅 ${dateStr}<br>
     ${ev.time ? '⏰ '+ev.time+'<br>' : ''}
-    ${ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : ''}
-  `;
+    ${noteFmt ? '<div style="margin-top:5px;border-top:1px solid rgba(255,255,255,.15);padding-top:5px">'+noteFmt+'</div>' : ''}
+  `
   previewBox.style.display = 'block';
   previewBox.classList.add('show');
   movePreview(e);
@@ -866,8 +1008,12 @@ function showPreview(e, ev){
 function movePreview(e){
   const previewBox = getPreviewBox();
   if(!previewBox) return;
-  previewBox.style.left = (e.pageX + 15) + 'px';
-  previewBox.style.top = (e.pageY + 15) + 'px';
+  const x = e.clientX + 15;
+  const y = e.clientY + 15;
+  const boxW = 240;
+  const safeX = (x + boxW > window.innerWidth) ? e.clientX - boxW - 10 : x;
+  previewBox.style.left = safeX + 'px';
+  previewBox.style.top = y + 'px';
 }
 
 function hidePreview(){
@@ -875,4 +1021,25 @@ function hidePreview(){
   if(!previewBox) return;
   previewBox.classList.remove('show');
   previewBox.style.display = 'none';
+}
+
+/* ── Auto-detect URL di teks → <a> ── */
+function linkify(text){
+  if(!text) return '';
+  return text.replace(/(https?:\/\/[^\s<]+)/g, url =>
+    `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all;" onclick="event.stopPropagation()">${url}</a>`
+  );
+}
+
+/* ── Cek apakah teks mengandung URL ── */
+function hasLink(text){
+  return /https?:\/\/[^\s<]+/.test(text||'');
+}
+
+/* ── Auto-detect URL di teks → <a> ── */
+function linkify(text){
+  if(!text) return '';
+  return text.replace(/(https?:\/\/[^\s<]+)/g, url =>
+    `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all;" onclick="event.stopPropagation()">${url}</a>`
+  );
 }
