@@ -58,8 +58,16 @@ function catLabel(c){return(lang==='en'?CNAMES_EN:CNAMES_ID)[c]||CNAMES_ID[c]||c
 function catColor(c){return CATS[c]||'#94a3b8';}
 async function loadCatsFromDB(){
   try{
-    const rows=await dbGet('categories','select=*&order=created_at.asc');
-    rows.forEach(r=>{CATS[r.id]=r.color;CNAMES_ID[r.id]=r.label_id;CNAMES_EN[r.id]=r.label_en;});
+    const rows=await dbGet('categories','select=*&order=sort_order.asc');
+    if(rows&&rows.length){
+      // Reset CATS dari Supabase — bukan merge dengan hardcode
+      Object.keys(CATS).forEach(k=>{delete CATS[k];});
+      Object.keys(CNAMES_ID).forEach(k=>{delete CNAMES_ID[k];});
+      Object.keys(CNAMES_EN).forEach(k=>{delete CNAMES_EN[k];});
+      // Sort: lainnya selalu terakhir
+      const sorted=[...rows.filter(r=>r.id!=='lainnya'),...rows.filter(r=>r.id==='lainnya')];
+      sorted.forEach(r=>{CATS[r.id]=r.color;CNAMES_ID[r.id]=r.label_id;CNAMES_EN[r.id]=r.label_en;});
+    }
   }catch(e){console.warn('Gagal load kategori:',e.message);}
 }
 async function saveCatToDB(id,color,label){
@@ -82,7 +90,7 @@ const T={
     lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
     lbPw:'Password',loginErr:'Password salah atau nama tidak dipilih.',
-    loginBtn2:'Masuk',detailTitle:'Detail Event',closeBtn:'Tutup',editBtn:'Edit',
+    loginBtn2:'Masuk',detailTitle:'Detail Event',closeBtn:'Tutup',editBtn:'Edit',deleteBtn:'Hapus',
     evModalAdd:'Tambah Event',evModalEdit:'Ubah Event',
     connecting:'Menghubungkan…',connected:'Terhubung',saving:'Menyimpan…',
     saved:'Tersimpan ✓',deleted:'Event dihapus.',saveFail:'Gagal menyimpan',delFail:'Gagal menghapus',
@@ -93,13 +101,20 @@ const T={
     statTotal:'Total Event',statMonth:'Bulan ini',statToday:'Hari ini',statVisit:'Total kunjungan',
     footerVisit:'kunjungan',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
     moreEventsLabel:(n)=>`+${n} lagi`,catMgrBtn:'⚙ Kelola',
+    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',
+    exportModalTitle:'Export Kalender',expSecFormat:'Format Export',expSecScope:'Data yang Di-export',
+    expDescPdf:'Dokumen siap cetak, tabel rapi',expDescPng:'Screenshot tampilan kalender',
+    expDescCsv:'Data spreadsheet, bisa diedit',expDescIcal:'Import ke Google / Apple Calendar',
+    scopeLblAll:'Semua Bulan',scopeLblMonth:'Bulan Ini Saja',scopeLblPick:'Pilih Bulan…',scopeLblCat:'Kategori Aktif',
+    exportRangeSep:'s/d',exportCancelBtn:'Batal',doExportBtnTxt:'Export Sekarang',
+    exportProgressTxt:'Menyiapkan…',
   },
   en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
     lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
     lbPw:'Password',loginErr:'Wrong password or name not selected.',
-    loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',
+    loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',deleteBtn:'Delete',
     evModalAdd:'Add Event',evModalEdit:'Edit Event',
     connecting:'Connecting…',connected:'Connected',saving:'Saving…',
     saved:'Saved ✓',deleted:'Event deleted.',saveFail:'Save failed',delFail:'Delete failed',
@@ -110,6 +125,13 @@ const T={
     statTotal:'Total Events',statMonth:'This month',statToday:'Today',statVisit:'Total visits',
     footerVisit:'visits',darkModeLbl:'Dark Mode',langModeLbl:'Language',
     moreEventsLabel:(n)=>`+${n} more`,catMgrBtn:'⚙ Manage',
+    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',
+    exportModalTitle:'Export Calendar',expSecFormat:'Export Format',expSecScope:'Data to Export',
+    expDescPdf:'Print-ready document, clean table',expDescPng:'Screenshot of calendar view',
+    expDescCsv:'Spreadsheet data, editable',expDescIcal:'Import to Google / Apple Calendar',
+    scopeLblAll:'All Months',scopeLblMonth:'This Month Only',scopeLblPick:'Pick Month…',scopeLblCat:'Active Category',
+    exportRangeSep:'to',exportCancelBtn:'Cancel',doExportBtnTxt:'Export Now',
+    exportProgressTxt:'Preparing…',
   }
 };
 function tx(k,...a){const fn=(T[lang]||T.id)[k]||T.id[k]||k;return typeof fn==='function'?fn(...a):fn;}
@@ -125,11 +147,16 @@ let EVENTS=[],lang=localStorage.getItem('naposo_lang')||'id',darkMode=localStora
 let isAdmin=false,editingId=null,filterCat='all',currentView='grid';
 let undoStack=[];
 let copiedEvent=null;
-function pushUndo(action){undoStack.push(action);}
-function resetUndo(){undoStack=[];}
+function pushUndo(action){undoStack.push(action);syncUndoBtn();}
+function resetUndo(){undoStack=[];syncUndoBtn();}
+function syncUndoBtn(){const btn=document.getElementById('undoBtn');if(btn)btn.disabled=undoStack.length===0;}
+function setAdminBarTxt(name){
+  const abt=document.getElementById('adminBarTxt');
+  if(abt)abt.textContent='Halo, '+name+'.';
+}
 async function undoLast(){
   if(!undoStack.length){showToast('Tidak ada yang bisa di-undo.','err');return;}
-  const action=undoStack.pop();
+  const action=undoStack.pop();syncUndoBtn();
   try{
     if(action.type==='add'){
       await dbWrite('events','DELETE',null,{id:action.ev.id});
@@ -148,7 +175,21 @@ async function undoLast(){
     showToast('Undo berhasil ✓','ok');
   } catch(e){showToast('Undo gagal: '+e.message,'err');}
 }
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();if(isAdmin)undoLast();}});
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();if(isAdmin)undoLast();return;}
+  if(document.querySelector('.overlay.open')) return;
+  switch(e.key){
+    case 'g':case 'G':switchView('grid');break;
+    case 'a':case 'A':switchView('agenda');break;
+    case 't':case 'T':goToday();break;
+    case 'ArrowLeft':switchMonth(currentMonth-1<0?11:currentMonth-1);break;
+    case 'ArrowRight':switchMonth(currentMonth+1>11?0:currentMonth+1);break;
+    case '/':e.preventDefault();document.getElementById('searchInput')?.focus();break;
+    case '?':toggleShortcutHelp();break;
+    case 'Escape':closeAllModals();break;
+  }
+});
 let currentMonth=Math.min(Math.max(TODAY.getFullYear()===YEAR?TODAY.getMonth():3,0),11);
 
 /* ══ SEED ══ */
@@ -227,26 +268,76 @@ const SEED=[
 ];
 
 /* ══ TRAFFIC ══ */
-function trackVisit(){const k='naposo_visits_v2';let d=JSON.parse(localStorage.getItem(k)||'{}');d.total=(d.total||0)+1;localStorage.setItem(k,JSON.stringify(d));return d;}
+async function trackVisit(){
+  const timeout=ms=>new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms));
+  let sid=sessionStorage.getItem('naposo_sid');
+  if(!sid){
+    sid='sid_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+    sessionStorage.setItem('naposo_sid',sid);
+    try{
+      await Promise.race([
+        sb('visits',{method:'POST',headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({session_id:sid})}),
+        timeout(3000)
+      ]);
+    }catch(_){}
+  }
+  try{
+    const res=await Promise.race([
+      fetch(`${SUPA_URL}/rest/v1/visits?select=count`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Prefer':'count=exact','Range':'0-0'}}),
+      timeout(3000)
+    ]);
+    const count=res.headers.get('content-range')?.split('/')?.pop()||'–';
+    return {total:count};
+  }catch(_){return {total:'–'};}
+}
 
 /* ══ INIT ══ */
 async function init(){
   applyDark();
-  const visits=trackVisit();
+  const visits=await trackVisit();
   document.getElementById('footerYear').textContent=new Date().getFullYear();
-  document.getElementById('footerVisits').textContent=visits.total||1;
-  document.getElementById('stValVisit').textContent=visits.total||1;
+  document.getElementById('footerVisits').textContent=visits.total||'–';
   applyLangUI();buildLoginDropdown();buildCatFilterDropdown();buildLegend();buildTabs();
   document.addEventListener('click',e=>{
     if(!document.getElementById('catFilterWrap').contains(e.target)) document.getElementById('catFilterDropdown').classList.remove('open');
     if(!document.getElementById('infoBtn').parentElement.contains(e.target)) document.getElementById('statsPopup').classList.remove('open');
     if(!document.getElementById('hamburgerBtn').contains(e.target)&&!document.getElementById('hdrMenuPanel').contains(e.target)) closeHamburger();
+    const deskWrap=document.getElementById('deskMonthBtn')?.closest('.desk-month-picker-wrap');
+    if(deskWrap&&!deskWrap.contains(e.target)) closeDeskMonthPicker();
+    const sw=document.getElementById('searchDropdown');
+    const swrap=document.getElementById('searchInput')?.closest('.search-wrap');
+    if(sw&&swrap&&!swrap.contains(e.target)) closeSearchDropdown();
+    const mbar=document.getElementById('mobSearchBar');
+    if(mbar&&!mbar.contains(e.target)) closeSearchDropdown();
   });
   try{
     await loadCatsFromDB();
     buildCatFilterDropdown();buildLegend();buildTabs();
     EVENTS=await dbGet('events','select=*&order=date.asc,created_at.asc');
     renderCalendar();renderStats();
+    switchView(currentView);
+    updateMobMonthLabel();
+    // Auto-restore login session
+    const savedToken=localStorage.getItem('naposo_token');
+    const savedName=localStorage.getItem('naposo_admin_name');
+    if(savedToken&&savedName){
+      adminToken=savedToken;
+      isAdmin=true;document.body.classList.add('admin-mode');
+      document.getElementById('adminBar').classList.add('on');
+      const abt=document.getElementById('adminBarTxt');
+      setAdminBarTxt(savedName);
+      const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='flex';
+      const amt=document.getElementById('adminMobileNameTxt');if(amt)amt.textContent=savedName;
+      const lbm=document.getElementById('loginBtnMobile');if(lbm)lbm.style.display='none';
+      ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
+      ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=savedName+' (Pengurus)';});
+      document.getElementById('loginBtn').textContent=`✓ ${savedName}`;document.getElementById('loginBtn').disabled=true;
+      document.getElementById('loginBtnMobile').textContent=`✓ ${savedName}`;document.getElementById('loginBtnMobile').disabled=true;
+      document.getElementById('addEventBtn').style.display='';
+      const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
+      setSyncBadge('ok',tx('connected'));
+      renderCalendar();
+    }
     startRealtime();
   }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;}
 }
@@ -290,7 +381,7 @@ function applyLangUI(){
   const isEn=lang==='en';
   ['langTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',isEn);});
   const langBtn=document.getElementById('langToggleBtn');if(langBtn)langBtn.textContent=isEn?'ID':'EN';
-  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',adminBarTxt:'adminBarTxt',
+  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',
     addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
     lbCat:'lbCat',lbNote:'lbNote',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
     loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
@@ -298,17 +389,28 @@ function applyLangUI(){
     catMgrBtn:'catMgrBtn',footerVisitLbl:'footerVisit',
     darkModeLbl:'darkModeLbl',langModeLbl:'langModeLbl',
     loginBtnMobileTxt:'loginBtnTxt',
+    undoBtnTxt:'undoBtn',pasteBtnTxt:'pasteBtn',exportBtnTxt:'exportBtn',logoutBtnTxt:'logoutBtn',
+    exportModalTitle:'exportModalTitle',expSecFormat:'expSecFormat',expSecScope:'expSecScope',
+    expDescPdf:'expDescPdf',expDescPng:'expDescPng',expDescCsv:'expDescCsv',expDescIcal:'expDescIcal',
+    scopeLblAll:'scopeLblAll',scopeLblMonth:'scopeLblMonth',scopeLblPick:'scopeLblPick',scopeLblCat:'scopeLblCat',
+    exportRangeSep:'exportRangeSep',exportCancelBtn:'exportCancelBtn',doExportBtnTxt:'doExportBtnTxt',
   };
   Object.entries(ids).forEach(([el,key])=>{const e=document.getElementById(el);if(e)e.textContent=tx(key);});
   const todayBtn=document.getElementById('todayBtn');if(todayBtn)todayBtn.textContent=lang==='en'?'Today':'Hari ini';
+  // mobile "Hari ini" button
+  document.querySelectorAll('.mob-toolbar .mob-nav-btn').forEach(btn=>{
+    if(btn.textContent.trim()==='Hari ini'||btn.textContent.trim()==='Today'){
+      btn.textContent=lang==='en'?'Today':'Hari ini';
+    }
+  });
   const si=document.getElementById('searchInput');if(si)si.placeholder=tx('searchPlaceholder');
+  const msi=document.getElementById('mobSearchInput');if(msi)msi.placeholder=tx('searchPlaceholder');
   if(!isAdmin){
     ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
   }
   document.getElementById('stLblTotal').textContent=tx('statTotal');
   document.getElementById('stLblMonth').textContent=tx('statMonth');
   document.getElementById('stLblToday').textContent=tx('statToday');
-  document.getElementById('stLblVisit').textContent=tx('statVisit');
   buildCatFilterDropdown();buildLegend();buildTabs();buildCatSelect();
   if(EVENTS.length){renderCalendar();renderStats();}
 }
@@ -321,11 +423,119 @@ function closeHamburger(){document.getElementById('hdrMenuPanel').classList.remo
 
 /* ══ TABS ══ */
 function buildTabs(){
-  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
-  document.getElementById('monthTabs').innerHTML=MO.map((m,i)=>`<button class="mtab ${i===currentMonth?'on':''}" onclick="switchMonth(${i})">${m.slice(0,3)}</button>`).join('');
+  buildDeskMonthGrid();
+  updateDeskMonthBtn();
 }
-function switchMonth(i){currentMonth=i;buildTabs();renderCalendar();renderStats();if(currentView==='agenda')renderAgenda();const tb=document.getElementById('todayBtn');if(tb)tb.classList.toggle('dim',i===TODAY.getMonth()&&YEAR===TODAY.getFullYear());}
-function goToday(){if(TODAY.getFullYear()!==YEAR)return;currentMonth=TODAY.getMonth();buildTabs();renderCalendar();renderStats();if(currentView==='agenda')renderAgenda();const tb=document.getElementById('todayBtn');if(tb)tb.classList.add('dim');}
+function buildDeskMonthGrid(){
+  const grid=document.getElementById('deskMonthGrid');if(!grid)return;
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  grid.innerHTML=MO.map((m,i)=>`<div class="desk-mtab${i===currentMonth?' on':''}" onclick="switchMonth(${i});closeDeskMonthPicker()">${m.slice(0,3)}</div>`).join('');
+}
+function updateDeskMonthBtn(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const el=document.getElementById('calTitle');
+  if(el)el.innerHTML=`${MO[currentMonth]} <span>${YEAR}</span>`;
+}
+function toggleDeskMonthPicker(){
+  const dd=document.getElementById('deskMonthDropdown');if(!dd)return;
+  const isOpen=dd.style.display!=='none';
+  if(isOpen){dd.style.display='none';}
+  else{buildDeskMonthGrid();dd.style.display='block';}
+}
+function closeDeskMonthPicker(){
+  const dd=document.getElementById('deskMonthDropdown');if(dd)dd.style.display='none';
+}
+function switchMonth(i){
+  if(i<0||i>11)return;
+  currentMonth=i;buildTabs();renderCalendar();renderStats();
+  syncTodayBtn();
+  updateMobMonthLabel();buildMobMonthGrid();
+}
+
+function syncTodayBtn(){
+  const isToday=YEAR===TODAY.getFullYear()&&currentMonth===TODAY.getMonth();
+  ['todayBtn','mobTodayBtn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.toggle('dim',isToday);
+  });
+}
+function goToday(){
+  if(TODAY.getFullYear()!==YEAR)return;
+  currentMonth=TODAY.getMonth();
+  buildTabs();renderCalendar();renderStats();
+  syncTodayBtn();
+  updateMobMonthLabel();
+  if(currentView==='agenda'){
+    renderAgenda();
+    setTimeout(()=>{
+      const el=document.getElementById('agTodayRow');
+      if(el)el.scrollIntoView({behavior:'smooth',block:'center'});
+    },50);
+  }
+}
+
+/* ══ MOBILE TOOLBAR ══ */
+function updateMobMonthLabel(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const el=document.getElementById('mobMonthLabel');
+  if(el)el.textContent=`${MO[currentMonth]} ${YEAR}`;
+}
+function buildMobMonthGrid(){
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const grid=document.getElementById('mobMonthGrid');if(!grid)return;
+  grid.innerHTML=MO.map((m,i)=>`<div class="mob-mtab${i===currentMonth?' on':''}" onclick="switchMonth(${i});closeMobMonthPicker()">${m.slice(0,3)}</div>`).join('');
+}
+function toggleMobMonthPicker(){
+  const p=document.getElementById('mobMonthPicker');
+  const isOpen=p.style.display!=='none';
+  closeMobMenu();
+  if(isOpen){p.style.display='none';}
+  else{buildMobMonthGrid();p.style.display='block';}
+}
+function closeMobMonthPicker(){
+  const p=document.getElementById('mobMonthPicker');if(p)p.style.display='none';
+}
+function toggleMobSearch(){
+  const bar=document.getElementById('mobSearchBar');
+  const btn=document.getElementById('mobSearchBtn');
+  const isOpen=bar.style.display!=='none';
+  closeMobMenu();closeMobMonthPicker();
+  if(isOpen){bar.style.display='none';btn.classList.remove('active');document.getElementById('searchInput').value='';applyFilters();}
+  else{bar.style.display='block';btn.classList.add('active');setTimeout(()=>document.getElementById('mobSearchInput').focus(),50);}
+}
+function toggleMobMenu(){
+  const p=document.getElementById('mobMenuPanel');
+  const isOpen=p.style.display!=='none';
+  closeMobMonthPicker();
+  if(isOpen){p.style.display='none';}
+  else{buildMobCatList();p.style.display='block';}
+}
+function closeMobMenu(){
+  const p=document.getElementById('mobMenuPanel');if(p)p.style.display='none';
+}
+function applyFiltersMob(){
+  const mob=document.getElementById('mobSearchInput');
+  const desk=document.getElementById('searchInput');
+  if(mob&&desk) desk.value=mob.value;
+  onSearchInput(mob?.value||'');
+}
+function buildMobCatList(){
+  const list=document.getElementById('mobCatList');if(!list)return;
+  list.innerHTML='';
+  // update judul section filter
+  const sec=document.querySelector('.mob-menu-section');
+  if(sec)sec.textContent=lang==='en'?'Filter Category':'Filter Kategori';
+  const allOpt=document.createElement('div');allOpt.className='mob-menu-item';
+  allOpt.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><span>${tx('allCats')}</span>${filterCat==='all'?'<span class="mob-menu-check">✓</span>':''}`;
+  allOpt.onclick=()=>{setCatFilter('all');closeMobMenu();};list.appendChild(allOpt);
+  const catKeys=Object.keys(CATS).filter(k=>k!=='other');
+  if(CATS['other']) catKeys.push('other');
+  catKeys.forEach(cat=>{
+    const opt=document.createElement('div');opt.className='mob-menu-item';
+    opt.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:${catColor(cat)};flex-shrink:0"></div><span>${catLabel(cat)}</span>${filterCat===cat?'<span class="mob-menu-check">✓</span>':''}`;
+    opt.onclick=()=>{setCatFilter(cat);closeMobMenu();};list.appendChild(opt);
+  });
+}
 
 /* ══ STATS ══ */
 function renderStats(){
@@ -349,7 +559,9 @@ function buildCatFilterDropdown(){
   allOpt.className=`cat-filter-opt${filterCat==='all'?' on':''}`;
   allOpt.innerHTML=`<div class="cat-filter-dot" style="background:var(--blue)"></div>${tx('allCats')}`;
   allOpt.onclick=()=>setCatFilter('all');dd.appendChild(allOpt);
-  Object.keys(CATS).forEach(cat=>{
+  const catKeys=Object.keys(CATS).filter(k=>k!=='other');
+  if(CATS['other']) catKeys.push('other');
+  catKeys.forEach(cat=>{
     const opt=document.createElement('div');opt.className=`cat-filter-opt${filterCat===cat?' on':''}`;
     opt.innerHTML=`<div class="cat-filter-dot" style="background:${catColor(cat)}"></div>${catLabel(cat)}`;
     opt.onclick=()=>setCatFilter(cat);dd.appendChild(opt);
@@ -365,7 +577,9 @@ function setCatFilter(cat){filterCat=cat;buildCatFilterDropdown();document.getEl
 /* ══ LEGEND ══ */
 function buildLegend(){
   const w=document.getElementById('legendWrap');w.innerHTML='';
-  Object.keys(CATS).forEach(cat=>{
+  const catKeys=Object.keys(CATS).filter(k=>k!=='other');
+  if(CATS['other']) catKeys.push('other');
+  catKeys.forEach(cat=>{
     const it=document.createElement('div');it.className='leg-item';
     it.innerHTML=`<div class="leg-dot" style="background:${catColor(cat)}"></div>${catLabel(cat)}`;
     w.appendChild(it);
@@ -425,13 +639,14 @@ async function deleteCategory(cat){
 
 /* ══ FILTERS ══ */
 function applyFilters(){
-  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const q=(document.getElementById('searchInput').value||document.getElementById('mobSearchInput')?.value||'').trim().toLowerCase();
   document.querySelectorAll('.event-pill').forEach(pill=>{
     const ev=EVENTS.find(e=>e.id===pill.dataset.evid);if(!ev)return;
     const catOk=filterCat==='all'||ev.category===filterCat;
     const qOk=!q||(ev.title.toLowerCase().includes(q)||(ev.note||'').toLowerCase().includes(q));
-    pill.style.display=(catOk&&qOk)?'':'none';
-    pill.classList.toggle('ev-hl',catOk&&qOk&&!!q);
+    const isOverflow=pill.dataset.overflow==='1';
+    pill.style.display=(catOk&&qOk&&pill.dataset.overflow!=='1')?'':'none';
+    pill.classList.toggle('ev-hl',catOk&&qOk&&!!q&&pill.dataset.overflow!=='1');
   });
   // update "+N more" buttons visibility
   document.querySelectorAll('.cal-cell:not(.empty)').forEach(cell=>{
@@ -441,13 +656,196 @@ function applyFilters(){
     const moreBtn=cell.querySelector('.ev-more');
     if(moreBtn){
       const ds=cell.dataset.date;
-      const hidden=allPills.filter(p=>p.dataset.overflow==='1'&&p.style.display!=='none').length;
+      const maxV=window.innerWidth<=680?2:MAX_VISIBLE;
+      const visibleNonOverflow=allPills.filter(p=>p.dataset.overflow!=='1'&&p.style.display!=='none').length;
+      const totalHidden=allPills.filter(p=>p.dataset.overflow==='1').length;
+      const hidden=Math.max(0, totalHidden + Math.max(0, visibleNonOverflow - maxV));
       moreBtn.style.display=hidden>0?'':'none';
       moreBtn.textContent=tx('moreEventsLabel',hidden);
     }
     cell.classList.toggle('no-match',visible.length===0&&!!q);
     });
     if(currentView==='agenda')renderAgenda(q);
+}
+
+/* ══ SEARCH DROPDOWN ══ */
+let _searchDebounce;
+function onSearchInput(val){
+  clearTimeout(_searchDebounce);
+  // sync mobile ↔ desktop
+  const desk=document.getElementById('searchInput');
+  const mob=document.getElementById('mobSearchInput');
+  if(desk&&desk.value!==val) desk.value=val;
+  if(mob&&mob.value!==val) mob.value=val;
+
+  applyFilters();
+
+  _searchDebounce=setTimeout(()=>{
+    const q=val.trim().toLowerCase();
+    if(q.length<3){closeSearchDropdown();return;}
+    showSearchDropdown(q);
+  },300);
+}
+
+function showSearchDropdown(q){
+  const isMob=window.innerWidth<=680;
+  const dd=document.getElementById(isMob?'mobSearchDropdown':'searchDropdown');if(!dd)return;
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const dayNames=lang==='en'
+    ?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+    :['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+  // cari di semua bulan
+  const results=EVENTS.filter(e=>
+    e.title.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q)
+  ).sort((a,b)=>a.date.localeCompare(b.date));
+
+  if(!results.length){
+    dd.innerHTML=`<div class="sd-empty">Tidak ada hasil untuk "<strong>${q}</strong>"</div>`;
+    dd.style.display='block';return;
+  }
+
+  const preview=results.slice(0,5);
+  const hasMore=results.length>5;
+
+  let html='';
+  let lastMonth='';
+  preview.forEach(ev=>{
+    const month=ev.date.slice(0,7);
+    if(month!==lastMonth){
+      const [y,m]=month.split('-');
+      html+=`<div class="sd-month-sep">${MO[parseInt(m)-1]} ${y}</div>`;
+      lastMonth=month;
+    }
+    const d=new Date(ev.date+'T00:00:00');
+    const col=catColor(ev.category);
+    const dayStr=`${dayNames[d.getDay()]}, ${d.getDate()} ${MO[d.getMonth()].slice(0,3)}`;
+    html+=`<div class="sd-item" onclick="jumpToEvent('${ev.id}')">
+      <div class="sd-dot" style="background:${col}"></div>
+      <div class="sd-body">
+        <div class="sd-title">${highlightMatch(ev.title,q)}</div>
+        <div class="sd-meta">${dayStr} · ${catLabel(ev.category)}</div>
+      </div>
+    </div>`;
+  });
+
+  if(hasMore){
+    html+=`<div class="sd-show-all" onclick="showAllSearchResults('${q}')">
+      Tampilkan semua ${results.length} hasil →
+    </div>`;
+  }
+
+  dd.innerHTML=html;
+  dd.style.display='block';
+}
+
+function highlightMatch(text,q){
+  const i=text.toLowerCase().indexOf(q);
+  if(i===-1) return text;
+  return text.slice(0,i)+`<mark class="sd-hl">${text.slice(i,i+q.length)}</mark>`+text.slice(i+q.length);
+}
+
+function jumpToEvent(id){
+  const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+  const month=parseInt(ev.date.slice(5,7))-1;
+  closeSearchDropdown();
+  document.getElementById('searchInput').value='';
+  if(document.getElementById('mobSearchInput')) document.getElementById('mobSearchInput').value='';
+
+  // selalu pindah ke bulan event, render agenda normal, lalu scroll + highlight
+  switchMonth(month);
+  switchView('agenda');
+  renderAgenda();
+  setTimeout(()=>{
+    const agRow=document.querySelector(`[data-agid="${id}"]`);
+    const pill=document.querySelector(`[data-evid="${id}"]`);
+    const target=agRow||pill;
+    if(target){
+      target.scrollIntoView({behavior:'smooth',block:'center'});
+      target.classList.add('ev-jump-hl');
+      setTimeout(()=>target.classList.remove('ev-jump-hl'),2500);
+    }
+  },200);
+}
+
+function showAllSearchResults(q){
+  closeSearchDropdown();
+  document.getElementById('searchInput').value=q;
+  if(document.getElementById('mobSearchInput')) document.getElementById('mobSearchInput').value=q;
+  // switch ke agenda view, tampilkan semua bulan
+  switchView('agenda');
+  renderAgendaAllMonths(q);
+}
+
+function renderAgendaAllMonths(q){
+  const aw=document.getElementById('agendaWrap');if(!aw)return;
+  const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+  const isMobile=window.innerWidth<=680;
+  const DAYS_FULL=lang==='en'
+    ?(isMobile?['SUN','MON','TUE','WED','THU','FRI','SAT']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])
+    :(isMobile?['MIN','SEN','SEL','RAB','KAM','JUM','SAB']:['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']);
+
+  const results=EVENTS.filter(e=>
+    e.title.toLowerCase().includes(q.toLowerCase())||(e.note||'').toLowerCase().includes(q.toLowerCase())
+  ).sort((a,b)=>a.date.localeCompare(b.date));
+
+  if(!results.length){aw.innerHTML=`<div class="agenda-empty">Tidak ada hasil untuk "${q}".</div>`;return;}
+
+  // kelompok per bulan
+  const byMonth={};
+  results.forEach(ev=>{
+    const m=ev.date.slice(0,7);
+    if(!byMonth[m])byMonth[m]=[];
+    byMonth[m].push(ev);
+  });
+
+  let html=`<div class="agenda-search-banner">🔍 ${results.length} hasil untuk "<strong>${q}</strong>" <button class="agenda-search-clear" onclick="clearAllSearch()">✕ Hapus pencarian</button></div>`;
+
+  Object.keys(byMonth).sort().forEach(ym=>{
+    const [y,m]=ym.split('-');
+    const monthEvs=byMonth[ym];
+    html+=`<div class="agenda-month-block">`;
+    html+=`<div class="agenda-month-hdr">${MO[parseInt(m)-1]} ${y} <span>${monthEvs.length} hasil</span></div>`;
+    const groups={};
+    monthEvs.forEach(ev=>{if(!groups[ev.date])groups[ev.date]=[];groups[ev.date].push(ev);});
+    Object.keys(groups).sort().forEach(date=>{
+      const dayEvs=groups[date];
+      const d=new Date(date+'T00:00:00');
+      const dow=DAYS_FULL[d.getDay()];
+      html+=`<div class="ag-day-group">`;
+      html+=`<div class="ag-date-col"><span class="ag-date-num">${d.getDate()}</span><span class="ag-date-day">${dow}</span></div>`;
+      html+=`<div class="ag-events-col">`;
+      dayEvs.forEach((ev,idx)=>{
+        const col=catColor(ev.category);
+        html+=`<div class="ag-event-row${idx>0?' ag-event-row--border':''}" data-agid="${ev.id}" onclick="jumpToEvent('${ev.id}')">
+          <div class="ag-event-main">
+            <div class="ag-cat-dot" style="background:${col}"></div>
+            <div class="ag-event-body">
+              <div class="ag-title">${highlightMatch(ev.title,q)}</div>
+              ${ev.time?`<div class="ag-time">⏰ ${ev.time}</div>`:''}
+            </div>
+          </div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    });
+    html+=`</div>`;
+  });
+
+  aw.innerHTML=html;
+}
+
+function clearAllSearch(){
+  document.getElementById('searchInput').value='';
+  if(document.getElementById('mobSearchInput')) document.getElementById('mobSearchInput').value='';
+  closeSearchDropdown();
+  applyFilters();
+  renderAgenda();
+}
+
+function closeSearchDropdown(){
+  const dd=document.getElementById('searchDropdown');if(dd)dd.style.display='none';
+  const ddm=document.getElementById('mobSearchDropdown');if(ddm)ddm.style.display='none';
 }
 
 /* ══ RENDER ══ */
@@ -459,17 +857,24 @@ function switchView(v){
   currentView=v;
   document.getElementById('btnGrid').classList.toggle('on',v==='grid');
   document.getElementById('btnAgenda').classList.toggle('on',v==='agenda');
+  const mg=document.getElementById('btnGridMob');if(mg)mg.classList.toggle('on',v==='grid');
+  const ma=document.getElementById('btnAgendaMob');if(ma)ma.classList.toggle('on',v==='agenda');
   document.getElementById('calSection').style.display=v==='grid'?'':'none';
   const aw=document.getElementById('agendaWrap');
   if(v==='agenda'){aw.classList.add('on');renderAgenda();}
   else{aw.classList.remove('on');}
+  const cg=document.getElementById('menuCheckGrid');if(cg)cg.textContent=v==='grid'?'✓':'';
+  const ca=document.getElementById('menuCheckAgenda');if(ca)ca.textContent=v==='agenda'?'✓':'';
 }
 
 function renderAgenda(q){
   q=q||'';
   const aw=document.getElementById('agendaWrap');
   if(!aw)return;
-  const DAYS_FULL=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const isMobile=window.innerWidth<=680;
+  const DAYS_FULL=lang==='en'
+    ?(isMobile?['SUN','MON','TUE','WED','THU','FRI','SAT']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])
+    :(isMobile?['MIN','SEN','SEL','RAB','KAM','JUM','SAB']:['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']);
   const monthStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
   let evs=EVENTS.filter(e=>e.date.startsWith(monthStr));
   if(filterCat!=='all') evs=evs.filter(e=>e.category===filterCat);
@@ -478,40 +883,63 @@ function renderAgenda(q){
   evs.sort((a,b)=>a.date.localeCompare(b.date));
   const todayStr=new Date().toISOString().slice(0,10);
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
+
+  // Kelompokkan event per tanggal
+  const groups={};
+  evs.forEach(ev=>{
+    if(!groups[ev.date]) groups[ev.date]=[];
+    groups[ev.date].push(ev);
+  });
+  // Pastikan hari ini selalu muncul jika masih di bulan yang sama
+  const todayInThisMonth=todayStr.startsWith(monthStr);
+  if(todayInThisMonth&&!groups[todayStr]) groups[todayStr]=[];
+
   let html=`<div class="agenda-month-block">`;
   html+=`<div class="agenda-month-hdr">${MO[currentMonth]} ${YEAR} <span>${evs.length} event</span></div>`;
-  html+=`<table class="agenda-table">`;
-  evs.forEach(ev=>{
-    const d=new Date(ev.date+'T00:00:00');
+
+  Object.keys(groups).sort().forEach(date=>{
+    const dayEvs=groups[date];
+    const d=new Date(date+'T00:00:00');
     const dow=DAYS_FULL[d.getDay()];
-    const isToday=ev.date===todayStr;
-    const col=catColor(ev.category);
-    const lbl=catLabel(ev.category);
-    const ef=getExtraField(ev.category);
-    const extraVal=ef&&ev.extra?ev.extra[ef.key]:'';
-    html+=`<tr onclick="openDetail(EVENTS.find(e=>e.id==='${ev.id}'))" class="agenda-row">
-      <td class="ag-date${isToday?' today-row':''}">
-        <span class="ag-date-num">${d.getDate()}</span>
-        <span class="ag-date-day">${dow}</span>
-      </td>
-      <td class="ag-cat">
-        <span class="ag-cat-badge" style="background:${col}22;color:${col};border:1px solid ${col}44">
-          <span style="width:6px;height:6px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0"></span>
-          ${lbl}
-        </span>
-      </td>
-      <td>
-        <div class="ag-title">${ev.title}</div>
-        ${ev.time?`<div class="ag-time">⏰ ${ev.time}</div>`:''}
-        ${extraVal?`<div class="ag-extra">📌 ${ef.label}: <span>${extraVal}</span></div>`:''}
-        ${ev.note?`<div class="ag-note">${ev.note.substring(0,80)}${ev.note.length>80?'…':''}</div>`:''}
-      </td>
-      <td class="ag-actions">
-        ${isAdmin?`<button class="ag-del-btn" onclick="event.stopPropagation();confirmDel('${ev.id}',event)">✕</button>`:''}
-      </td>
-    </tr>`;
+    const isToday=date===todayStr;
+
+    html+=`<div class="ag-day-group"${isToday?' id="agTodayRow"':''}>`;
+    // Kolom tanggal — hanya muncul sekali per grup
+    html+=`<div class="ag-date-col${isToday?' today-row':''}">
+      <span class="ag-date-num${isToday?' ag-today-circle':''}">${d.getDate()}</span>
+      <span class="ag-date-day">${dow}</span>
+    </div>`;
+    // Kolom event — semua event hari itu
+    html+=`<div class="ag-events-col">`;
+    if(dayEvs.length===0){
+      html+=`<div class="ag-empty-today">${lang==='en'?'No events scheduled for today — enjoy your day! 🌿':'Tidak ada kegiatan hari ini — nikmati harimu! 🌿'}</div>`;
+    }
+    dayEvs.forEach((ev,idx)=>{
+      const col=catColor(ev.category);
+      const lbl=catLabel(ev.category);
+      const ef=getExtraField(ev.category);
+      const extraVal=ef&&ev.extra?ev.extra[ef.key]:'';
+      html+=`<div class="ag-event-row${idx>0?' ag-event-row--border':''}" data-agid="${ev.id}" onclick="openDetail(EVENTS.find(e=>e.id==='${ev.id}'))">
+        <div class="ag-event-main">
+          <div class="ag-cat-dot" style="background:${col}"></div>
+          <div class="ag-event-body">
+            <div class="ag-title">${ev.title}</div>
+            ${ev.time?`<div class="ag-time">⏰ ${ev.time}</div>`:''}
+            ${extraVal?`<div class="ag-extra">📌 ${ef.label}: <span>${extraVal}</span></div>`:''}
+            ${ev.note?`<div class="ag-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
+          </div>
+        </div>
+        <div class="ag-admin-btns">
+          ${ev.note&&/(https?:\/\/[^\s<]+)/.test(ev.note)?`<button class="ag-link-btn" title="Buka link" onclick="event.stopPropagation();window.open('${ev.note.match(/(https?:\/\/[^\s<]+)/)[1]}','_blank')">🔗</button>`:''}
+          ${isAdmin?`<button class="ag-edit-btn" onclick="event.stopPropagation();closeModal('detailModal');openEditModal(EVENTS.find(e=>e.id==='${ev.id}'))">✎</button>`:''}
+          ${isAdmin?`<button class="ag-del-btn" onclick="event.stopPropagation();confirmDel('${ev.id}',event)">✕</button>`:''}
+        </div>
+      </div>`;
+    });
+    html+=`</div></div>`;
   });
-  html+=`</table></div>`;
+
+  html+=`</div>`;
   aw.innerHTML=html;
 }
 
@@ -542,15 +970,17 @@ function buildMonth(year,month){
     const num=document.createElement('div');num.className='cal-num';num.textContent=d;cell.appendChild(num);
     if(isAdmin){const ab=document.createElement('button');ab.className='cal-add';ab.textContent='+';ab.onclick=e=>{e.stopPropagation();openAddModal(ds);};cell.appendChild(ab);}
     const dayEvs=EVENTS.filter(ev=>ev.date===ds);
+    const maxV=window.innerWidth<=680?(dayEvs.length>3?2:dayEvs.length):MAX_VISIBLE; 
     dayEvs.forEach((ev,idx)=>{
       const pill=makePill(ev);
-      if(idx>=MAX_VISIBLE){pill.dataset.overflow='1';pill.style.display='none';}
+      if(idx>=maxV){pill.dataset.overflow='1';pill.style.display='none';}
+      else{pill.dataset.overflow='0';}
       cell.appendChild(pill);
     });
     // "+N more" button
-    if(dayEvs.length>MAX_VISIBLE){
+    if(dayEvs.length>maxV){
       const more=document.createElement('button');more.className='ev-more';
-      const hidden=dayEvs.length-MAX_VISIBLE;
+      const hidden=dayEvs.length-maxV;
       more.textContent=tx('moreEventsLabel',hidden);
       more.onclick=()=>showDayPopup(ds,dayEvs);
       cell.appendChild(more);
@@ -597,7 +1027,6 @@ function makePill(ev){
   /* ===== HOVER PREVIEW ===== */
 
   pill.addEventListener('mouseenter', (e) => {
-    console.log("HOVER MASUK", ev.title);
     showPreview(e, ev);
   });
 
@@ -631,7 +1060,7 @@ function showDayPopup(ds,evs){
     item.onclick=()=>openDetail(ev);
     body.appendChild(item);
   });
-  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-ghost" onclick="closeModal('detailModal')">${tx('closeBtn')}</button>`;
+  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="margin-right:auto;background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">X Hapus</button>`:''} ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ Edit</button>`:''}`;
   openModal('detailModal');
 }
 
@@ -669,6 +1098,7 @@ function openAddModal(ds){
   document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
   document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
   document.getElementById('evNote').value='';
+  const fc=document.getElementById('evFeatured');if(fc)fc.checked=false;
   buildCatSelect();updateExtraField();openModal('eventModal');
 }
 
@@ -684,6 +1114,7 @@ function openEditModal(ev){
     const extraField=getExtraField(ev.category);
     const inp=document.getElementById('extraFieldInput');
     if(extraField&&inp&&ev.extra) inp.value=ev.extra[extraField.key]||'';
+    const fc=document.getElementById('evFeatured');if(fc)fc.checked=!!ev.featured;
   },30);
   openModal('eventModal');
 }
@@ -703,7 +1134,9 @@ function openDetail(ev){
     ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
-    <button class="btn btn-ghost" onclick="closeModal('detailModal')">${tx('closeBtn')}</button>
+    <button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>
+    ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${window._detEv&&window._detEv.featured?'var(--gold)':'none'};border:1px solid ${window._detEv&&window._detEv.featured?'var(--gold)':'var(--border2)'};color:${window._detEv&&window._detEv.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${window._detEv&&window._detEv.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
+    ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
     ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
 }
@@ -721,16 +1154,17 @@ async function saveEvent(){
     const extraField=getExtraField(cat);
     const extraVal=document.getElementById('extraFieldInput')?.value.trim()||'';
     const extra=extraField&&extraVal?{[extraField.key]:extraVal}:{};
+    const featured=!!(document.getElementById('evFeatured')?.checked);
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
-      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra},{id:editingId});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra};
+      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured},{id:editingId});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured};
       pushUndo({type:'edit',prev});
     }else{
       const id='ev_'+Date.now();
-      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra});
-      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra});
-      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra}});
+      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured});
+      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured});
+      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured}});
     }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
@@ -780,15 +1214,19 @@ async function doLogin(){
     btn.disabled=false;btn.textContent=tx('loginBtn2');return;
   }
   adminToken=data.token||null;
+  localStorage.setItem('naposo_token', adminToken);
+  localStorage.setItem('naposo_admin_name', name);
   isAdmin=true;resetUndo();document.body.classList.add('admin-mode');
   document.getElementById('adminBar').classList.add('on');
-  ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.add('on'));
+  setAdminBarTxt(name);
+  ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
   document.getElementById('loginBtn').textContent=`✓ ${name}`;document.getElementById('loginBtn').disabled=true;
   document.getElementById('loginBtnMobile').textContent=`✓ ${name}`;document.getElementById('loginBtnMobile').disabled=true;
   document.getElementById('addEventBtn').style.display='';
+  const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
   btn.disabled=false;btn.textContent=tx('loginBtn2');
-  setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();
+  setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();syncUndoBtn();
   showToast(`${tx('welcome')}, ${name}! ${tx('modeActive')}`,'ok');
 }
 
@@ -812,14 +1250,19 @@ function pasteEvent(){
 
 function doLogout(){
   adminToken=null;
+  localStorage.removeItem('naposo_token');
+  localStorage.removeItem('naposo_admin_name');
   isAdmin=false;document.body.classList.remove('admin-mode');
   document.getElementById('adminBar').classList.remove('on');
-  ['loginBadge','loginBadgeMobile'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
   document.getElementById('loginBtn').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtn').disabled=false;
   document.getElementById('loginBtnMobile').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
   document.getElementById('addEventBtn').style.display='none';
-  renderCalendar();showToast(tx('logoutBtn'));
+  const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='none';
+  renderCalendar();showToast('Logout berhasil.');
+  const amr2=document.getElementById('adminMobileRow');if(amr2)amr2.style.display='none';
+  const lbm2=document.getElementById('loginBtnMobile');if(lbm2)lbm2.style.display='';
 }
 
 /* ══ PASSWORD TOGGLE ══ */
@@ -832,8 +1275,10 @@ function togglePw(id,btn){
 /* ══ SYNC BADGE ══ */
 function setSyncBadge(type,txt){
   const b=document.getElementById('syncBadge'),d=document.getElementById('syncDot');
-  b.className=`sync-badge ${type}`;d.className=`sync-dot${type==='load'?' pulse':''}`;
-  document.getElementById('syncTxt').textContent=txt;
+  if(b) b.className=`sync-dot-only ${type}`;
+  if(d) d.className=`sync-dot${type==='load'?' pulse':''}`;
+  const t=document.getElementById('syncTxt');
+  if(t) t.textContent=type==='ok'?'':txt;
 }
 
 /* ══ TOAST ══ */
@@ -1142,17 +1587,58 @@ function hidePreview(){
   previewBox.style.display = 'none';
 }
 
-/* ── Auto-detect URL di teks → <a> ── */
-function linkify(text){
-  if(!text) return '';
-  return text.replace(/(https?:\/\/[^\s<]+)/g, url =>
-    `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all;" onclick="event.stopPropagation()">${url}</a>`
-  );
-}
-
 /* ── Cek apakah teks mengandung URL ── */
 function hasLink(text){
   return /https?:\/\/[^\s<]+/.test(text||'');
+}
+
+/* ══ Toggle Featured ══ */
+async function toggleFeatured(ev){
+  if(!ev)return;
+  const newVal=!ev.featured;
+  try{
+    await dbWrite('events','UPDATE',{featured:newVal},{id:ev.id});
+    const i=EVENTS.findIndex(e=>e.id===ev.id);
+    if(i!==-1){EVENTS[i]={...EVENTS[i],featured:newVal};window._detEv=EVENTS[i];}
+    showToast(newVal?'Event ditampilkan di beranda ★':'Event dihapus dari beranda','ok');
+    openDetail(EVENTS.find(e=>e.id===ev.id));
+  }catch(e){showToast('Gagal update: '+e.message,'err');}
+}
+
+/* ══ Share Event ══ */
+function shareEvent(ev){
+  if(!ev)return;
+  const d=new Date(ev.date+"T00:00:00");
+  const MO=lang==="en"?MONTHS_EN:MONTHS_ID;
+  const dateStr=d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear();
+  const lines=["📅 "+ev.title,"🗓 "+dateStr];
+  if(ev.time) lines.push("⏰ "+ev.time);
+  if(ev.note) lines.push("📝 "+ev.note);
+  lines.push("","— Kalender Naposo HKBP Ujung Menteng");
+  const text=lines.join("\n");
+  if(navigator.share){navigator.share({title:ev.title,text}).catch(()=>{});}
+  else{navigator.clipboard.writeText(text).then(()=>showToast("Info event disalin ke clipboard!","ok")).catch(()=>showToast("Gagal menyalin.","err"));}
+}
+
+/* ══ Keyboard Shortcut Help ══ */
+function toggleShortcutHelp(){
+  let el=document.getElementById('shortcutHelp');
+  if(el){el.remove();return;}
+  el=document.createElement('div');
+  el.id='shortcutHelp';
+  const rows=[['G','Tampilan Grid'],['A','Tampilan Agenda'],['T','Hari ini'],
+    ['←','Bulan sebelumnya'],['→','Bulan berikutnya'],
+    ['/','Fokus ke search'],['Ctrl+Z','Undo (admin)'],['Esc','Tutup modal'],['?','Panduan ini']];
+  const rowsHtml=rows.map(r=>`<div class="shortcut-row"><kbd>${r[0]}</kbd><span>${r[1]}</span></div>`).join('');
+  const closeBtn=`<button onclick="document.getElementById('shortcutHelp').remove()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem">×</button>`;
+  el.innerHTML=`<div class="shortcut-panel"><div class="shortcut-hdr"><strong>⌨️ Keyboard Shortcuts</strong>${closeBtn}</div><div class="shortcut-grid">${rowsHtml}</div></div>`;
+  el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;display:flex;align-items:center;justify-content:center';
+  el.onclick=e=>{if(e.target===el)el.remove();};
+  document.body.appendChild(el);
+}
+function closeAllModals(){
+  ["eventModal","loginModal","detailModal","exportModal"].forEach(id=>closeModal(id));
+  closeSearchDropdown();closeDeskMonthPicker();
 }
 
 /* ── Auto-detect URL di teks → <a> ── */
