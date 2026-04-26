@@ -25,32 +25,51 @@ const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza',
   
 /* ══ CATEGORIES ══ */
 const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
+// Kategori bawaan — warna & label ini SELALU dipakai, tidak bisa di-override dari Supabase
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
-const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
-const DEF_LBL_EN={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const DEF_LBL_ID={koor:'Koor / Pelayanan',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const DEF_LBL_EN={koor:'Koor / Pelayanan',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+// CAT_EXTRA: map dari label kategori ke array field ekstra
+// Setiap field: {key, label, type} — type: 'text'|'url'|'money'
 const CAT_EXTRA={
-  'Koor':               {key:'judul_lagu',     label:'Judul Lagu'},
-  'Ibadah / Pelayanan': {key:'tema_acara',      label:'Tema Acara'},
-  'Olahraga':           {key:'jenis_olahraga',  label:'Jenis Olahraga'},
+  'Koor':               [{key:'judul_lagu',      label:'Judul Lagu',         type:'text'},
+                         {key:'link_guide',       label:'Link Guide',         type:'url'}],
+  'Ibadah / Pelayanan': [{key:'tema_acara',       label:'Tema Acara',         type:'text'}],
+  'Latihan':            [{key:'judul_lagu',       label:'Judul Lagu',         type:'text'},
+                         {key:'link_guide',       label:'Link Guide',         type:'url'}],
+  'Reversement':        [{key:'tema_reversement', label:'Tema Reversement',   type:'text'}],
+  'Olahraga':           [{key:'jenis_olahraga',   label:'Jenis Olahraga',     type:'text'},
+                         {key:'tempat',           label:'Tempat / Lapangan',  type:'text'},
+                         {key:'uang_patungan',    label:'Uang Patungan',      type:'money'}],
 };
-function getExtraField(catId){
+// Kembalikan array field untuk kategori tsb (berdasarkan label ID)
+function getExtraFields(catId){
   const lbl=CNAMES_ID[catId]||catId;
-  return CAT_EXTRA[lbl]||null;
+  return CAT_EXTRA[lbl]||[];
+}
+// Legacy helper — kembalikan field pertama (untuk backward compat tooltip & export lama)
+function getExtraField(catId){
+  const fields=getExtraFields(catId);
+  return fields.length?fields[0]:null;
 }
 function updateExtraField(){
   const cat=document.getElementById('evCat')?.value;
-  const wrap=document.getElementById('extraFieldWrap');
-  const lbl=document.getElementById('extraFieldLabel');
-  const inp=document.getElementById('extraFieldInput');
-  if(!wrap||!lbl||!inp) return;
-  const extra=getExtraField(cat);
-  if(extra){
-    lbl.textContent=extra.label;
-    wrap.style.display='block';
-  } else {
-    wrap.style.display='none';
-    inp.value='';
+  const container=document.getElementById('extraFieldWrap');
+  if(!container) return;
+  const fields=getExtraFields(cat);
+  if(!fields.length){
+    container.style.display='none';
+    container.innerHTML='';
+    return;
   }
+  container.style.display='block';
+  container.innerHTML=fields.map(f=>`
+    <div class="form-g extra-field-item" style="margin-bottom:6px">
+      <label class="extra-field-label">${f.label}</label>
+      <input type="text" class="extra-field-input" data-key="${f.key}"
+        placeholder="${f.type==='url'?'https://…':f.type==='money'?'contoh: Rp 20.000':''}"
+        style="width:100%"/>
+    </div>`).join('');
 }
 
 let CATS={...DEF_COLORS},CNAMES_ID={...DEF_LBL_ID},CNAMES_EN={...DEF_LBL_EN};
@@ -60,12 +79,14 @@ async function loadCatsFromDB(){
   try{
     const rows=await dbGet('categories','select=*&order=sort_order.asc');
     if(rows&&rows.length){
-      // Reset CATS dari Supabase — bukan merge dengan hardcode
-      Object.keys(CATS).forEach(k=>{delete CATS[k];});
-      Object.keys(CNAMES_ID).forEach(k=>{delete CNAMES_ID[k];});
-      Object.keys(CNAMES_EN).forEach(k=>{delete CNAMES_EN[k];});
-      // Sort: lainnya selalu terakhir
-      const sorted=[...rows.filter(r=>r.id!=='lainnya'),...rows.filter(r=>r.id==='lainnya')];
+      // Reset hanya custom cats — BUILT_IN selalu dari DEF_* dan tidak bisa di-override
+      Object.keys(CATS).filter(k=>!BUILT_IN.includes(k)).forEach(k=>{delete CATS[k];});
+      Object.keys(CNAMES_ID).filter(k=>!BUILT_IN.includes(k)).forEach(k=>{delete CNAMES_ID[k];});
+      Object.keys(CNAMES_EN).filter(k=>!BUILT_IN.includes(k)).forEach(k=>{delete CNAMES_EN[k];});
+      // Restore BUILT_IN ke nilai default
+      BUILT_IN.forEach(k=>{CATS[k]=DEF_COLORS[k];CNAMES_ID[k]=DEF_LBL_ID[k];CNAMES_EN[k]=DEF_LBL_EN[k];});
+      // Load custom cats dari Supabase (skip BUILT_IN)
+      const sorted=[...rows.filter(r=>!BUILT_IN.includes(r.id)&&r.id!=='lainnya'),...rows.filter(r=>r.id==='lainnya'&&!BUILT_IN.includes(r.id))];
       sorted.forEach(r=>{CATS[r.id]=r.color;CNAMES_ID[r.id]=r.label_id;CNAMES_EN[r.id]=r.label_en;});
     }
   }catch(e){console.warn('Gagal load kategori:',e.message);}
@@ -87,10 +108,10 @@ async function updateCatInDB(id,fields){
 const T={
   id:{hdrSub:'Kalender Pelayanan 2026',loginBadgeView:'Lihat saja',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Event',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
-    lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
+    lbCat:'Kategori',lbNote:'Catatan (opsional)',lbPoster:'Link Poster (Google Drive)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
     lbPw:'Password',loginErr:'Password salah atau nama tidak dipilih.',
-    loginBtn2:'Masuk',detailTitle:'Detail Event',closeBtn:'Tutup',editBtn:'Edit',deleteBtn:'Hapus',
+    loginBtn2:'Masuk',detailTitle:'Detail Event',closeBtn:'Tutup',editBtn:'Ubah',deleteBtn:'Hapus',
     evModalAdd:'Tambah Event',evModalEdit:'Ubah Event',
     connecting:'Menghubungkan…',connected:'Terhubung',saving:'Menyimpan…',
     saved:'Tersimpan ✓',deleted:'Event dihapus.',saveFail:'Gagal menyimpan',delFail:'Gagal menghapus',
@@ -111,7 +132,7 @@ const T={
   },
   en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
-    lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
+    lbCat:'Category',lbNote:'Notes (optional)',lbPoster:'Poster Link (Google Drive)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
     lbPw:'Password',loginErr:'Wrong password or name not selected.',
     loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',deleteBtn:'Delete',
@@ -333,7 +354,6 @@ async function init(){
       ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=savedName+' (Pengurus)';});
       document.getElementById('loginBtn').textContent=`✓ ${savedName}`;document.getElementById('loginBtn').disabled=true;
       document.getElementById('loginBtnMobile').textContent=`✓ ${savedName}`;document.getElementById('loginBtnMobile').disabled=true;
-      document.getElementById('addEventBtn').style.display='';
       const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
       setSyncBadge('ok',tx('connected'));
       renderCalendar();
@@ -383,7 +403,7 @@ function applyLangUI(){
   const langBtn=document.getElementById('langToggleBtn');if(langBtn)langBtn.textContent=isEn?'ID':'EN';
   const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',
     addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
-    lbCat:'lbCat',lbNote:'lbNote',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
+    lbCat:'lbCat',lbNote:'lbNote',lbPoster:'lbPoster',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
     loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
     loginBtn2:'loginBtn2',detailTitle:'detailTitle',cancelBtn2:'cancelBtn',
     catMgrBtn:'catMgrBtn',footerVisitLbl:'footerVisit',
@@ -917,15 +937,15 @@ function renderAgenda(q){
     dayEvs.forEach((ev,idx)=>{
       const col=catColor(ev.category);
       const lbl=catLabel(ev.category);
-      const ef=getExtraField(ev.category);
-      const extraVal=ef&&ev.extra?ev.extra[ef.key]:'';
+      const fields=getExtraFields(ev.category);
+      const extraHtml=fields.length&&ev.extra?fields.map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="ag-extra">📌 ${f.label}: <span>${disp}</span></div>`;}).join(''):'';
       html+=`<div class="ag-event-row${idx>0?' ag-event-row--border':''}" data-agid="${ev.id}" onclick="openDetail(EVENTS.find(e=>e.id==='${ev.id}'))">
         <div class="ag-event-main">
           <div class="ag-cat-dot" style="background:${col}"></div>
           <div class="ag-event-body">
             <div class="ag-title">${ev.title}</div>
             ${ev.time?`<div class="ag-time">⏰ ${ev.time}</div>`:''}
-            ${extraVal?`<div class="ag-extra">📌 ${ef.label}: <span>${extraVal}</span></div>`:''}
+            ${extraHtml}
             ${ev.note?`<div class="ag-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
           </div>
         </div>
@@ -1060,7 +1080,7 @@ function showDayPopup(ds,evs){
     item.onclick=()=>openDetail(ev);
     body.appendChild(item);
   });
-  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="margin-right:auto;background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">X Hapus</button>`:''} ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ Edit</button>`:''}`;
+  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="margin-right:auto;background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">X Hapus</button>`:''} ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
 }
 
@@ -1095,6 +1115,7 @@ document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=
 
 function openAddModal(ds){
   editingId=null;document.getElementById('evModalTitle').textContent=tx('evModalAdd');
+  const posterClr=document.getElementById('evPoster');if(posterClr)posterClr.value='';
   document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
   document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
   document.getElementById('evNote').value='';
@@ -1104,6 +1125,7 @@ function openAddModal(ds){
 
 function openEditModal(ev){
   editingId=ev.id;document.getElementById('evModalTitle').textContent=tx('evModalEdit');
+  const posterFld=document.getElementById('evPoster');if(posterFld)posterFld.value=ev.poster_url||'';
   document.getElementById('evDate').value=ev.date;document.getElementById('evTitle').value=ev.title;
   const ts=(ev.time||'').split('–');
   document.getElementById('evStart').value=ts[0]||'';document.getElementById('evEnd').value=ts[1]||'';
@@ -1111,9 +1133,13 @@ function openEditModal(ev){
   buildCatSelect();document.getElementById('evCat').value=ev.category||'other';
   updateExtraField();
   setTimeout(()=>{
-    const extraField=getExtraField(ev.category);
-    const inp=document.getElementById('extraFieldInput');
-    if(extraField&&inp&&ev.extra) inp.value=ev.extra[extraField.key]||'';
+    const fields=getExtraFields(ev.category);
+    if(fields.length&&ev.extra){
+      document.querySelectorAll('#extraFieldWrap .extra-field-input').forEach(inp=>{
+        const key=inp.dataset.key;
+        if(key&&ev.extra[key]) inp.value=ev.extra[key];
+      });
+    }
     const fc=document.getElementById('evFeatured');if(fc)fc.checked=!!ev.featured;
   },30);
   openModal('eventModal');
@@ -1130,41 +1156,60 @@ function openDetail(ev){
     <div class="det-title">${ev.title}</div>
     ${ev.time?`<div class="det-time">⏰ ${ev.time}</div>`:''}
     ${ev.link?`<div class="det-link"><a href="${ev.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${ev.link}</a></div>`:''}
-    ${(()=>{const ef=getExtraField(ev.category);const ev2=ev;const val=ef&&ev2.extra?ev2.extra[ef.key]:'';return val?`<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${ef.label}:</span> <span style="font-size:.82rem;font-weight:600">${val}</span></div>`:''})()}
+    ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';return fields.map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
     ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
     <button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>
     ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${window._detEv&&window._detEv.featured?'var(--gold)':'none'};border:1px solid ${window._detEv&&window._detEv.featured?'var(--gold)':'var(--border2)'};color:${window._detEv&&window._detEv.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${window._detEv&&window._detEv.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
     ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
-    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">${tx('editBtn')}</button>`:''}`;
+    ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
 }
 
 /* ══ CRUD ══ */
+
+/* ══ POSTER HELPER ══ */
+function driveToThumbnail(url){
+  if(!url)return '';
+  // format: https://drive.google.com/file/d/FILE_ID/view
+  const m=url.match(/\/file\/d\/([^/?\s]+)/);
+  if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  // already a direct/thumbnail URL
+  return url;
+}
+
 async function saveEvent(){
   const date=document.getElementById('evDate').value,title=document.getElementById('evTitle').value.trim();
   const tS=document.getElementById('evStart').value,tE=document.getElementById('evEnd').value;
   const cat=document.getElementById('evCat').value,note=document.getElementById('evNote').value.trim();
   const link='';
+  const rawPoster=document.getElementById('evPoster')?.value.trim()||'';
+  const poster_url=driveToThumbnail(rawPoster);
   if(!date||!title){showToast(tx('fieldReq'),'err');return;}
   const time=tS?(tE?`${tS}–${tE}`:tS):'';
   const btn=document.getElementById('evSaveBtn');btn.disabled=true;btn.textContent=tx('saving');setSyncBadge('load',tx('saving'));
   try{
-    const extraField=getExtraField(cat);
-    const extraVal=document.getElementById('extraFieldInput')?.value.trim()||'';
-    const extra=extraField&&extraVal?{[extraField.key]:extraVal}:{};
+    const fields=getExtraFields(cat);
+    const extra={};
+    if(fields.length){
+      document.querySelectorAll('#extraFieldWrap .extra-field-input').forEach(inp=>{
+        const key=inp.dataset.key;
+        const val=inp.value.trim();
+        if(key&&val) extra[key]=val;
+      });
+    }
     const featured=!!(document.getElementById('evFeatured')?.checked);
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
-      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured},{id:editingId});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured};
+      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured,poster_url},{id:editingId});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured,poster_url};
       pushUndo({type:'edit',prev});
     }else{
       const id='ev_'+Date.now();
-      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured});
-      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured});
-      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured}});
+      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured,poster_url});
+      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured,poster_url});
+      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured,poster_url}});
     }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
@@ -1223,7 +1268,6 @@ async function doLogin(){
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
   document.getElementById('loginBtn').textContent=`✓ ${name}`;document.getElementById('loginBtn').disabled=true;
   document.getElementById('loginBtnMobile').textContent=`✓ ${name}`;document.getElementById('loginBtnMobile').disabled=true;
-  document.getElementById('addEventBtn').style.display='';
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
   btn.disabled=false;btn.textContent=tx('loginBtn2');
   setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();syncUndoBtn();
@@ -1258,7 +1302,6 @@ function doLogout(){
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
   document.getElementById('loginBtn').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtn').disabled=false;
   document.getElementById('loginBtnMobile').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
-  document.getElementById('addEventBtn').style.display='none';
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='none';
   renderCalendar();showToast('Logout berhasil.');
   const amr2=document.getElementById('adminMobileRow');if(amr2)amr2.style.display='none';
@@ -1389,8 +1432,8 @@ function exportCSV(){
   const dayNames=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   evs.forEach(ev=>{
     const d=new Date(ev.date+'T00:00:00');
-    const ef=getExtraField(ev.category);
-    const extraVal=ef&&ev.extra?ev.extra[ef.key]||'':'';
+    const fields=getExtraFields(ev.category);
+    const extraVal=fields.length&&ev.extra?fields.filter(f=>ev.extra[f.key]).map(f=>`${f.label}: ${ev.extra[f.key]}`).join('; '):'';
     rows.push([ev.date, dayNames[d.getDay()], ev.title, ev.time||'', catLabel(ev.category), extraVal, ev.note||'']);
   });
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -1555,13 +1598,13 @@ function showPreview(e, ev){
   const dateStr = d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
   const noteRaw = ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : '';
   const noteFmt = linkify(noteRaw.replace(/\r\n|\r|\n/g,'<br>'));
-  const extraField=getExtraField(ev.category);
-  const extraVal=extraField&&ev.extra?ev.extra[extraField.key]:'';
+  const fields=getExtraFields(ev.category);
+  const extraHtml=fields.length&&ev.extra?fields.map(f=>{const val=ev.extra[f.key]||'';return val?`<div style="margin-top:3px;font-size:11px;color:rgba(255,255,255,.75)">📌 ${f.label}: ${val}</div>`:''}).join(''):'';
   previewBox.innerHTML = `
     <strong>${ev.title}</strong><br>
     📅 ${dateStr}<br>
     ${ev.time ? '⏰ '+ev.time+'<br>' : ''}
-    ${extraVal?`<div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,.75)">📌 ${extraField.label}: ${extraVal}</div>`:''}
+    ${extraHtml}
     ${noteFmt ? '<div style="margin-top:5px;border-top:1px solid rgba(255,255,255,.15);padding-top:5px">'+noteFmt+'</div>' : ''}
   `
   previewBox.style.display = 'block';
