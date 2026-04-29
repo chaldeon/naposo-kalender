@@ -6,6 +6,12 @@
   <title>Naposo HKBP Ujung Menteng</title>
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="css/index.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0a1f44"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Naposo HKBP"/>
+  <link rel="apple-touch-icon" href="img/icon-192.png"/>
 </head>
 <body>
 
@@ -20,7 +26,7 @@
     </svg>
     <div class="hdr-title">
       <h1 id="hdrTitle">Naposo HKBP Ujung Menteng</h1>
-      <p id="hdrSub">Beranda</p>
+
     </div>
   </a>
 
@@ -29,12 +35,12 @@
     <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
     <button class="icon-toggle" id="langToggleBtn" onclick="toggleLang()">EN</button>
     <div class="hdr-nav-sep"></div>
+    <a class="navbar-pill pill-home active-pill" href="index.html">🏠 <span id="navHome">Home</span></a>
     <a class="navbar-pill pill-home" href="kalender.html">📅 <span id="navKalender">Kalender</span></a>
-
+    <a class="navbar-pill pill-rev" href="reversement.html">✝️ <span id="navRev">Reversement</span></a>
     <!-- Login / Admin area -->
     <div class="admin-dd-anchor" id="adminDdAnchor">
       <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span></button>
-      <!-- Admin dropdown -->
       <div class="admin-dd" id="adminDd">
         <button class="admin-dd-item" onclick="openDocsModal()">📂 <span id="ddDocs">Kelola Dokumen</span></button>
         <button class="admin-dd-item" onclick="openAnnounceModal()">📢 <span id="ddAnnounce">Pengumuman</span></button>
@@ -61,10 +67,10 @@
   </div>
   <div class="hdr-menu-sep"></div>
   <div class="hdr-login-row">
+    <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="index.html">🏠 <span id="navHomeMob">Home</span></a>
     <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="kalender.html">📅 <span id="navKalenderMob">Kalender</span></a>
-    <!-- Sebelum login -->
+    <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="reversement.html">✝️ <span id="navRevMob">Reversement</span></a>
     <button class="btn btn-gold" style="width:100%;justify-content:center" id="loginBtnMobile" onclick="handleLoginBtnMobile()">🔐 <span id="loginBtnMobileTxt">Login</span></button>
-    <!-- Setelah login (admin) — hidden by default -->
     <div id="adminMobileRow" style="display:none;flex-direction:column;gap:6px;width:100%">
       <div style="font-size:.75rem;color:var(--gold-lt);text-align:center;padding:4px 0;font-weight:600">✔ <span id="adminMobileNameTxt"></span></div>
       <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)" onclick="openDocsModal();closeHamburger()">📂 <span id="mobDocs">Kelola Dokumen</span></button>
@@ -77,7 +83,7 @@
 
 <!-- ══ ADMIN BAR ══ -->
 <div class="admin-bar" id="adminBar">
-  <span class="admin-bar-txt" id="adminBarTxt">Mode Pengurus Aktif</span>
+  <span class="admin-bar-txt" id="adminBarTxt"></span>
 </div>
 
 <!-- ══ ANNOUNCEMENT BANNER ══ -->
@@ -87,10 +93,10 @@
     <div class="announce-title" id="announceTitleDisp">Pendaftaran Ulang Anggota</div>
     <div class="announce-sub" id="announceSubDisp">Klik untuk mengisi formulir pendaftaran ulang</div>
   </div>
-  <a class="announce-cta" id="announceCtaBtn" href="#" target="_blank" rel="noopener" id="announceLinkDisp">
+  <a class="announce-cta" id="announceCtaBtn" href="#" target="_blank" rel="noopener">
     <span id="announceCtaTxt">Daftar Sekarang →</span>
   </a>
-  <button class="announce-close" onclick="closeBanner()" id="announceCloseBtn">✕</button>
+  <button class="announce-close" onclick="closeBanner()" id="announceCloseBtn" aria-label="Tutup">✕</button>
 </div>
 
 <!-- ══ HERO ══ -->
@@ -111,11 +117,11 @@
     <h1 class="hero-title" id="heroTitle">Naposo HKBP Ujung Menteng</h1>
     <p class="hero-sub" id="heroSub">Selamat datang Naps! Temukan jadwal kegiatan dan informasi terkini.</p>
     <div class="hero-tags">
-      <span class="hero-tag" id="tagIbadah">Ibadah</span>
-      <span class="hero-tag" id="tagKoor">Koor</span>
-      <span class="hero-tag" id="tagPelayanan">Pelayanan</span>
-      <span class="hero-tag" id="tagKesehatian">Kesehatian</span>
-      <span class="hero-tag" id="tagDoa">Doa</span>
+      <span class="hero-tag" id="tagIbadah" data-tip="Ibadah Naposo & Pelayanan">Ibadah</span>
+      <span class="hero-tag" id="tagKoor" data-tip="Latihan & Penampilan Koor">Koor</span>
+      <span class="hero-tag" id="tagPelayanan" data-tip="Kegiatan Pelayanan Jemaat">Pelayanan</span>
+      <span class="hero-tag" id="tagKesehatian" data-tip="Kesehatian & Persekutuan">Kesehatian</span>
+      <span class="hero-tag" id="tagDoa" data-tip="Doa Bersama & Teduh">Doa</span>
     </div>
   </div>
 </section>
@@ -126,28 +132,31 @@
   <!-- Event Terdekat -->
   <section class="events-section anim-1">
     <div class="sec-hdr">
-      <h2 class="sec-title" id="secEvents">Event Terdekat</h2>
+      <h2 class="sec-title" id="secEvents">Kegiatan Terdekat</h2>
       <a href="kalender.html" class="sec-link" id="secEventsLink">Lihat semua →</a>
     </div>
     <div class="events-grid" id="eventsGrid"></div>
   </section>
 
   <!-- Recap Kegiatan -->
-  <section class="recap-section anim-2">
+  <section class="recap-section anim-2 reveal reveal-delay-2">
     <div class="sec-hdr">
       <h2 class="sec-title" id="secRecap">Recap Kegiatan</h2>
     </div>
     <div class="recap-carousel-wrap">
       <div class="recap-carousel" id="recapCarousel"></div>
-      <div class="recap-nav">
-        <button class="recap-nav-btn" onclick="recapScroll(-1)" title="Sebelumnya">←</button>
-        <button class="recap-nav-btn" onclick="recapScroll(1)" title="Berikutnya">→</button>
+      <div class="recap-dots-row">
+        <div class="recap-dots" id="recapDots"></div>
+        <div class="recap-nav">
+          <button class="recap-nav-btn" onclick="recapScroll(-1)" title="Sebelumnya">←</button>
+          <button class="recap-nav-btn" onclick="recapScroll(1)" title="Berikutnya">→</button>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Dokumen + Hubungi Kami — 1 baris -->
-  <div class="bottom-row anim-3">
+  <div class="bottom-row anim-3 reveal reveal-delay-3">
     <section class="doc-section">
       <div class="sec-hdr"><h2 class="sec-title" id="secDocs">Dokumen</h2></div>
       <div class="doc-grid" id="docGrid"></div>
@@ -155,62 +164,36 @@
     <section class="contact-section" id="kontak">
       <div class="sec-hdr"><h2 class="sec-title" id="secContact">Hubungi Kami</h2></div>
       <div class="contact-wrap">
-        <!-- Sosial Media expand -->
-        <div class="contact-row contact-sm-row" onclick="toggleSocialMedia()">
+        <a class="contact-row" href="https://instagram.com/nhkbpum" target="_blank" rel="noopener">
           <div class="contact-icon c-ig">
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff"/></svg>
           </div>
           <div class="contact-info">
-            <span class="contact-label" id="smLabel">Sosial Media</span>
-            <span class="contact-handle" style="font-size:11px;color:var(--text3)">Instagram · YouTube · TikTok</span>
+            <span class="contact-label" id="smIgLabel">Instagram</span>
+            <span class="contact-handle">@nhkbpum</span>
           </div>
-          <span class="contact-arrow" id="smArrow">↓</span>
-        </div>
-        <div class="cp-expand" id="smExpand">
-          <a class="cp-person" href="https://instagram.com/nhkbpum" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <div class="cp-avatar" style="background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)">
-              <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="#fff"/></svg>
-            </div>
-            <div><span class="cp-name">Instagram</span><span class="cp-num">@nhkbpum</span></div>
-            <span style="margin-left:auto;font-size:12px;color:var(--text3)">→</span>
-          </a>
-          <a class="cp-person" href="https://www.youtube.com/@nhkbpujungmenteng4124" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <div class="cp-avatar" style="background:#ff0000">
-              <svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.4 3 12 3 12 3s-4.4 0-6.8.2c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.6 12 21.7 12 21.7s4.4 0 6.8-.3c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>
-            </div>
-            <div><span class="cp-name">YouTube</span><span class="cp-num">@nhkbpujungmenteng4124</span></div>
-            <span style="margin-left:auto;font-size:12px;color:var(--text3)">→</span>
-          </a>
-          <a class="cp-person" href="https://www.tiktok.com/@nhkbp_ujungmenteng" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <div class="cp-avatar" style="background:#010101">
-              <svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.8 0h-3.7v16.1a2.8 2.8 0 1 1-2-2.7V9.6A6.6 6.6 0 1 0 15 16.1V8.5a8.4 8.4 0 0 0 4.9 1.6V6.3a4.9 4.9 0 0 1-0.3 0z"/></svg>
-            </div>
-            <div><span class="cp-name">TikTok</span><span class="cp-num">@nhkbp_ujungmenteng</span></div>
-            <span style="margin-left:auto;font-size:12px;color:var(--text3)">→</span>
-          </a>
-        </div>
-        <div class="contact-row contact-wa-row" onclick="toggleWaPopup()">
-          <div class="contact-icon c-wa">
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.523 3.657 1.435 5.162L2 22l4.956-1.418A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 9c0-.5.5-1.5 1.5-1.5s1.5 1 1.5 1.5v1c0 .5-.5 1-1 1.5L9 13c1 2 2.5 3 4 3.5l1.5-1.5c.5-.5 1-.5 1.5-.5h.5c.5 0 1 .5 1 1.5 0 1-.5 2-2 2-3 0-7-3-7-9z" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span style="font-size:12px;color:var(--text3)">→</span>
+        </a>
+        <a class="contact-row" href="https://www.youtube.com/@nhkbpujungmenteng4124" target="_blank" rel="noopener">
+          <div class="contact-icon c-yt">
+            <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.4 3 12 3 12 3s-4.4 0-6.8.2c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.2v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.2 21.6 12 21.7 12 21.7s4.4 0 6.8-.3c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zM9.7 15.5V8.4l8.1 3.6-8.1 3.5z"/></svg>
           </div>
           <div class="contact-info">
-            <span class="contact-label">WhatsApp</span>
-            <span class="contact-handle" id="cpLabel">Hubungi Contact Person</span>
+            <span class="contact-label" id="smYtLabel">YouTube</span>
+            <span class="contact-handle">NHKBP Ujung Menteng</span>
           </div>
-          <span class="contact-arrow" id="waArrow">↓</span>
-        </div>
-        <div class="cp-expand" id="cpExpand">
-          <a class="cp-person" href="https://wa.me/6289538514537" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <div class="cp-avatar" style="background:#2563be">G</div>
-            <div><span class="cp-name">Gunawan Siagian</span><span class="cp-num">+62 895-3851-4537</span></div>
-            <svg viewBox="0 0 24 24" fill="#25d366" width="18" height="18" style="margin-left:auto;flex-shrink:0"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.523 3.657 1.435 5.162L2 22l4.956-1.418A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
-          </a>
-          <a class="cp-person" href="https://wa.me/6282125843372" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-            <div class="cp-avatar" style="background:#db2777">M</div>
-            <div><span class="cp-name">Mutiara Panjaitan</span><span class="cp-num">+62 821-2584-3372</span></div>
-            <svg viewBox="0 0 24 24" fill="#25d366" width="18" height="18" style="margin-left:auto;flex-shrink:0"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.523 3.657 1.435 5.162L2 22l4.956-1.418A9.956 9.956 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
-          </a>
-        </div>
+          <span style="font-size:12px;color:var(--text3)">→</span>
+        </a>
+        <a class="contact-row" href="https://www.tiktok.com/@nhkbp_ujungmenteng" target="_blank" rel="noopener">
+          <div class="contact-icon c-tt">
+            <svg viewBox="0 0 24 24" fill="#fff" width="20" height="20"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.8 0h-3.7v16.1a2.8 2.8 0 1 1-2-2.7V9.6A6.6 6.6 0 1 0 15 16.1V8.5a8.4 8.4 0 0 0 4.9 1.6V6.3a4.9 4.9 0 0 1-0.3 0z"/></svg>
+          </div>
+          <div class="contact-info">
+            <span class="contact-label" id="smTtLabel">TikTok</span>
+            <span class="contact-handle">@nhkbp_ujungmenteng</span>
+          </div>
+          <span style="font-size:12px;color:var(--text3)">→</span>
+        </a>
       </div>
     </section>
   </div>
@@ -346,12 +329,33 @@
         <div class="form-g"><label id="lbAnnLink">Link Formulir</label><input type="text" id="annLink" placeholder="https://forms.gle/..."/></div>
         <div class="form-g"><label id="lbAnnCta">Teks Tombol</label><input type="text" id="annCta" placeholder="Daftar Sekarang →"/></div>
         <div class="form-g"><label id="lbAnnExp">Berlaku Sampai (opsional)</label><input type="date" id="annExpiry"/></div>
-        <label class="check-row"><input type="checkbox" id="annActive"/><span id="lbAnnActive">Aktifkan Banner</span></label>
+        <!-- Status banner — tombol eksplisit -->
+        <div class="ann-status-row" id="annStatusRow">
+          <span class="ann-status-dot" id="annStatusDot"></span>
+          <span class="ann-status-lbl" id="annStatusLbl">Banner nonaktif</span>
+          <button class="btn btn-sm ann-toggle-btn" id="annToggleBtn" onclick="toggleAnnActive()">Aktifkan</button>
+        </div>
+        <input type="hidden" id="annActiveHidden" value="0"/>
+        <!-- Preview banner -->
+        <div class="ann-preview-wrap" id="annPreviewWrap" style="display:none">
+          <div class="ann-preview-label" id="lbAnnPreview">Preview Banner</div>
+          <div class="ann-preview" id="annPreview">
+            <span class="announce-icon">📋</span>
+            <div class="announce-content">
+              <div class="announce-title" id="annPreviewTitle"></div>
+              <div class="announce-sub" id="annPreviewSub"></div>
+            </div>
+            <a class="announce-cta" id="annPreviewCta" href="#" onclick="return false"></a>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" onclick="closeModal('announceModal')" id="annCancelBtn">Batal</button>
-      <button class="btn btn-primary" onclick="saveAnnounce()" id="annSaveBtn">Simpan</button>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-danger-ghost" id="annDeleteBtn" onclick="deleteAnnounce()">🗑 <span id="lbAnnDelete">Hapus Banner</span></button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal('announceModal')" id="annCancelBtn">Batal</button>
+        <button class="btn btn-primary" onclick="saveAnnounce()" id="annSaveBtn">Simpan</button>
+      </div>
     </div>
   </div>
 </div>

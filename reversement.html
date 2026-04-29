@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Reversement · Naposo HKBP Ujung Menteng</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/index.css"/>
+  <link rel="stylesheet" href="css/reversement.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#0a1f44"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Naposo HKBP"/>
+  <link rel="apple-touch-icon" href="img/icon-192.png"/>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+<div class="hdr">
+  <a class="hdr-brand" href="index.html">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
+      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+    </svg>
+    <div class="hdr-title">
+      <h1 id="hdrTitle">Naposo HKBP Ujung Menteng</h1>
+    </div>
+  </a>
+
+  <!-- Desktop nav -->
+  <div class="hdr-right-desktop">
+    <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
+    <button class="icon-toggle" id="langToggleBtn" onclick="toggleLang()">EN</button>
+    <div class="hdr-nav-sep"></div>
+    <a class="navbar-pill pill-home" href="index.html">🏠 <span id="navHome">Home</span></a>
+    <a class="navbar-pill pill-home" href="kalender.html">📅 <span id="navKalender">Kalender</span></a>
+    <a class="navbar-pill pill-rev active-pill" href="reversement.html">✝️ <span id="navRev">Reversement</span></a>
+    <!-- Login / Admin area -->
+    <div class="admin-dd-anchor" id="adminDdAnchor">
+      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span></button>
+      <div class="admin-dd" id="adminDd">
+        <button class="admin-dd-item danger" onclick="doLogout()">→ <span id="ddLogout">Logout</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile hamburger -->
+  <button class="hdr-menu-btn" id="hamburgerBtn" onclick="toggleHamburger()" aria-label="Menu">
+    <svg viewBox="0 0 20 20" width="18" height="18"><path d="M2 5h16M2 10h16M2 15h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+  </button>
+</div>
+
+<!-- Mobile dropdown panel -->
+<div class="hdr-menu-panel" id="hdrMenuPanel">
+  <div class="hdr-menu-item" onclick="toggleDarkMobile()">
+    <div class="hdr-menu-label">🌙 <span id="darkModeLbl">Dark Mode</span></div>
+    <div class="tog-track" id="darkTrackMobile" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="hdr-menu-item" onclick="toggleLangMobile()">
+    <div class="hdr-menu-label">🌐 <span id="langModeLbl">Bahasa</span></div>
+    <div class="tog-track" id="langTrackMobile" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="hdr-menu-sep"></div>
+  <div class="hdr-login-row">
+    <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="index.html">🏠 <span id="navHomeMob">Home</span></a>
+    <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="kalender.html">📅 <span id="navKalenderMob">Kalender</span></a>
+    <a class="btn btn-primary" style="width:100%;justify-content:center;text-decoration:none" href="reversement.html">✝️ <span id="navRevMob">Reversement</span></a>
+    <button class="btn btn-gold" style="width:100%;justify-content:center" id="loginBtnMobile" onclick="handleLoginBtnMobile()">🔐 <span id="loginBtnMobileTxt">Login</span></button>
+    <div id="adminMobileRow" style="display:none;flex-direction:column;gap:6px;width:100%">
+      <div style="font-size:.75rem;color:var(--gold-lt);text-align:center;padding:4px 0;font-weight:600">✔ <span id="adminMobileNameTxt"></span></div>
+      <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.35)" onclick="doLogout();closeHamburger()"><span id="logoutBtnMobTxt">Logout</span></button>
+    </div>
+  </div>
+</div>
+</header>
+
+<!-- ══ ADMIN BAR ══ -->
+<div class="admin-bar" id="adminBar">
+  <span class="admin-bar-txt" id="adminBarTxt"></span>
+</div>
+
+<!-- ══ HERO ══ -->
+<div class="rev-hero">
+  <div class="rev-hero-bg"></div>
+  <div class="rev-hero-content">
+    <div class="rev-hero-eyebrow" id="revHeroEyebrow">Renungan Mingguan</div>
+    <h2 class="rev-hero-title">Reversement</h2>
+    <p class="rev-hero-sub" id="revHeroSub">Ayat dan renungan untuk memulai harimu bersama Naposo · Senin &amp; Jumat</p>
+  </div>
+</div>
+
+<!-- ══ FILTER TABS + ADMIN ADD BUTTON ══ -->
+<div class="rev-filter-wrap">
+  <button class="rev-filter-btn active" data-filter="all" onclick="filterPosts('all')" id="filterAll">Semua</button>
+  <button class="rev-filter-btn" data-filter="senin" onclick="filterPosts('senin')" id="filterSenin">🌅 Senin</button>
+  <button class="rev-filter-btn" data-filter="jumat" onclick="filterPosts('jumat')" id="filterJumat">🌿 Jumat</button>
+  <!-- Tombol ini hanya muncul saat .is-admin -->
+  <button class="rev-filter-btn rev-add-btn admin-only" onclick="openAdminForm(null)" id="addPost">+ Tambah Post</button>
+</div>
+
+<!-- ══ GRID ══ -->
+<main class="rev-main">
+  <div class="rev-grid" id="revGrid">
+    <div class="rev-loading">
+      <div class="rev-loading-dot"></div>
+      <div class="rev-loading-dot"></div>
+      <div class="rev-loading-dot"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <strong>Naposo HKBP Ujung Menteng</strong> · © <span id="footerYear"></span>
+  &nbsp;·&nbsp; 👁 <span id="footerVisits">–</span> <span id="footerVisitLbl">kunjungan</span>
+</footer>
+
+<!-- ══ POST MODAL (detail) ══ -->
+<div class="rev-modal-overlay" id="revModalOverlay"></div>
+<div class="rev-modal" id="revModal" role="dialog" aria-modal="true" onclick="closeRevModal()">
+  <div class="rev-modal-inner" id="revModalInner" onclick="event.stopPropagation()">
+    <button class="rev-modal-close" onclick="closeRevModal()" aria-label="Tutup">✕</button>
+    <!-- Poster: kiri di desktop, full-screen di mobile -->
+    <div class="rev-modal-poster-wrap" id="revModalPosterWrap" onclick="_onPosterTap()">
+      <img class="rev-modal-poster" id="revModalPoster" src="" alt="Poster"/>
+    </div>
+    <!-- Konten panel kanan (desktop only, hidden di mobile) -->
+    <div class="rev-modal-content" id="revModalContent">
+      <div class="rev-modal-meta">
+        <span class="rev-modal-day-badge" id="revModalDayBadge">Senin</span>
+        <span class="rev-modal-date" id="revModalDate"></span>
+      </div>
+      <h3 class="rev-modal-title" id="revModalTitle"></h3>
+      <div class="rev-modal-verse" id="revModalVerse"></div>
+      <div class="rev-modal-body" id="revModalBody"></div>
+      <div class="rev-modal-admin-actions" id="revModalAdminActions" style="display:none">
+        <button class="btn btn-outline btn-sm" id="revModalEditBtn" onclick="openAdminForm(_activePost?.id)">Edit</button>
+        <button class="btn btn-sm rev-delete-btn" id="revModalDeleteBtn" onclick="deletePost()">Hapus Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet — mobile only, rendered outside inner -->
+  <div class="rev-bottom-sheet hidden" id="revBottomSheet" onclick="event.stopPropagation()">
+    <div class="rev-bs-handle"></div>
+    <!-- Strip collapsed: judul + more -->
+    <div class="rev-bs-strip" id="revBsStrip" onclick="expandBottomSheet()">
+      <span class="rev-bs-strip-title" id="revBsTitle"></span>
+      <span class="rev-bs-strip-more">baca selengkapnya</span>
+    </div>
+    <!-- Body expanded -->
+    <div class="rev-bs-body" id="revBsBody">
+      <div class="rev-modal-meta" style="padding:4px 0 0">
+        <span class="rev-modal-day-badge" id="revBsDayBadge">Senin</span>
+        <span class="rev-modal-date" id="revBsDate"></span>
+      </div>
+      <h3 class="rev-modal-title" id="revBsTitle2" style="margin:4px 0 8px"></h3>
+      <div class="rev-modal-verse" id="revBsVerse"></div>
+      <div class="rev-modal-body" id="revBsBody2" style="margin-bottom:0"></div>
+      <div class="rev-modal-admin-actions" id="revBsAdminActions" style="display:none">
+        <button class="btn btn-outline btn-sm" onclick="openAdminForm(_activePost?.id)" id="revBsEditBtn">Edit</button>
+        <button class="btn btn-sm rev-delete-btn" onclick="deletePost()" id="revBsDeleteBtn">Hapus Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN FORM MODAL ══ -->
+
+<div class="rev-modal-overlay" id="adminFormOverlay" onclick="closeAdminForm()"></div>
+<div class="rev-modal" id="adminFormModal" role="dialog" aria-modal="true">
+  <div class="rev-modal-inner rev-form-inner">
+    <div class="rev-form-hdr">
+      <span class="rev-form-title" id="adminFormModalTitle">Tambah Post Reversement</span>
+      <button class="rev-modal-close" style="position:static;float:none;margin:0" onclick="closeAdminForm()" aria-label="Tutup">✕</button>
+    </div>
+
+    <div class="rev-form-body">
+      <!-- Judul -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldTitle">Judul</label>
+        <input class="form-input" id="afTitle" type="text" placeholder="It's Okay to Restart"/>
+      </div>
+      <!-- Nama seri -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldSeries">Nama Seri</label>
+        <input class="form-input" id="afSeries" type="text" placeholder="Reversement" value="Reversement"/>
+      </div>
+      <!-- Hari + Tanggal (2 kolom) -->
+      <div class="rev-form-row">
+        <div class="rev-form-group">
+          <label class="form-label" id="fldDayType">Hari</label>
+          <select class="form-input" id="afDayType">
+            <option value="senin">🌅 Senin</option>
+            <option value="jumat">🌿 Jumat</option>
+          </select>
+        </div>
+        <div class="rev-form-group">
+          <label class="form-label" id="fldDate">Tanggal</label>
+          <input class="form-input" id="afDate" type="date"/>
+        </div>
+      </div>
+      <!-- Ayat -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldVerseRef">Referensi Ayat</label>
+        <input class="form-input" id="afVerseRef" type="text" placeholder="Ratapan 3:22-23"/>
+      </div>
+      <!-- Poster URL -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldPosterUrl">Link Poster Google Drive</label>
+        <input class="form-input" id="afPosterUrl" type="url" placeholder="https://drive.google.com/file/d/.../view"/>
+      </div>
+      <!-- Body -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldBody">Redaksi</label>
+        <textarea class="form-input rev-form-textarea" id="afBody" placeholder="Tulis renungan di sini…"></textarea>
+      </div>
+      <!-- Published toggle -->
+      <div class="rev-form-check">
+        <input type="checkbox" id="afPublished" checked/>
+        <label for="afPublished" id="fldPublished">Tampilkan (Published)</label>
+      </div>
+      <!-- Error -->
+      <div id="adminFormErr" class="rev-form-err"></div>
+    </div>
+
+    <div class="rev-form-footer">
+      <button class="btn btn-outline" onclick="closeAdminForm()" id="btnCancel">Batal</button>
+      <button class="btn btn-gold" id="adminFormSaveBtn" onclick="saveAdminForm()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN MODAL ══ -->
+<div class="overlay" id="loginModal">
+<div class="modal" style="max-width:350px">
+  <div class="modal-hdr"><h2 id="loginTitle">Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g">
+      <label id="lbName">Nama Pengurus</label>
+      <select id="loginName"><option value="">-- Pilih nama --</option></select>
+    </div>
+    <div class="form-g">
+      <label id="lbPw">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button class="pw-eye" type="button" onclick="togglePw('loginPw',this)">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="login-err" id="loginErr">Password salah atau nama tidak dipilih.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('loginModal')" id="loginCancelBtn">Batal</button>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginSubmitBtn">Masuk</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/reversement.js"></script>
+</body>
+</html>

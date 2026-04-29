@@ -106,7 +106,10 @@ async function updateCatInDB(id,fields){
 
 /* ══ I18N ══ */
 const T={
-  id:{hdrSub:'Kalender Pelayanan 2026',loginBadgeView:'Lihat saja',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
+  id:{loginBadgeView:'Lihat saja',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
+    navHome:'Home',navKalender:'Kalender',navRev:'Reversement',
+    navHomeMob:'Home',navKalenderMob:'Kalender',navRevMob:'Reversement',
+    logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Event',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
     lbCat:'Kategori',lbNote:'Catatan (opsional)',lbPoster:'Link Poster (Google Drive)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
@@ -122,7 +125,7 @@ const T={
     statTotal:'Total Event',statMonth:'Bulan ini',statToday:'Hari ini',statVisit:'Total kunjungan',
     footerVisit:'kunjungan',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
     moreEventsLabel:(n)=>`+${n} lagi`,catMgrBtn:'⚙ Kelola',
-    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',
+    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',ddLogout:'Logout',
     exportModalTitle:'Export Kalender',expSecFormat:'Format Export',expSecScope:'Data yang Di-export',
     expDescPdf:'Dokumen siap cetak, tabel rapi',expDescPng:'Screenshot tampilan kalender',
     expDescCsv:'Data spreadsheet, bisa diedit',expDescIcal:'Import ke Google / Apple Calendar',
@@ -130,7 +133,10 @@ const T={
     exportRangeSep:'s/d',exportCancelBtn:'Batal',doExportBtnTxt:'Export Sekarang',
     exportProgressTxt:'Menyiapkan…',
   },
-  en:{hdrSub:'Ministry Calendar 2026',loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
+  en:{loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
+    navHome:'Home',navKalender:'Calendar',navRev:'Reversement',
+    navHomeMob:'Home',navKalenderMob:'Calendar',navRevMob:'Reversement',
+    logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
     lbCat:'Category',lbNote:'Notes (optional)',lbPoster:'Poster Link (Google Drive)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
@@ -146,7 +152,7 @@ const T={
     statTotal:'Total Events',statMonth:'This month',statToday:'Today',statVisit:'Total visits',
     footerVisit:'visits',darkModeLbl:'Dark Mode',langModeLbl:'Language',
     moreEventsLabel:(n)=>`+${n} more`,catMgrBtn:'⚙ Manage',
-    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',
+    undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',ddLogout:'Logout',
     exportModalTitle:'Export Calendar',expSecFormat:'Export Format',expSecScope:'Data to Export',
     expDescPdf:'Print-ready document, clean table',expDescPng:'Screenshot of calendar view',
     expDescCsv:'Spreadsheet data, editable',expDescIcal:'Import to Google / Apple Calendar',
@@ -171,9 +177,11 @@ let copiedEvent=null;
 function pushUndo(action){undoStack.push(action);syncUndoBtn();}
 function resetUndo(){undoStack=[];syncUndoBtn();}
 function syncUndoBtn(){const btn=document.getElementById('undoBtn');if(btn)btn.disabled=undoStack.length===0;}
+let _adminName='';
 function setAdminBarTxt(name){
+  _adminName=name;
   const abt=document.getElementById('adminBarTxt');
-  if(abt)abt.textContent='Halo, '+name+'.';
+  if(abt)abt.textContent=(lang==='en'?'Hello, ':'Halo, ')+name+'.';
 }
 async function undoLast(){
   if(!undoStack.length){showToast('Tidak ada yang bisa di-undo.','err');return;}
@@ -330,6 +338,9 @@ async function init(){
     if(sw&&swrap&&!swrap.contains(e.target)) closeSearchDropdown();
     const mbar=document.getElementById('mobSearchBar');
     if(mbar&&!mbar.contains(e.target)) closeSearchDropdown();
+    const dd=document.getElementById('adminDd');
+    const anchor=document.getElementById('adminDdAnchor');
+    if(dd&&anchor&&dd.classList.contains('open')&&!anchor.contains(e.target))dd.classList.remove('open');
   });
   try{
     await loadCatsFromDB();
@@ -352,7 +363,7 @@ async function init(){
       const lbm=document.getElementById('loginBtnMobile');if(lbm)lbm.style.display='none';
       ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
       ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=savedName+' (Pengurus)';});
-      document.getElementById('loginBtn').textContent=`✓ ${savedName}`;document.getElementById('loginBtn').disabled=true;
+      document.getElementById('loginBtn').textContent=`✓ ${savedName}`;document.getElementById('loginBtn').disabled=false;
       document.getElementById('loginBtnMobile').textContent=`✓ ${savedName}`;document.getElementById('loginBtnMobile').disabled=true;
       const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
       setSyncBadge('ok',tx('connected'));
@@ -401,7 +412,10 @@ function applyLangUI(){
   const isEn=lang==='en';
   ['langTrackMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',isEn);});
   const langBtn=document.getElementById('langToggleBtn');if(langBtn)langBtn.textContent=isEn?'ID':'EN';
-  const ids={hdrSub:'hdrSub',loginBtnTxt:'loginBtnTxt',
+  const ids={loginBtnTxt:'loginBtnTxt',
+    navHome:'navHome',navKalender:'navKalender',navRev:'navRev',
+    navHomeMob:'navHomeMob',navKalenderMob:'navKalenderMob',navRevMob:'navRevMob',
+    logoutBtnMobTxt:'logoutBtnMobTxt',loginBtnMobileTxt:'loginBtnMobileTxt',
     addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
     lbCat:'lbCat',lbNote:'lbNote',lbPoster:'lbPoster',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
     loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
@@ -409,7 +423,7 @@ function applyLangUI(){
     catMgrBtn:'catMgrBtn',footerVisitLbl:'footerVisit',
     darkModeLbl:'darkModeLbl',langModeLbl:'langModeLbl',
     loginBtnMobileTxt:'loginBtnTxt',
-    undoBtnTxt:'undoBtn',pasteBtnTxt:'pasteBtn',exportBtnTxt:'exportBtn',logoutBtnTxt:'logoutBtn',
+    undoBtnTxt:'undoBtn',pasteBtnTxt:'pasteBtn',exportBtnTxt:'exportBtn',logoutBtnTxt:'logoutBtn',ddLogout:'ddLogout',
     exportModalTitle:'exportModalTitle',expSecFormat:'expSecFormat',expSecScope:'expSecScope',
     expDescPdf:'expDescPdf',expDescPng:'expDescPng',expDescCsv:'expDescCsv',expDescIcal:'expDescIcal',
     scopeLblAll:'scopeLblAll',scopeLblMonth:'scopeLblMonth',scopeLblPick:'scopeLblPick',scopeLblCat:'scopeLblCat',
@@ -431,6 +445,7 @@ function applyLangUI(){
   document.getElementById('stLblTotal').textContent=tx('statTotal');
   document.getElementById('stLblMonth').textContent=tx('statMonth');
   document.getElementById('stLblToday').textContent=tx('statToday');
+  if(isAdmin&&_adminName) setAdminBarTxt(_adminName);
   buildCatFilterDropdown();buildLegend();buildTabs();buildCatSelect();
   if(EVENTS.length){renderCalendar();renderStats();}
 }
@@ -1080,7 +1095,7 @@ function showDayPopup(ds,evs){
     item.onclick=()=>openDetail(ev);
     body.appendChild(item);
   });
-  document.getElementById('detailFoot').innerHTML=`<button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="margin-right:auto;background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">X Hapus</button>`:''} ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
+  document.getElementById('detailFoot').innerHTML=`<span style="margin-right:auto"></span>${isAdmin?`<button class=\"btn btn-danger\" onclick=\"closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})\" >X Hapus</button>`:''} ${isAdmin?`<button class=\"btn btn-primary\" onclick=\"closeModal('detailModal');openEditModal(window._detEv)\">✎ ${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
 }
 
@@ -1160,7 +1175,6 @@ function openDetail(ev){
     ${ev.note?`<div class="det-note">${linkify(ev.note.replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
-    <button class="btn btn-sm" onclick="shareEvent(window._detEv)" style="background:none;border:1px solid var(--border2);color:var(--text2)">🔗 Bagikan</button>
     ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${window._detEv&&window._detEv.featured?'var(--gold)':'none'};border:1px solid ${window._detEv&&window._detEv.featured?'var(--gold)':'var(--border2)'};color:${window._detEv&&window._detEv.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${window._detEv&&window._detEv.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
     ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
     ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
@@ -1228,6 +1242,15 @@ async function confirmDel(id,e){
 }
 
 /* ══ AUTH ══ */
+function handleLoginBtn(){
+  if(isAdmin){document.getElementById('adminDd').classList.toggle('open');return;}
+  openLoginModal();
+}
+function handleLoginBtnMobile(){
+  closeHamburger();
+  if(isAdmin)return;
+  openLoginModal();
+}
 function openLoginModal(){
   document.getElementById('loginErr').style.display='none';
   document.getElementById('loginName').value='';document.getElementById('loginPw').value='';
@@ -1266,7 +1289,8 @@ async function doLogin(){
   setAdminBarTxt(name);
   ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
-  document.getElementById('loginBtn').textContent=`✓ ${name}`;document.getElementById('loginBtn').disabled=true;
+  document.getElementById('loginBtn').textContent=`✓ ${name}`;
+  document.getElementById('loginBtn').disabled=false;
   document.getElementById('loginBtnMobile').textContent=`✓ ${name}`;document.getElementById('loginBtnMobile').disabled=true;
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='';
   btn.disabled=false;btn.textContent=tx('loginBtn2');
@@ -1298,10 +1322,11 @@ function doLogout(){
   localStorage.removeItem('naposo_admin_name');
   isAdmin=false;document.body.classList.remove('admin-mode');
   document.getElementById('adminBar').classList.remove('on');
+  const dd=document.getElementById('adminDd');if(dd)dd.classList.remove('open');
   ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
-  document.getElementById('loginBtn').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtn').disabled=false;
-  document.getElementById('loginBtnMobile').textContent=`🔒 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
+  document.getElementById('loginBtn').innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;document.getElementById('loginBtn').disabled=false;
+  document.getElementById('loginBtnMobile').textContent=`🔐 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='none';
   renderCalendar();showToast('Logout berhasil.');
   const amr2=document.getElementById('adminMobileRow');if(amr2)amr2.style.display='none';
@@ -1393,6 +1418,9 @@ function updateMonthRangeHint(){
 
 function getExportEvents(){
   let evs=[...EVENTS];
+  // ikut search query yang aktif
+  const q=(document.getElementById('searchInput')?.value||document.getElementById('mobSearchInput')?.value||'').trim().toLowerCase();
+  if(q) evs=evs.filter(e=>e.title.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q));
   if(exportScope==='month'){
     const monStr=`${YEAR}-${String(currentMonth+1).padStart(2,'0')}`;
     evs=evs.filter(e=>e.date.startsWith(monStr));
@@ -1643,24 +1671,10 @@ async function toggleFeatured(ev){
     await dbWrite('events','UPDATE',{featured:newVal},{id:ev.id});
     const i=EVENTS.findIndex(e=>e.id===ev.id);
     if(i!==-1){EVENTS[i]={...EVENTS[i],featured:newVal};window._detEv=EVENTS[i];}
+    localStorage.removeItem('naposo_featured_change');localStorage.setItem('naposo_featured_change',JSON.stringify({id:ev.id,featured:newVal,ts:Date.now()}));
     showToast(newVal?'Event ditampilkan di beranda ★':'Event dihapus dari beranda','ok');
     openDetail(EVENTS.find(e=>e.id===ev.id));
   }catch(e){showToast('Gagal update: '+e.message,'err');}
-}
-
-/* ══ Share Event ══ */
-function shareEvent(ev){
-  if(!ev)return;
-  const d=new Date(ev.date+"T00:00:00");
-  const MO=lang==="en"?MONTHS_EN:MONTHS_ID;
-  const dateStr=d.getDate()+" "+MO[d.getMonth()]+" "+d.getFullYear();
-  const lines=["📅 "+ev.title,"🗓 "+dateStr];
-  if(ev.time) lines.push("⏰ "+ev.time);
-  if(ev.note) lines.push("📝 "+ev.note);
-  lines.push("","— Kalender Naposo HKBP Ujung Menteng");
-  const text=lines.join("\n");
-  if(navigator.share){navigator.share({title:ev.title,text}).catch(()=>{});}
-  else{navigator.clipboard.writeText(text).then(()=>showToast("Info event disalin ke clipboard!","ok")).catch(()=>showToast("Gagal menyalin.","err"));}
 }
 
 /* ══ Keyboard Shortcut Help ══ */
@@ -1691,3 +1705,32 @@ function linkify(text){
     `<a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all;" onclick="event.stopPropagation()">${url}</a>`
   );
 }
+/* ══ PWA SERVICE WORKER ══ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+
+/* ══ CROSS-TAB FEATURED SYNC ══ */
+window.addEventListener('storage',ev=>{
+  if(ev.key!=='naposo_featured_change'||!ev.newValue)return;
+  try{
+    const{id,featured}=JSON.parse(ev.newValue);
+    const i=EVENTS.findIndex(e=>e.id===id);
+    if(i===-1)return;
+    EVENTS[i]={...EVENTS[i],featured};
+    renderCalendar();
+    // Kalau detail modal sedang terbuka untuk event ini, refresh tombol featured-nya
+    if(window._detEv&&window._detEv.id===id){
+      window._detEv=EVENTS[i];
+      const btn=document.getElementById('featBtn');
+      if(btn){
+        btn.style.background=featured?'var(--gold)':'none';
+        btn.style.borderColor=featured?'var(--gold)':'var(--border2)';
+        btn.style.color=featured?'var(--navy)':'var(--text2)';
+        btn.textContent=featured?'★ Di Beranda':'☆ Beranda';
+      }
+    }
+  }catch(_){}
+});

@@ -6,6 +6,11 @@ function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':S
 async function dbGet(t,q=''){const r=await sb(`${t}?${q}`);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function dbWrite(table,method,data,match){
+  const token=localStorage.getItem('naposo_token')||'';
+  const r=await fetch(`${SUPA_URL}/functions/v1/db-write`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`,'x-admin-token':token},body:JSON.stringify({table,method,data,match})});
+  const json=await r.json();if(!r.ok)throw new Error(json.error||'Write failed');return json.data||[];
+}
 async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
 
 function driveToThumbnail(url){
@@ -26,25 +31,49 @@ function catLabel(c){return CNAMES[c]||c;}
 
 /* ══ CATEGORY ICONS ══ */
 const CAT_ICONS={
-  koor:'🎵',ibadah:'🙏',rapat:'📋',latihan:'⚽',
+  koor:'🎵',ibadah:'🙏',rapat:'📋',latihan:'🎶',
   reversement:'✝️',doa:'🕊️','event-gabungan':'🎉',
   bph:'📌',olahraga:'🏃','perayaan-ulang-tahun':'🎂',other:'📅'
 };
 function catIcon(c){return CAT_ICONS[c]||'📅';}
-const DEFAULT_POSTER='img/default-poster.jpg';
+
+/* ══ CATEGORY DEFAULT THUMBNAILS ══ */
+const CAT_THUMBS={
+  ibadah:'img/categories/ibadah.png',
+  koor:'img/categories/latihan-choir.png',
+  latihan:'img/categories/latihan-choir.png',
+};
+const SPORT_THUMBS={
+  badminton:'img/categories/badminton.png',
+  basket:'img/categories/basket.png',
+  basketball:'img/categories/basket.png',
+};
+function getCatThumb(ev){
+  if(ev.category==='olahraga'&&ev.extra&&ev.extra.jenis_olahraga){
+    const sport=ev.extra.jenis_olahraga.toLowerCase().trim();
+    for(const key of Object.keys(SPORT_THUMBS)){
+      if(sport.includes(key))return SPORT_THUMBS[key];
+    }
+  }
+  return CAT_THUMBS[ev.category]||'';
+}
 
 
 const MS_ID=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const MS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 let darkMode=localStorage.getItem('naposo_dark')==='1';
 let _lang=localStorage.getItem('naposo_lang')||'id';
-let isAdmin=false,EVENTS=[],DOCS=[],ANNOUNCE={};
+let isAdmin=false,EVENTS=[],DOCS=[],ANNOUNCE={},_adminName='';
 
 /* ══ I18N ══ */
 const T={
-  hdrSub:{id:'Beranda',en:'Home'},
   navKalender:{id:'Kalender',en:'Calendar'},
   navKalenderMob:{id:'Kalender',en:'Calendar'},
+  navRev:{id:'Reversement',en:'Reversement'},
+  navRevMob:{id:'Reversement',en:'Reversement'},
+  smIgLabel:{id:'Instagram',en:'Instagram'},
+  smYtLabel:{id:'YouTube',en:'YouTube'},
+  smTtLabel:{id:'TikTok',en:'TikTok'},
   loginBtnTxt:{id:'Login',en:'Login'},
   loginBtnMobileTxt:{id:'Login',en:'Login'},
   ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},
@@ -62,7 +91,7 @@ const T={
   tagPelayanan:{id:'Pelayanan',en:'Ministry'},
   tagKesehatian:{id:'Kesehatian',en:'Fellowship'},
   tagDoa:{id:'Doa',en:'Prayer'},
-  secEvents:{id:'Event Terdekat',en:'Upcoming Events'},
+  secEvents:{id:'Kegiatan Terdekat',en:'Upcoming Events'},
   secEventsLink:{id:'Lihat semua →',en:'View all →'},
   secRecap:{id:'Recap Kegiatan',en:'Activity Recap'},
   secDocs:{id:'Dokumen',en:'Documents'},
@@ -99,9 +128,11 @@ const T={
   lbAnnCta:{id:'Teks Tombol',en:'Button Text'},
   lbAnnExp:{id:'Berlaku Sampai (opsional)',en:'Valid Until (optional)'},
   lbAnnActive:{id:'Aktifkan Banner',en:'Activate Banner'},
+  lbAnnPreview:{id:'Preview Banner',en:'Banner Preview'},
+  lbAnnDelete:{id:'Hapus Banner',en:'Delete Banner'},
   annCancelBtn:{id:'Batal',en:'Cancel'},
   annSaveBtn:{id:'Simpan',en:'Save'},
-  adminBarTxt:{id:'Mode Pengurus Aktif',en:'Admin Mode Active'},
+  adminBarTxt:{id:'',en:''},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){
@@ -109,6 +140,11 @@ function applyLang(){
   Object.keys(T).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tx(id);});
   const ltm=document.getElementById('langTrackMobile');if(ltm)ltm.classList.toggle('on',_lang==='en');
   const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
+  // update admin bar teks saat bahasa ganti, kalau admin sedang login
+  if(isAdmin&&_adminName){const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+_adminName+'.';}
+  // update status banner saat modal terbuka
+  const annH=document.getElementById('annActiveHidden');
+  if(annH)_updateAnnStatusUI(annH.value==='1');
   renderEvents();renderRecap();renderDocs();
 }
 function toggleLang(){_lang=_lang==='id'?'en':'id';localStorage.setItem('naposo_lang',_lang);applyLang();}
@@ -190,6 +226,7 @@ function togglePw(inputId){
 }
 
 function _applyAdminUI(name){
+  _adminName=name;
   document.body.classList.add('is-admin');
   const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.textContent=`✓ ${name}`;loginBtn.disabled=false;}
@@ -198,15 +235,17 @@ function _applyAdminUI(name){
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='flex';
   const ant=document.getElementById('adminMobileNameTxt');if(ant)ant.textContent=name;
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
-  const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=`Halo, ${name}`;
+  const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
 }
 function _resetAuthUI(){
+  _adminName='';
   document.body.classList.remove('is-admin');
   const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;loginBtn.disabled=false;}
   const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='';
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='none';
   const bar=document.getElementById('adminBar');if(bar)bar.classList.remove('on');
+  applyLang(); /* re-apply agar teks ikut bahasa aktif */
 }
 
 /* ══ ADMIN DROPDOWN — click outside ══ */
@@ -222,16 +261,7 @@ document.addEventListener('click',e=>{
   if(dd&&anchor&&!anchor.contains(e.target))dd.classList.remove('open');
   const panel=document.getElementById('hdrMenuPanel'),btn=document.getElementById('hamburgerBtn');
   if(panel&&btn&&!panel.contains(e.target)&&!btn.contains(e.target))panel.classList.remove('open');
-  const waRow=document.querySelector('.contact-wa-row'),cpEx=document.getElementById('cpExpand');
-  if(waRow&&cpEx&&!waRow.contains(e.target)&&!cpEx.contains(e.target)){
-    cpEx.classList.remove('open');waRow.classList.remove('open');
-    const arrow=document.getElementById('waArrow');if(arrow)arrow.textContent='↓';
-  }
-  const smRow=document.querySelector('.contact-sm-row'),smEx=document.getElementById('smExpand');
-  if(smRow&&smEx&&!smRow.contains(e.target)&&!smEx.contains(e.target)){
-    smEx.classList.remove('open');smRow.classList.remove('open');
-    const smArr=document.getElementById('smArrow');if(smArr)smArr.textContent='↓';
-  }
+
 });
 
 /* ══ ANNOUNCE BANNER ══ */
@@ -264,23 +294,35 @@ async function saveAnnounce(){
     link:document.getElementById('annLink').value.trim(),
     cta:document.getElementById('annCta').value.trim()||'Daftar Sekarang →',
     expiry:document.getElementById('annExpiry').value||'',
-    active:document.getElementById('annActive').checked,
+    active:document.getElementById('annActiveHidden').value==='1',
     updated_at:new Date().toISOString(),
   };
   try{
-    // upsert — row 'config' always exists after SQL setup
     await dbUpd('home_announcement','id=eq.config',a);
     ANNOUNCE=a;
     const el=document.getElementById('announceBanner');
     if(a.active){
       _showBanner(a);
-      // clear all dismiss keys so banner shows again on all devices
     }else{
       el.classList.remove('on');
     }
     closeModal('announceModal');
     showToast('Pengumuman disimpan ✓','ok');
   }catch(e){showToast('Gagal simpan: '+e.message,'err');}
+}
+async function deleteAnnounce(){
+  const confirmMsg=_lang==='en'
+    ?'Delete this banner? This cannot be undone.'
+    :'Hapus banner ini? Tindakan ini tidak bisa dibatalkan.';
+  if(!confirm(confirmMsg))return;
+  const empty={title:'',sub:'',link:'',cta:'',expiry:'',active:false,updated_at:new Date().toISOString()};
+  try{
+    await dbUpd('home_announcement','id=eq.config',empty);
+    ANNOUNCE=empty;
+    document.getElementById('announceBanner').classList.remove('on');
+    closeModal('announceModal');
+    showToast(_lang==='en'?'Banner deleted.':'Banner dihapus.','ok');
+  }catch(e){showToast('Gagal hapus: '+e.message,'err');}
 }
 function closeBanner(){
   document.getElementById('announceBanner').classList.remove('on');
@@ -295,39 +337,77 @@ function openAnnounceModal(){
   document.getElementById('annLink').value=a.link||'';
   document.getElementById('annCta').value=a.cta||'';
   document.getElementById('annExpiry').value=a.expiry||'';
-  document.getElementById('annActive').checked=!!a.active;
+  // set hidden active state
+  const isActive=!!a.active;
+  document.getElementById('annActiveHidden').value=isActive?'1':'0';
+  _updateAnnStatusUI(isActive);
+  // update preview
+  _updateAnnPreview();
+  // disable hapus jika belum ada data
+  const delBtn=document.getElementById('annDeleteBtn');
+  if(delBtn)delBtn.disabled=!a.title;
   closeHamburger();
   document.getElementById('adminDd').classList.remove('open');
   openModal('announceModal');
 }
+function _updateAnnStatusUI(isActive){
+  const dot=document.getElementById('annStatusDot');
+  const lbl=document.getElementById('annStatusLbl');
+  const btn=document.getElementById('annToggleBtn');
+  if(dot)dot.className='ann-status-dot'+(isActive?' active':'');
+  if(lbl)lbl.textContent=_lang==='en'?(isActive?'Banner active':'Banner inactive'):(isActive?'Banner aktif':'Banner nonaktif');
+  if(btn)btn.textContent=_lang==='en'?(isActive?'Deactivate':'Activate'):(isActive?'Nonaktifkan':'Aktifkan');
+}
+function toggleAnnActive(){
+  const h=document.getElementById('annActiveHidden');
+  const nowActive=h.value==='1';
+  h.value=nowActive?'0':'1';
+  _updateAnnStatusUI(!nowActive);
+  _updateAnnPreview();
+}
+function _updateAnnPreview(){
+  const title=document.getElementById('annTitle').value.trim();
+  const sub=document.getElementById('annSub').value.trim();
+  const cta=document.getElementById('annCta').value.trim()||(_lang==='en'?'Register Now →':'Daftar Sekarang →');
+  const isActive=document.getElementById('annActiveHidden').value==='1';
+  const wrap=document.getElementById('annPreviewWrap');
+  if(!wrap)return;
+  if(!title&&!isActive){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  document.getElementById('annPreviewTitle').textContent=title||(_lang==='en'?'(no title)':'(judul kosong)');
+  document.getElementById('annPreviewSub').textContent=sub;
+  document.getElementById('annPreviewCta').textContent=cta;
+}
+// Live preview on input
+['annTitle','annSub','annCta'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('input',_updateAnnPreview);
+});
 
 /* ══ CONTACT ══ */
-
-/* ══ SOCIAL MEDIA ══ */
-function toggleSocialMedia(){
-  const row=document.querySelector('.contact-sm-row');
-  const expand=document.getElementById('smExpand');
-  const isOpen=expand.classList.toggle('open');
-  if(row)row.classList.toggle('open',isOpen);
-  const arrow=document.getElementById('smArrow');if(arrow)arrow.textContent=isOpen?'↑':'↓';
-}
-
-function toggleWaPopup(){
-  const row=document.querySelector('.contact-wa-row');
-  const expand=document.getElementById('cpExpand');
-  const isOpen=expand.classList.toggle('open');
-  row.classList.toggle('open',isOpen);
-  const arrow=document.getElementById('waArrow');if(arrow)arrow.textContent=isOpen?'↑':'↓';
-}
+/* social links are now direct <a> tags — no toggle needed */
 
 /* ══ EVENTS ══ */
 function getDisplayEvents(){
   const today=new Date();today.setHours(0,0,0,0);
   const todayStr=today.toISOString().slice(0,10);
-  const featuredIds=new Set(EVENTS.filter(e=>e.featured).map(e=>e.id));
-  const featured=EVENTS.filter(e=>e.featured).sort((a,b)=>a.date.localeCompare(b.date));
-  const upcoming=EVENTS.filter(e=>e.date>=todayStr&&!featuredIds.has(e.id)).sort((a,b)=>a.date.localeCompare(b.date));
-  return [...featured,...upcoming].slice(0,6);
+
+  function isPast(ev){return ev.date<todayStr;}
+  function sortAsc(a,b){return a.date.localeCompare(b.date)||((a.time||'').localeCompare(b.time||''));}
+  function sortDesc(a,b){return b.date.localeCompare(a.date)||((b.time||'').localeCompare(a.time||''));}
+
+  // Pinned selalu masuk (dijamin ada di 6 slot), auto mengisi sisa
+  const pinnedUpcoming=EVENTS.filter(e=>e.featured&&!isPast(e)).sort(sortAsc);
+  const pinnedPast    =EVENTS.filter(e=>e.featured&&isPast(e)).sort(sortDesc);
+  const autoUpcoming  =EVENTS.filter(e=>!e.featured&&!isPast(e)).sort(sortAsc);
+  const autoPast      =EVENTS.filter(e=>!e.featured&&isPast(e)).sort(sortDesc);
+
+  // Urutan: upcoming auto → upcoming pinned → past pinned → past auto
+  // Pinned dijamin masuk semua; auto hanya mengisi sisa slot sampai 6
+  const allAuto=[...autoUpcoming,...autoPast];
+  const allPinned=[...pinnedUpcoming,...pinnedPast];
+  const sisa=Math.max(0,6-allPinned.length);
+  return [...allAuto.slice(0,sisa),...allPinned].slice(0,6);
 }
 function linkifyNote(text){
   if(!text)return '';
@@ -348,9 +428,7 @@ function renderEvents(){
     const endTime=ev.time_end||(ev.time?ev.time.split(/[–\-]/).pop().trim():'');
     const isFinished=isPast||(sameDay&&!!endTime&&endTime<=nowHHMM);
     const note=ev.note||'';
-    const noteHtml=linkifyNote(note);
     const hasPoster=!!(ev.poster_url);
-    const posterSrc=hasPoster?driveToThumbnail(ev.poster_url):DEFAULT_POSTER;
 
     // build time string
     let timeStr='';
@@ -371,15 +449,20 @@ function renderEvents(){
     const yrStr=d.getFullYear();
 
     // image area
-    const imgWrap=`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')"
-      style="background-image:url('${posterSrc}');background-size:cover;background-position:center;background-color:${col}22;"
-      onerror="">
-      <div class="ev-card-poster-ph" style="display:none;background:linear-gradient(135deg,${col}22,${col}44)">
-        <div class="ev-card-poster-ph-icon">${catIcon(ev.category)}</div>
-        <div class="ev-card-poster-ph-label">${catLabel(ev.category)}</div>
-      </div>
-      <div class="ev-card-img-overlay">🔍 Lihat Poster</div>
-    </div>`;
+    const catThumb=getCatThumb(ev);
+    const posterSrc=hasPoster?driveToThumbnail(ev.poster_url):catThumb;
+    const hasImg=hasPoster||!!catThumb;
+
+    const imgWrap=hasImg
+      ?`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')"
+          style="background-image:url('${posterSrc}');background-size:cover;background-position:center;background-color:${col}22;">
+          <div class="ev-card-img-overlay">🔍 Lihat Poster</div>
+        </div>`
+      :`<div class="ev-card-img-wrap ev-card-img-placeholder" onclick="openPosterModal('${ev.id}')"
+          style="background:linear-gradient(135deg,${col}18,${col}38);">
+          <div class="ev-card-poster-ph-icon" style="font-size:2.2rem">${catIcon(ev.category)}</div>
+          <div class="ev-card-poster-ph-label" style="font-size:10px;font-weight:700;color:${col};margin-top:4px;letter-spacing:.05em">${catLabel(ev.category)}</div>
+        </div>`;
 
     return `<div class="ev-card${isFinished?' ev-card-past':''}">
       ${imgWrap}
@@ -395,7 +478,7 @@ function renderEvents(){
           </div>
           <div class="ev-card-admin">
             <button class="ev-card-edit-btn" onclick="openEditEvent('${ev.id}');event.stopPropagation()">✎ Ubah</button>
-            <button class="ev-card-unfeature-btn" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'★':'☆'}</button>
+            <button class="ev-card-unfeature-btn${ev.featured?' is-pinned':''}" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'★':'☆'}</button>
           </div>
         </div>
         <div class="ev-card-title">${ev.title}</div>
@@ -418,10 +501,23 @@ function openPosterModal(evId){
   const MS=_lang==='en'?MS_EN:MS_ID;
   const d=new Date(ev.date+'T00:00:00');
   const col=catColor(ev.category);
-  const posterSrc=ev.poster_url?driveToThumbnail(ev.poster_url):DEFAULT_POSTER;
+  const catThumb=getCatThumb(ev);
+  const posterSrc=ev.poster_url?driveToThumbnail(ev.poster_url):catThumb;
   const img=document.getElementById('pmImg');
-  if(img){img.src=posterSrc;img.onerror=()=>{img.src=DEFAULT_POSTER;};}
-  const title=document.getElementById('pmTitle');
+  if(img){
+    if(posterSrc){img.src=posterSrc;img.style.display='block';}
+    else{img.src='';img.style.display='none';}
+  }
+  const pmImgWrap=document.getElementById('pmImgWrap');
+  if(pmImgWrap){
+    if(posterSrc){
+      pmImgWrap.style.background='#000';
+      pmImgWrap.style.display='flex';
+    } else {
+      pmImgWrap.style.background=`linear-gradient(135deg,${col}22,${col}44)`;
+      pmImgWrap.style.display='flex';
+    }
+  }  const title=document.getElementById('pmTitle');
   if(title)title.textContent=ev.title;
   const dateEl=document.getElementById('pmDate');
   if(dateEl){
@@ -460,8 +556,9 @@ function closePosterModalDirect(){
 
 async function toggleFeatured(id,currentlyFeatured){
   try{
-    await dbUpd('events',`id=eq.${id}`,{featured:!currentlyFeatured});
+    await dbWrite('events','UPDATE',{featured:!currentlyFeatured},{id});
     const ev=EVENTS.find(e=>e.id===id);if(ev)ev.featured=!currentlyFeatured;
+    localStorage.removeItem('naposo_featured_change');localStorage.setItem('naposo_featured_change',JSON.stringify({id,featured:!currentlyFeatured,ts:Date.now()}));
     renderEvents();
     showToast(currentlyFeatured?'Dihapus dari beranda.':'Ditambahkan ke beranda. ⭐','ok');
   }catch(e){showToast('Gagal: '+e.message,'err');}
@@ -525,7 +622,6 @@ async function saveEditEvent(){
   btn.disabled=false;btn.textContent=tx('editSubmitBtn');
 }
 
-/* ══ RECAP CAROUSEL ══ */
 const RECAP=[
   {category:'event-gabungan',title:'Bonataon RN',meta:'28 Feb 2026',bgColor:'#059669'},
   {category:'event-gabungan',title:'Paskah RN',meta:'4 Apr 2026',bgColor:'#c9a227'},
@@ -543,11 +639,28 @@ function renderRecap(){
         <div class="recap-meta">${r.meta}</div>
       </div>
     </div>`).join('');
+  renderRecapDots();
+  el.addEventListener('scroll',()=>updateRecapDots(),{passive:true});
+}
+function renderRecapDots(){
+  const dotsEl=document.getElementById('recapDots');if(!dotsEl)return;
+  dotsEl.innerHTML=RECAP.map((_,i)=>`<button class="recap-dot${i===0?' active':''}" onclick="recapScrollTo(${i})" aria-label="Slide ${i+1}"></button>`).join('');
+}
+function updateRecapDots(){
+  const el=document.getElementById('recapCarousel');if(!el)return;
+  const dotsEl=document.getElementById('recapDots');if(!dotsEl)return;
+  const card=el.querySelector('.recap-card');if(!card)return;
+  const idx=Math.round(el.scrollLeft/(card.offsetWidth+14));
+  dotsEl.querySelectorAll('.recap-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+function recapScrollTo(idx){
+  const el=document.getElementById('recapCarousel');if(!el)return;
+  const card=el.querySelector('.recap-card');if(!card)return;
+  el.scrollTo({left:idx*(card.offsetWidth+14),behavior:'smooth'});
 }
 function recapScroll(dir){
   const el=document.getElementById('recapCarousel');if(!el)return;
-  const card=el.querySelector('.recap-card');
-  if(!card)return;
+  const card=el.querySelector('.recap-card');if(!card)return;
   el.scrollBy({left:dir*(card.offsetWidth+14),behavior:'smooth'});
 }
 
@@ -632,6 +745,26 @@ async function trackVisit(){
   }catch(e){}
 }
 
+/* ══ SCROLL REVEAL (IntersectionObserver) ══ */
+function initScrollReveal(){
+  const obs=new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{
+      if(en.isIntersecting){en.target.classList.add('visible');obs.unobserve(en.target);}
+    });
+  },{threshold:0.05});/* rootMargin positif agar elemen langsung di viewport langsung terdeteksi */
+
+  function observeCards(){
+    /* rAF: tunggu browser selesai paint baru pasang observer,
+       agar elemen yang sudah di viewport langsung dapat isIntersecting:true */
+    requestAnimationFrame(()=>{
+      document.querySelectorAll('.ev-card:not(.visible)').forEach(el=>obs.observe(el));
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el=>obs.observe(el));
+    });
+  }
+  observeCards();
+  window._observeCards=observeCards;
+}
+
 /* ══ TOAST ══ */
 let _tt;
 function showToast(msg,type=''){
@@ -668,9 +801,28 @@ async function init(){
     try{DOCS=await dbGet('home_docs','select=*&order=created_at.asc');}catch(e){DOCS=[];}
     renderEvents();renderRecap();renderDocs();
     if(isAdmin)renderDocAdmList();
+    initScrollReveal();
+    if(window._observeCards)window._observeCards();
   }catch(e){
     const g=document.getElementById('eventsGrid');
     if(g)g.innerHTML=`<div class="ev-empty">Gagal memuat data.</div>`;
   }
 }
 init();
+
+/* ══ PWA SERVICE WORKER ══ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+
+/* ══ CROSS-TAB FEATURED SYNC ══ */
+window.addEventListener('storage',e=>{
+  if(e.key!=='naposo_featured_change'||!e.newValue)return;
+  try{
+    const{id,featured}=JSON.parse(e.newValue);
+    const ev=EVENTS.find(e=>e.id===id);
+    if(ev){ev.featured=featured;renderEvents();}
+  }catch(_){}
+});
