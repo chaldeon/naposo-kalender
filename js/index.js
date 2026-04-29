@@ -133,6 +133,7 @@ const T={
   annCancelBtn:{id:'Batal',en:'Cancel'},
   annSaveBtn:{id:'Simpan',en:'Save'},
   adminBarTxt:{id:'',en:''},
+  feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){
@@ -398,16 +399,27 @@ function getDisplayEvents(){
 
   // Pinned selalu masuk (dijamin ada di 6 slot), auto mengisi sisa
   const pinnedUpcoming=EVENTS.filter(e=>e.featured&&!isPast(e)).sort(sortAsc);
-  const pinnedPast    =EVENTS.filter(e=>e.featured&&isPast(e)).sort(sortDesc);
+  const pinnedPast    =EVENTS.filter(e=>e.featured&&isPast(e)).sort(sortAsc);
   const autoUpcoming  =EVENTS.filter(e=>!e.featured&&!isPast(e)).sort(sortAsc);
-  const autoPast      =EVENTS.filter(e=>!e.featured&&isPast(e)).sort(sortDesc);
+  const autoPast      =EVENTS.filter(e=>!e.featured&&isPast(e)).sort(sortAsc);
 
-  // Urutan: upcoming auto → upcoming pinned → past pinned → past auto
   // Pinned dijamin masuk semua; auto hanya mengisi sisa slot sampai 6
-  const allAuto=[...autoUpcoming,...autoPast];
   const allPinned=[...pinnedUpcoming,...pinnedPast];
   const sisa=Math.max(0,6-allPinned.length);
-  return [...allAuto.slice(0,sisa),...allPinned].slice(0,6);
+  const autoFill=[...autoUpcoming,...autoPast].slice(0,sisa);
+
+  // Gabung pinned + auto, lalu sort: upcoming dulu (asc), past belakang (asc dari terdekat ke terjauh)
+  // Dalam tanggal/status yang sama, pinned duluan dari auto
+  const combined=[...allPinned,...autoFill];
+  combined.sort((a,b)=>{
+    const aPast=isPast(a),bPast=isPast(b);
+    if(aPast!==bPast) return aPast?1:-1;                         // upcoming selalu duluan
+    const dateCmp=a.date.localeCompare(b.date);
+    if(dateCmp!==0) return dateCmp;                              // sort date asc (berlaku untuk upcoming & past)
+    if(a.featured!==b.featured) return a.featured?-1:1;         // pinned duluan dalam tanggal sama
+    return (a.time||'').localeCompare(b.time||'');
+  });
+  return combined.slice(0,6);
 }
 function linkifyNote(text){
   if(!text)return '';
@@ -640,18 +652,29 @@ function renderRecap(){
       </div>
     </div>`).join('');
   renderRecapDots();
-  el.addEventListener('scroll',()=>updateRecapDots(),{passive:true});
+  el.addEventListener('scroll',()=>updateRecapProgress(),{passive:true});
+  setTimeout(updateRecapProgress,50);
 }
 function renderRecapDots(){
-  const dotsEl=document.getElementById('recapDots');if(!dotsEl)return;
-  dotsEl.innerHTML=RECAP.map((_,i)=>`<button class="recap-dot${i===0?' active':''}" onclick="recapScrollTo(${i})" aria-label="Slide ${i+1}"></button>`).join('');
+  updateRecapProgress();
 }
 function updateRecapDots(){
+  updateRecapProgress();
+}
+function updateRecapProgress(){
   const el=document.getElementById('recapCarousel');if(!el)return;
-  const dotsEl=document.getElementById('recapDots');if(!dotsEl)return;
+  const bar=document.getElementById('recapProgressBar');if(!bar)return;
   const card=el.querySelector('.recap-card');if(!card)return;
-  const idx=Math.round(el.scrollLeft/(card.offsetWidth+14));
-  dotsEl.querySelectorAll('.recap-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  const total=RECAP.length;if(!total)return;
+  const cardW=card.offsetWidth+14;
+  const idx=Math.min(Math.round(el.scrollLeft/cardW),total-1);
+  const pct=100/total;
+  bar.style.width=pct+'%';
+  bar.style.marginLeft=(idx*pct)+'%';
+  const prev=document.getElementById('recapPrev');
+  const next=document.getElementById('recapNext');
+  if(prev) prev.style.opacity=idx===0?'0.35':'1';
+  if(next) next.style.opacity=idx>=total-1?'0.35':'1';
 }
 function recapScrollTo(idx){
   const el=document.getElementById('recapCarousel');if(!el)return;

@@ -541,14 +541,9 @@ footer strong{color:rgba(255,255,255,.75)}
 [data-theme="dark"] .ev-card:hover{box-shadow:0 10px 28px rgba(0,0,0,.35)}
 
 /* ══ RECAP DOTS ══ */
-.recap-dots-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
-.recap-dots{display:flex;gap:6px;align-items:center;padding:2px 0}
-.recap-dot{
-  width:7px;height:7px;border-radius:50%;border:none;cursor:pointer;
-  background:var(--border2);transition:all .25s;padding:0;flex-shrink:0
-}
-.recap-dot.active{background:var(--gold);width:20px;border-radius:4px}
-.recap-dot:hover:not(.active){background:var(--text3)}
+.recap-bottom-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+.recap-progress-track{flex:1;height:3px;border-radius:2px;background:var(--border2);overflow:hidden}
+.recap-progress-bar{height:100%;border-radius:2px;background:var(--gold);transition:width .25s ease}
 
 /* ══ HERO TAGS — tooltip on hover ══ */
 .hero-tag{position:relative}
@@ -627,3 +622,8 @@ footer strong{color:rgba(255,255,255,.75)}
 
 /* social media expand arrow rotate */
 .contact-sm-row.open .contact-arrow{transform:rotate(180deg)}
+
+/* ══ FEEDBACK BUTTON ══ */
+.feedback-fab{position:fixed;bottom:24px;right:20px;z-index:998;display:flex;align-items:center;gap:7px;background:rgba(var(--blue-rgb,30,90,200),.55);color:#fff;border:none;border-radius:24px;padding:10px 16px 10px 13px;font-size:.8rem;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(10,31,68,.2);transition:background .18s,transform .18s,box-shadow .18s,opacity .18s;white-space:nowrap;backdrop-filter:blur(6px)}
+.feedback-fab:hover{background:var(--blue);transform:translateY(-2px);box-shadow:0 8px 24px rgba(10,31,68,.45)}
+.feedback-fab svg{flex-shrink:0}

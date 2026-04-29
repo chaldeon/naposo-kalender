@@ -79,6 +79,7 @@ const T={
   errDel:{id:'Gagal menghapus post.',en:'Failed to delete post.'},
   errLoad:{id:'Gagal memuat konten.',en:'Failed to load content.'},
   footerVisitLbl:{id:'kunjungan',en:'visits'},
+  feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){

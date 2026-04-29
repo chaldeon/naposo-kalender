@@ -132,6 +132,7 @@ const T={
     scopeLblAll:'Semua Bulan',scopeLblMonth:'Bulan Ini Saja',scopeLblPick:'Pilih Bulan…',scopeLblCat:'Kategori Aktif',
     exportRangeSep:'s/d',exportCancelBtn:'Batal',doExportBtnTxt:'Export Sekarang',
     exportProgressTxt:'Menyiapkan…',
+    feedbackFabTxt:'Beri Saran',
   },
   en:{loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     navHome:'Home',navKalender:'Calendar',navRev:'Reversement',
@@ -159,6 +160,7 @@ const T={
     scopeLblAll:'All Months',scopeLblMonth:'This Month Only',scopeLblPick:'Pick Month…',scopeLblCat:'Active Category',
     exportRangeSep:'to',exportCancelBtn:'Cancel',doExportBtnTxt:'Export Now',
     exportProgressTxt:'Preparing…',
+    feedbackFabTxt:'Give Feedback',
   }
 };
 function tx(k,...a){const fn=(T[lang]||T.id)[k]||T.id[k]||k;return typeof fn==='function'?fn(...a):fn;}
@@ -428,6 +430,7 @@ function applyLangUI(){
     expDescPdf:'expDescPdf',expDescPng:'expDescPng',expDescCsv:'expDescCsv',expDescIcal:'expDescIcal',
     scopeLblAll:'scopeLblAll',scopeLblMonth:'scopeLblMonth',scopeLblPick:'scopeLblPick',scopeLblCat:'scopeLblCat',
     exportRangeSep:'exportRangeSep',exportCancelBtn:'exportCancelBtn',doExportBtnTxt:'doExportBtnTxt',
+    feedbackFabTxt:'feedbackFabTxt',
   };
   Object.entries(ids).forEach(([el,key])=>{const e=document.getElementById(el);if(e)e.textContent=tx(key);});
   const todayBtn=document.getElementById('todayBtn');if(todayBtn)todayBtn.textContent=lang==='en'?'Today':'Hari ini';

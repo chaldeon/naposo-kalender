@@ -145,11 +145,11 @@
     </div>
     <div class="recap-carousel-wrap">
       <div class="recap-carousel" id="recapCarousel"></div>
-      <div class="recap-dots-row">
-        <div class="recap-dots" id="recapDots"></div>
+      <div class="recap-bottom-row">
+        <div class="recap-progress-track"><div class="recap-progress-bar" id="recapProgressBar"></div></div>
         <div class="recap-nav">
-          <button class="recap-nav-btn" onclick="recapScroll(-1)" title="Sebelumnya">←</button>
-          <button class="recap-nav-btn" onclick="recapScroll(1)" title="Berikutnya">→</button>
+          <button class="recap-nav-btn" id="recapPrev" onclick="recapScroll(-1)" title="Sebelumnya">←</button>
+          <button class="recap-nav-btn" id="recapNext" onclick="recapScroll(1)" title="Berikutnya">→</button>
         </div>
       </div>
     </div>
@@ -389,6 +389,12 @@
     </div>
   </div>
 </div>
+
+<!-- ══ FEEDBACK BUTTON ══ -->
+<a class="feedback-fab" href="https://forms.gle/7Um3RetNVywWrmV66" target="_blank" rel="noopener" aria-label="Beri saran">
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0L10.7 12.4a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/></svg>
+  <span id="feedbackFabTxt">Beri Saran</span>
+</a>
 
 <script src="js/index.js"></script>
 </body>
