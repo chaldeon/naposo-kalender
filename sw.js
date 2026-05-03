@@ -2,7 +2,7 @@
 // Strategi: cache-first untuk asset statis, network-first untuk API Supabase
 
 // ⚠️ Bump versi ini setiap deploy agar cache lama dihapus
-const CACHE_NAME = 'naposo-v2';
+const CACHE_NAME = 'naposo-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
