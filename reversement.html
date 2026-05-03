@@ -13,6 +13,17 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Naposo HKBP"/>
   <link rel="apple-touch-icon" href="img/icon-192.png"/>
+  <!-- ══ SEO: Open Graph & Twitter Card ══ -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Reversement · Naposo HKBP Ujung Menteng"/>
+  <meta property="og:description" content="Renungan mingguan Senin & Jumat dari Naposo HKBP Ujung Menteng — ayat dan refleksi untuk memulai harimu."/>
+  <meta property="og:url" content="https://naposo-hkbp-um.github.io/reversement.html"/>
+  <meta property="og:image" content="https://naposo-hkbp-um.github.io/img/icon-512.png"/>
+  <meta property="og:locale" content="id_ID"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Reversement · Naposo HKBP Ujung Menteng"/>
+  <meta name="twitter:description" content="Renungan mingguan Senin & Jumat dari Naposo HKBP Ujung Menteng — ayat dan refleksi untuk memulai harimu."/>
+  <meta name="twitter:image" content="https://naposo-hkbp-um.github.io/img/icon-512.png"/>
 </head>
 <body>
 
@@ -77,6 +88,49 @@
 </div>
 </header>
 
+<!-- ══ BOTTOM NAV (mobile only) ══ -->
+<nav class="bottom-nav" id="bottomNav" aria-label="Navigasi bawah">
+  <a class="bn-tab" href="index.html" aria-label="Home">
+    <span class="bn-icon">🏠</span>
+    <span class="bn-label" id="bnHome">Home</span>
+  </a>
+  <a class="bn-tab" href="kalender.html" aria-label="Kalender">
+    <span class="bn-icon">📅</span>
+    <span class="bn-label" id="bnKalender">Kalender</span>
+  </a>
+  <a class="bn-tab bn-tab--active" href="reversement.html" aria-label="Reversement">
+    <span class="bn-icon">✝️</span>
+    <span class="bn-label" id="bnRev">Reversement</span>
+  </a>
+  <button class="bn-tab" id="bnLoginTab" onclick="openBnSheet()" aria-label="Login / Menu">
+    <span class="bn-icon" id="bnLoginIcon">🔐</span>
+    <span class="bn-label" id="bnLoginLabel">Login</span>
+  </button>
+</nav>
+
+<!-- ══ BOTTOM NAV ACTION SHEET ══ -->
+<div class="bn-sheet-overlay" id="bnSheetOverlay" onclick="closeBnSheet()"></div>
+<div class="bn-sheet" id="bnSheet">
+  <div class="bn-sheet-handle"></div>
+  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span></div>
+  <div class="bn-sheet-item" onclick="toggleDark();closeBnSheet()">
+    <span>🌙 <span id="bnDarkLbl">Dark Mode</span></span>
+    <div class="tog-track" id="bnDarkTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="bn-sheet-item" onclick="toggleLang();closeBnSheet()">
+    <span>🌐 <span id="bnLangLbl">Bahasa</span></span>
+    <div class="tog-track" id="bnLangTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="bn-sheet-sep"></div>
+  <div id="bnAdminSection" style="display:none;flex-direction:column;gap:0">
+    <div class="bn-sheet-sep"></div>
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="doLogout();closeBnSheet()"><span id="bnLogout">Logout</span></button>
+  </div>
+  <div id="bnGuestSection">
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-login" onclick="closeBnSheet();handleLoginBtn()">🔐 <span id="bnLoginLbl">Login Admin</span></button>
+  </div>
+</div>
+
 <!-- ══ ADMIN BAR ══ -->
 <div class="admin-bar" id="adminBar">
   <span class="admin-bar-txt" id="adminBarTxt"></span>
@@ -97,8 +151,10 @@
   <button class="rev-filter-btn active" data-filter="all" onclick="filterPosts('all')" id="filterAll">Semua</button>
   <button class="rev-filter-btn" data-filter="senin" onclick="filterPosts('senin')" id="filterSenin">🌅 Senin</button>
   <button class="rev-filter-btn" data-filter="jumat" onclick="filterPosts('jumat')" id="filterJumat">🌿 Jumat</button>
+</div>
+<div class="rev-add-wrap">
   <!-- Tombol ini hanya muncul saat .is-admin -->
-  <button class="rev-filter-btn rev-add-btn admin-only" onclick="openAdminForm(null)" id="addPost">+ Tambah Post</button>
+  <button class="rev-add-btn-standalone" onclick="openAdminForm(null)"><span id="addPost">+ Tambah Post</span></button>
 </div>
 
 <!-- ══ GRID ══ -->
@@ -266,8 +322,28 @@
 <!-- ══ FEEDBACK BUTTON ══ -->
 <a class="feedback-fab" href="https://forms.gle/7Um3RetNVywWrmV66" target="_blank" rel="noopener" aria-label="Beri saran">
   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0L10.7 12.4a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/></svg>
-  <span id="feedbackFabTxt">Beri Saran</span>
+  <span class="fab-txt" id="feedbackFabTxt">Beri Saran</span>
 </a>
+
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="rev-modal-overlay" id="confirmModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,20,40,.55);backdrop-filter:blur(4px);z-index:620;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.28);width:100%;max-width:380px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,var(--navy),var(--blue-mid));padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+      <h2 style="font-family:var(--font-s);font-size:.9rem;color:#fff;font-weight:700" id="confirmModalTitle">Konfirmasi</h2>
+      <button style="background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center" onclick="closeConfirmModal()">×</button>
+    </div>
+    <div style="padding:16px 18px">
+      <p id="confirmModalMsg" style="font-size:.87rem;line-height:1.6;color:var(--text)"></p>
+    </div>
+    <div style="padding:10px 18px;background:var(--surface2);border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost" onclick="closeConfirmModal()" id="confirmCancelBtn">Batal</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCROLL TO TOP ══ -->
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll ke atas">↑</button>
 
 <script src="js/reversement.js"></script>
 </body>

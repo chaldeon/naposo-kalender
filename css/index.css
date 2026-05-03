@@ -78,7 +78,7 @@ header .hdr{position:relative}
 .icon-toggle:hover{background:rgba(255,255,255,.2);color:#fff}
 
 /* hamburger */
-.hdr-menu-btn{display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;width:36px;height:36px;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0}
+.hdr-menu-btn{display:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;width:44px;height:44px;border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0}
 @media(max-width:680px){.hdr-menu-btn{display:flex}}
 .hdr-menu-panel{display:none;position:absolute;top:calc(var(--hh) + 4px);right:12px;width:fit-content;background:var(--navy);border:1px solid rgba(255,255,255,.15);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);min-width:220px;z-index:350;overflow:hidden}
 .hdr-menu-panel.open{display:block}
@@ -145,11 +145,11 @@ html[data-theme] *{transition:filter .12s,opacity .2s,transform .15s!important}
 
 /* ══ HERO ══ */
 .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--blue-mid) 55%,#1e5fa8 100%);padding:36px 20px 30px;text-align:center;position:relative;overflow:hidden}
-.hero-watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.11}
+.hero-watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:.11;will-change:transform}
 .hero-cross{display:flex;justify-content:center;margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(201,162,39,.45))}
 .hero-title{font-family:var(--font-s);font-size:clamp(18px,3.5vw,26px);font-weight:700;color:#fff;letter-spacing:.01em;line-height:1.25;margin-bottom:8px}
 .hero-sub{font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.7;max-width:360px;margin:0 auto 18px}
-.hero-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;position:relative}
+.hero-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;position:relative;padding:0 8px;max-width:100%;box-sizing:border-box}
 .hero-tag{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:4px 14px;font-size:11.5px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
 .hero-tag:hover{background:rgba(255,255,255,.14);color:#fff}
 .hero-tag-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;font-size:11px;line-height:1.5;padding:8px 12px;border-radius:8px;white-space:normal;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:10;text-align:center;pointer-events:none;min-width:120px;max-width:200px}
@@ -256,7 +256,7 @@ html[data-theme] *{transition:filter .12s,opacity .2s,transform .15s!important}
 .ev-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:6px}
 
 /* date row — compact horizontal */
-.ev-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.ev-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:nowrap;min-width:0}
 .ev-card-date{
   display:inline-flex;align-items:center;gap:4px;
   font-size:11px;font-weight:600;color:var(--text3);
@@ -268,7 +268,7 @@ html[data-theme] *{transition:filter .12s,opacity .2s,transform .15s!important}
 .ev-card-date .mon{font-weight:600;color:var(--text2);text-transform:uppercase;font-size:10px}
 .ev-card-date .yr{opacity:.5;font-size:10px}
 
-.ev-card-admin{display:flex;gap:4px;flex-shrink:0}
+.ev-card-admin{display:flex;gap:4px;flex-shrink:0;align-items:flex-start}
 .ev-card-edit-btn,.ev-card-unfeature-btn{
   display:none;font-size:11px;padding:3px 7px;border-radius:6px;cursor:pointer;
   align-items:center;gap:3px;transition:background .15s,color .15s;
@@ -305,6 +305,10 @@ body.is-admin .ev-card-edit-btn,body.is-admin .ev-card-unfeature-btn{display:inl
 .ev-card-past .ev-card-title{opacity:.6}
 .ev-card-past .ev-card-accent{filter:grayscale(.6)}
 .ev-card-past .ev-card-img-wrap{filter:grayscale(.4)}
+
+/* countdown badge */
+.ev-countdown{display:inline-flex;align-items:center;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,190,.1);color:var(--blue);border:0.5px solid rgba(37,99,190,.2);letter-spacing:.01em;width:fit-content}
+.ev-countdown-today{background:rgba(201,162,39,.12);color:var(--gold);border-color:rgba(201,162,39,.3)}
 
 .ev-empty{grid-column:1/-1;padding:40px 20px;color:var(--text3);font-size:.82rem;text-align:center;font-style:italic}
 .ev-edit-row{display:flex;gap:10px;flex-wrap:wrap}
@@ -355,7 +359,7 @@ body.is-admin .ev-card-edit-btn,body.is-admin .ev-card-unfeature-btn{display:inl
 .pm-close{
   position:absolute;top:14px;right:14px;
   background:rgba(0,0,0,.55);border:none;
-  color:#fff;width:32px;height:32px;border-radius:50%;
+  color:#fff;width:44px;height:44px;border-radius:50%;
   font-size:16px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:background .15s;z-index:10;
@@ -465,7 +469,7 @@ body.is-admin .ev-card-edit-btn,body.is-admin .ev-card-unfeature-btn{display:inl
 .doc-adm-info{flex:1;min-width:0}
 .doc-adm-title{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .doc-adm-meta{font-size:10.5px;color:var(--text3)}
-.doc-del{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px;flex-shrink:0}
+.doc-del{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 8px;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;}
 .doc-del:hover{color:var(--red)}
 
 /* announce admin */
@@ -494,7 +498,7 @@ body.is-admin .ev-card-edit-btn,body.is-admin .ev-card-unfeature-btn{display:inl
 .ann-preview .announce-cta{font-size:.75rem;font-weight:700;color:var(--navy);background:rgba(10,31,68,.12);padding:4px 10px;border-radius:20px;white-space:nowrap;text-decoration:none;flex-shrink:0}
 
 /* ══ FOOTER ══ */
-footer{background:var(--navy);color:rgba(255,255,255,.4);text-align:center;padding:12px 16px;font-size:.7rem;line-height:1.9}
+footer{background:var(--navy);color:rgba(255,255,255,.4);text-align:center;padding:12px 16px;font-size:.7rem;line-height:1.9;position:relative;z-index:1}
 footer strong{color:rgba(255,255,255,.75)}
 
 /* ══ TOAST ══ */
@@ -593,11 +597,11 @@ footer strong{color:rgba(255,255,255,.75)}
   .bottom-row{gap:12px}
   .admin-bar{padding:5px 12px;flex-wrap:wrap}
   .admin-bar-txt{font-size:.68rem}
-  .announce-bar{padding:8px 44px 8px 12px;gap:6px;flex-wrap:nowrap}
-  .announce-icon{font-size:15px}
-  .announce-content{min-width:0}
-  .announce-cta{padding:5px 10px;font-size:.7rem}
-  .announce-close{right:8px;width:26px;height:26px;font-size:13px}
+  .announce-bar{padding:8px 52px 8px 12px;gap:6px;flex-wrap:nowrap}
+  .announce-icon{font-size:15px;display:none}
+  .announce-content{min-width:0;flex:1}
+  .announce-cta{padding:5px 10px;font-size:.7rem;flex-shrink:0;max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .announce-close{right:6px;width:32px;height:32px;font-size:13px;top:50%;transform:translateY(-50%)}
   .hdr-menu-panel{z-index:500}
   .admin-dd{right:-4px;width:200px}
   .wrap{padding:16px 14px 40px}
@@ -623,7 +627,226 @@ footer strong{color:rgba(255,255,255,.75)}
 /* social media expand arrow rotate */
 .contact-sm-row.open .contact-arrow{transform:rotate(180deg)}
 
+/* ══ PULL TO REFRESH ══ */
+.ptr-spinner{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:500;display:flex;align-items:center;gap:8px;background:var(--card);color:var(--text);border-radius:20px;padding:7px 16px 7px 12px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+.ptr-spinner.ptr-visible{transform:translateX(-50%) translateY(0);opacity:1}
+.ptr-spinner svg{animation:ptr-spin .8s linear infinite}
+@keyframes ptr-spin{to{transform:rotate(360deg)}}
+
 /* ══ FEEDBACK BUTTON ══ */
 .feedback-fab{position:fixed;bottom:24px;right:20px;z-index:998;display:flex;align-items:center;gap:7px;background:rgba(var(--blue-rgb,30,90,200),.55);color:#fff;border:none;border-radius:24px;padding:10px 16px 10px 13px;font-size:.8rem;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(10,31,68,.2);transition:background .18s,transform .18s,box-shadow .18s,opacity .18s;white-space:nowrap;backdrop-filter:blur(6px)}
 .feedback-fab:hover{background:var(--blue);transform:translateY(-2px);box-shadow:0 8px 24px rgba(10,31,68,.45)}
 .feedback-fab svg{flex-shrink:0}
+
+/* ══════════════════════════════════════════
+   SESI 34 — ADDITIONS
+   Items: 1,2,3,4,6,7,8,9,10,11
+   ══════════════════════════════════════════ */
+
+/* ── Item 3: Confirm Modal ── */
+/* Reuses existing .overlay + .modal classes — no extra CSS needed */
+/* confirmCancelBtn / confirmOkBtn use existing .btn classes */
+
+/* ── Item 7: Empty State ── */
+.ev-empty-state{
+  grid-column:1/-1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px 20px;text-align:center;gap:10px;
+}
+.ev-empty-state-icon{font-size:2.8rem;line-height:1;opacity:.6}
+.ev-empty-state-title{font-size:.92rem;font-weight:700;color:var(--text2)}
+.ev-empty-state-sub{font-size:.8rem;color:var(--text3);line-height:1.5;max-width:280px}
+
+/* ── Item 8: Skeleton Loader ── */
+@keyframes shimmer{
+  0%{background-position:-400px 0}
+  100%{background-position:400px 0}
+}
+.sk-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  overflow:hidden;display:flex;flex-direction:column;min-height:220px;
+}
+.sk-img{
+  width:100%;aspect-ratio:16/9;
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
+  background-size:800px 100%;
+  animation:shimmer 1.4s infinite linear;
+}
+.sk-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.sk-line{
+  border-radius:4px;
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
+  background-size:800px 100%;
+  animation:shimmer 1.4s infinite linear;
+}
+.sk-line-sm{height:10px;width:55%}
+.sk-line-md{height:13px;width:80%}
+.sk-line-lg{height:13px;width:95%}
+.sk-line-xs{height:9px;width:40%}
+
+/* ── Item 9: Scroll to Top ── */
+.scroll-top-btn{
+  position:fixed;bottom:72px;left:20px;z-index:997;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  border:none;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(10,31,68,.25);
+  opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;
+  transform:translateY(8px);
+}
+.scroll-top-btn.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
+.scroll-top-btn:hover{background:var(--blue-mid);transform:translateY(-2px)}
+
+/* ── Item 10: Card fade-in animation — staggered ── */
+/* Already handled by existing evCardIn + nth-child rules */
+/* For re-renders triggered by data load, we rely on JS adding class */
+.ev-card.card-animate{animation:evCardIn .4s ease both}
+
+/* ── Item 11: A11Y — Tap targets ── */
+@media(max-width:680px){
+  .recap-nav-btn{min-width:44px;min-height:44px}
+  .ev-card-edit-btn,.ev-card-unfeature-btn{min-width:44px;min-height:44px;padding:0 8px}
+  /* Fix 8: Pastikan tombol pin tidak meluber keluar card, bintang center vertikal */
+  .ev-card-admin{max-width:50%;gap:2px;align-items:center}
+  .announce-close{min-width:44px;min-height:44px;right:4px}
+  .modal-x{min-width:44px;min-height:44px}
+  .ev-card-img-wrap{min-height:44px}
+  .icon-toggle{min-height:44px;padding:0 12px}
+}
+/* Desktop small buttons — extend hit area via pseudo */
+.ev-card-edit-btn::before,.ev-card-unfeature-btn::before{
+  content:'';position:absolute;inset:-6px;
+}
+.ev-card-edit-btn,.ev-card-unfeature-btn{position:relative}
+
+/* ══════════════════════════════════════════
+   SESI 35 — BOTTOM NAVIGATION BAR (MOBILE)
+   ══════════════════════════════════════════ */
+
+/* ── Bottom Nav — hanya tampil mobile ≤680px ── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:60px;
+  background:var(--navy);
+  border-top:1px solid rgba(255,255,255,.12);
+  z-index:450;
+  align-items:stretch;
+  box-shadow:0 -4px 20px rgba(0,0,0,.25);
+  /* Safe area untuk iPhone home bar */
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(max-width:680px){
+  .bottom-nav{display:flex}
+  /* Sembunyikan hamburger — digantikan bottom nav */
+  .hdr-menu-btn{display:none!important}
+  /* Geser elemen fixed agar tidak bertabrakan dengan bottom nav */
+  .toast{bottom:calc(70px + env(safe-area-inset-bottom,0px))!important}
+  /* Feedback fab di mobile: tampilkan kecil di kiri atas bottom-nav, hanya icon */
+  .feedback-fab{
+    display:flex!important;
+    bottom:calc(68px + env(safe-area-inset-bottom,0px));
+    right:12px;
+    padding:8px 10px;
+    font-size:.75rem;
+    border-radius:20px;
+    background:rgba(var(--blue-rgb,30,90,200),.7);
+    box-shadow:0 2px 10px rgba(10,31,68,.3);
+  }
+  .feedback-fab .fab-txt{display:none} /* Sembunyikan teks, tampilkan hanya icon */
+  /* Scroll-to-top di kiri, di atas FAB */
+  .scroll-top-btn{bottom:calc(120px + env(safe-area-inset-bottom,0px))!important;left:12px;right:auto}
+  /* Body padding cukup untuk bottom-nav + sedikit breathing room */
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+}
+
+/* ── Tab item ── */
+.bn-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;cursor:pointer;
+  color:rgba(255,255,255,.5);text-decoration:none;
+  font-family:var(--font-b);padding:6px 4px;
+  transition:color .18s;
+  min-height:44px;
+  -webkit-tap-highlight-color:transparent;
+}
+.bn-tab:hover,.bn-tab:focus-visible{color:rgba(255,255,255,.85);outline:none}
+.bn-tab--active{color:#fff}
+.bn-tab--active .bn-icon{
+  transform:scale(1.1);
+}
+.bn-icon{font-size:1.25rem;line-height:1;transition:transform .18s}
+.bn-label{font-size:.6rem;font-weight:600;letter-spacing:.02em;line-height:1;margin-top:1px}
+
+/* Indikator aktif — dot kecil di atas icon */
+.bn-tab--active::before{
+  content:'';display:block;
+  width:4px;height:4px;border-radius:50%;
+  background:var(--gold);
+  position:absolute;top:6px;left:50%;transform:translateX(-50%);
+}
+.bn-tab{position:relative}
+
+/* ── Action Sheet Overlay ── */
+.bn-sheet-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:449;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.bn-sheet-overlay.open{display:block}
+
+/* ── Action Sheet Panel ── */
+.bn-sheet{
+  display:block;
+  position:fixed;bottom:-100%;left:0;right:0;
+  background:var(--navy);
+  border-top:1px solid rgba(255,255,255,.15);
+  border-radius:16px 16px 0 0;
+  z-index:451;
+  padding:8px 0 calc(12px + env(safe-area-inset-bottom,0px));
+  transition:bottom .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 -8px 32px rgba(0,0,0,.35);
+}
+.bn-sheet.open{bottom:60px}
+
+/* Handle drag visual */
+.bn-sheet-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.25);
+  margin:0 auto 12px;
+}
+
+/* Sheet item — bisa div atau button */
+.bn-sheet-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+  font-size:.88rem;color:rgba(255,255,255,.85);
+  font-family:var(--font-b);font-weight:500;
+  width:100%;background:none;border:none;cursor:pointer;
+  text-align:left;gap:10px;
+  transition:background .15s;
+  min-height:44px;
+}
+.bn-sheet-item:hover,.bn-sheet-item:active{background:rgba(255,255,255,.07)}
+
+/* Actions (tombol saja, tanpa toggle) */
+.bn-sheet-action{justify-content:flex-start;gap:8px}
+.bn-sheet-login{color:var(--gold-lt);font-weight:600}
+.bn-sheet-danger{color:#fca5a5}
+
+/* Admin name display */
+.bn-sheet-admin-name{
+  font-size:.75rem;color:var(--gold-lt);
+  text-align:center;padding:6px 20px 2px;
+  font-weight:600;
+}
+
+/* Separator */
+.bn-sheet-sep{
+  height:1px;background:rgba(255,255,255,.1);
+  margin:4px 0;
+}

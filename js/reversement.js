@@ -5,9 +5,15 @@ const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Gr
 
 function driveToThumbnail(url){
   if(!url)return '';
-  const m=url.match(/\/file\/d\/([^/?\s]+)/);
+  const m=url.match(/\/file\/d\/([^/?\\s]+)/);
   if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
   return url;
+}
+
+/* ── Item 1 (XSS guard) — escapeHTML ── */
+function escapeHTML(str){
+  if(!str)return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 /* ══ SUPABASE HELPER ══ */
@@ -86,6 +92,7 @@ function applyLang(){
   document.documentElement.lang=_lang;
   Object.keys(T).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tx(id);});
   const ltm=document.getElementById('langTrackMobile');if(ltm)ltm.classList.toggle('on',_lang==='en');
+  const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
   const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
   if(isAdmin&&_adminName){
     const abt=document.getElementById('adminBarTxt');
@@ -102,6 +109,7 @@ function applyDark(){
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
   const dtm=document.getElementById('darkTrackMobile');if(dtm)dtm.classList.toggle('on',darkMode);
   const dbt=document.getElementById('darkToggleBtn');if(dbt)dbt.textContent=darkMode?'☀️':'🌙';
+  const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
 }
 function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
 function toggleDarkMobile(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
@@ -114,19 +122,54 @@ document.addEventListener('click',e=>{
   if(panel&&btn&&!panel.contains(e.target)&&!btn.contains(e.target))panel.classList.remove('open');
 });
 
-/* ══ MODAL HELPER (pola kalender) ══ */
-function closeModal(id){
-  const el=document.getElementById(id);
-  if(el)el.classList.remove('on');
+/* ══ MODAL HELPER ══ */
+/* ── Item A11Y: Focus Trap ── */
+const FOCUSABLE_SEL='button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';
+let _trapEl=null,_trapHandler=null;
+function _attachFocusTrap(el){
+  _detachFocusTrap();
+  const nodes=[...el.querySelectorAll(FOCUSABLE_SEL)].filter(n=>!n.closest('[hidden]')&&n.offsetParent!==null);
+  if(!nodes.length)return;
+  const first=nodes[0],last=nodes[nodes.length-1];
+  setTimeout(()=>first.focus(),50);
+  _trapEl=el;
+  _trapHandler=e=>{
+    if(e.key!=='Tab')return;
+    if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus();}}
+    else{if(document.activeElement===last){e.preventDefault();first.focus();}}
+  };
+  el.addEventListener('keydown',_trapHandler);
 }
-function openModal(id){
-  const el=document.getElementById(id);
-  if(el)el.classList.add('on');
+function _detachFocusTrap(){
+  if(_trapEl&&_trapHandler){_trapEl.removeEventListener('keydown',_trapHandler);}
+  _trapEl=null;_trapHandler=null;
 }
+function closeModal(id){const el=document.getElementById(id);if(el){el.classList.remove('on');_detachFocusTrap();}}
+function openModal(id){const el=document.getElementById(id);if(el){el.classList.add('on');_attachFocusTrap(el);}}
 function togglePw(inputId,btn){
-  const inp=document.getElementById(inputId);
-  if(!inp)return;
+  const inp=document.getElementById(inputId);if(!inp)return;
   inp.type=inp.type==='password'?'text':'password';
+}
+
+/* ══ Item 3: Custom Confirm Modal ══ */
+let _confirmCallback=null;
+function showConfirmModal(msg,onConfirm,okLabel){
+  const overlay=document.getElementById('confirmModalOverlay');
+  const msgEl=document.getElementById('confirmModalMsg');
+  const okBtn=document.getElementById('confirmOkBtn');
+  const cancelBtn=document.getElementById('confirmCancelBtn');
+  if(msgEl)msgEl.textContent=msg;  // textContent = auto XSS-safe
+  const okTxt=okLabel||(_lang==='en'?'Delete':'Hapus');
+  if(okBtn)okBtn.textContent=okTxt;
+  if(cancelBtn)cancelBtn.textContent=_lang==='en'?'Cancel':'Batal';
+  _confirmCallback=onConfirm;
+  if(okBtn)okBtn.onclick=()=>{closeConfirmModal();if(_confirmCallback)_confirmCallback();};
+  if(overlay){overlay.style.display='flex';}
+}
+function closeConfirmModal(){
+  const overlay=document.getElementById('confirmModalOverlay');
+  if(overlay)overlay.style.display='none';
+  _confirmCallback=null;
 }
 
 /* ══ LOGIN MODAL ══ */
@@ -168,7 +211,6 @@ async function doLogin(){
     });
     const data=await res.json();
     if(!data.success){
-      const err=document.getElementById('loginErr');
       err.textContent='Password salah atau nama tidak dipilih.';
       err.style.display='block';
       btn.disabled=false;btn.textContent=tx('loginSubmitBtn');return;
@@ -205,6 +247,7 @@ function _applyAdminUI(name){
   if(mobName){mobName.textContent=name;}
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
   const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
+  _syncBnAdminUI(name);
 }
 function _resetAuthUI(){
   _adminName='';
@@ -217,8 +260,8 @@ function _resetAuthUI(){
   if(mobBtn){mobBtn.style.display='flex';}
   const bar=document.getElementById('adminBar');if(bar)bar.classList.remove('on');
   const dd=document.getElementById('adminDd');if(dd)dd.classList.remove('open');
+  _syncBnAdminUI(null);
 }
-/* ══ ADMIN DROPDOWN — click outside ══ */
 document.addEventListener('click',e=>{
   const dd=document.getElementById('adminDd');
   const anchor=document.getElementById('adminDdAnchor');
@@ -237,22 +280,31 @@ function showToast(msg,type=''){
 /* ══ DATA STATE ══ */
 let POSTS=[];
 
+/* ══ Item 8: Skeleton Loader ══ */
+function renderSkeletonGrid(){
+  const grid=document.getElementById('revGrid');if(!grid)return;
+  grid.innerHTML=Array(6).fill(0).map(()=>`
+    <div class="sk-rev-card">
+      <div class="sk-rev-img"></div>
+      <div class="sk-rev-body">
+        <div class="sk-line sk-line-sm"></div>
+        <div class="sk-line sk-line-md"></div>
+        <div class="sk-line sk-line-lg"></div>
+        <div class="sk-line sk-line-md"></div>
+      </div>
+    </div>`).join('');
+}
+
 /* ══ LOAD FROM SUPABASE ══ */
 async function loadPosts(){
-  const grid=document.getElementById('revGrid');
-  if(grid)grid.innerHTML=`<div class="rev-loading">
-    <div class="rev-loading-dot"></div>
-    <div class="rev-loading-dot"></div>
-    <div class="rev-loading-dot"></div>
-  </div>`;
+  renderSkeletonGrid();
   try{
-    // Fetch hanya yang published — sesuai RLS policy anon
-    // Draft tidak ditampilkan sampai sistem auth native diimplementasi
     const query='reversement_posts?select=*&published=eq.true&order=date.desc';
     POSTS=await sb(query)||[];
     renderGrid();
   }catch(e){
     console.error('loadPosts error:',e);
+    const grid=document.getElementById('revGrid');
     if(grid)grid.innerHTML=`<div class="rev-empty">${tx('errLoad')}</div>`;
   }
 }
@@ -285,24 +337,48 @@ function renderGrid(){
   if(!grid)return;
   const filtered=_filter==='all'?POSTS:POSTS.filter(p=>p.day_type===_filter);
   const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
+
+  // Item 7: empty state informatif
   if(!sorted.length){
-    grid.innerHTML=`<div class="rev-empty">${_lang==='en'?'No posts yet.':'Belum ada konten.'}</div>`;
+    const isFiltered=_filter!=='all';
+    const icon=isFiltered?'🔍':'📖';
+    const title=isFiltered
+      ?(_lang==='en'?'No posts match this filter':'Tidak ada post untuk filter ini')
+      :(_lang==='en'?'No posts yet':'Belum ada konten');
+    const sub=isFiltered
+      ?(_lang==='en'?'Try selecting All or a different day.':'Coba pilih Semua atau hari yang lain.')
+      :(_lang==='en'?'Check back on Monday or Friday for a new devotion.':'Konten akan hadir setiap Senin dan Jumat.');
+    grid.innerHTML=`<div class="rev-empty-state">
+      <div class="rev-empty-state-icon">${icon}</div>
+      <div class="rev-empty-state-title">${title}</div>
+      <div class="rev-empty-state-sub">${sub}</div>
+      ${isFiltered?`<button class="btn btn-sm" style="margin-top:8px" onclick="filterPosts('all')">${_lang==='en'?'Show All':'Tampilkan Semua'}</button>`:''}
+    </div>`;
     return;
   }
-  grid.innerHTML=sorted.map(p=>{
+
+  // Item 10: staggered card animation
+  grid.innerHTML=sorted.map((p,idx)=>{
     const hasPoster=!!p.poster_url;
     const imgSrc=hasPoster?driveToThumbnail(p.poster_url):'';
     const dayLbl=p.day_type==='senin'?(_lang==='en'?'Monday':'Senin'):(_lang==='en'?'Friday':'Jumat');
     const snippet=(p.body||'').replace(/\n/g,' ').slice(0,140)+'…';
     const seriesLbl=p.series||'Reversement';
+    const delay=idx*55;
+
+    // Item 1: escapeHTML untuk alt + title
+    const safeTitle=escapeHTML(p.title);
+    const safeSeriesLbl=escapeHTML(seriesLbl);
+
     const posterHtml=hasPoster
       ?`<div class="rev-card-poster-wrap">
-           <img class="rev-card-poster" src="${imgSrc}" alt="${p.title}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-           <div class="rev-card-poster-placeholder" style="display:none"><div class="rev-card-poster-placeholder-icon">✝️</div><div class="rev-card-poster-placeholder-text">${seriesLbl}</div></div>
+           <img class="rev-card-poster" src="${imgSrc}" alt="${safeTitle}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+           <div class="rev-card-poster-placeholder" style="display:none"><div class="rev-card-poster-placeholder-icon">✝️</div><div class="rev-card-poster-placeholder-text">${safeSeriesLbl}</div></div>
          </div>`
-      :`<div class="rev-card-poster-wrap"><div class="rev-card-poster-placeholder"><div class="rev-card-poster-placeholder-icon">✝️</div><div class="rev-card-poster-placeholder-text">${seriesLbl}</div></div></div>`;
+      :`<div class="rev-card-poster-wrap"><div class="rev-card-poster-placeholder"><div class="rev-card-poster-placeholder-icon">✝️</div><div class="rev-card-poster-placeholder-text">${safeSeriesLbl}</div></div></div>`;
     const draftBadge=(!p.published)?`<span class="rev-draft-badge">Draft</span>`:'';
-    return `<div class="rev-card${!p.published?' rev-card-draft':''}" onclick="openRevModal('${p.id}')">
+
+    return `<div class="rev-card card-animate${!p.published?' rev-card-draft':''}" style="animation-delay:${delay}ms" onclick="openRevModal('${p.id}')">
       ${posterHtml}
       ${!p.published?draftBadge:''}
       <div class="rev-card-body">
@@ -310,9 +386,9 @@ function renderGrid(){
           <span class="rev-day-badge ${p.day_type}">${dayLbl}</span>
           <span class="rev-card-date-lbl">${formatDate(p.date)}</span>
         </div>
-        <div class="rev-card-title">${p.title}</div>
-        <div class="rev-card-verse">${p.verse_ref||''}</div>
-        <div class="rev-card-snippet">${snippet}</div>
+        <div class="rev-card-title">${safeTitle}</div>
+        <div class="rev-card-verse">${escapeHTML(p.verse_ref||'')}</div>
+        <div class="rev-card-snippet">${escapeHTML(snippet)}</div>
         <div class="rev-card-cta">${_lang==='en'?'Read more':'Baca selengkapnya'} </div>
       </div>
     </div>`;
@@ -340,17 +416,17 @@ function openRevModal(id){
   if(hasPoster){
     posterWrap.style.display='';
     posterImg.src=imgSrc;
-    posterImg.alt=post.title;
+    posterImg.alt=escapeHTML(post.title);
   } else {
     posterWrap.style.display='none';
   }
   posterWrap.classList.remove('dimmed');
 
-  // Isi desktop panel kanan
   const badge=document.getElementById('revModalDayBadge');
   badge.textContent=dayLbl;
   badge.className='rev-modal-day-badge '+post.day_type;
   document.getElementById('revModalDate').textContent=formatDate(post.date);
+  // textContent auto-escapes — XSS safe
   document.getElementById('revModalTitle').textContent=post.title;
   document.getElementById('revModalVerse').textContent=post.verse_ref||'';
   document.getElementById('revModalBody').textContent=post.body||'';
@@ -361,14 +437,13 @@ function openRevModal(id){
   if(editBtn)editBtn.textContent=tx('btnEdit');
   if(delBtn)delBtn.textContent=tx('btnDelete');
 
-  // Isi mobile bottom sheet
   _populateBottomSheet(post,dayLbl);
 
   document.getElementById('revModalOverlay').classList.add('open');
   document.getElementById('revModal').classList.add('open');
   document.body.style.overflow='hidden';
+  _attachFocusTrap(document.getElementById('revModal'));
 
-  // Mobile: animasi bottom sheet muncul
   if(_isMobile()&&hasPoster){
     const bs=document.getElementById('revBottomSheet');
     if(bs){
@@ -383,8 +458,8 @@ function openRevModal(id){
 }
 
 function _populateBottomSheet(post,dayLbl){
-  const bs=document.getElementById('revBottomSheet');
-  if(!bs)return;
+  const bs=document.getElementById('revBottomSheet');if(!bs)return;
+  // textContent untuk semua — XSS safe
   document.getElementById('revBsTitle').textContent=post.title;
   document.getElementById('revBsTitle2').textContent=post.title;
   const bsBadge=document.getElementById('revBsDayBadge');
@@ -410,6 +485,7 @@ function closeRevModal(){
   document.body.style.overflow='';
   _activePost=null;
   _removeSwipeGesture();
+  _detachFocusTrap();
 }
 
 /* ══ MOBILE BOTTOM SHEET ══ */
@@ -445,18 +521,15 @@ function _onSwipeEnd(e){
   if(dy>60)collapseBottomSheet();
 }
 function _initSwipeGesture(){
-  const bs=document.getElementById('revBottomSheet');
-  if(!bs)return;
+  const bs=document.getElementById('revBottomSheet');if(!bs)return;
   bs.addEventListener('touchstart',_onSwipeStart,{passive:true});
   bs.addEventListener('touchend',_onSwipeEnd,{passive:true});
 }
 function _removeSwipeGesture(){
-  const bs=document.getElementById('revBottomSheet');
-  if(!bs)return;
+  const bs=document.getElementById('revBottomSheet');if(!bs)return;
   bs.removeEventListener('touchstart',_onSwipeStart);
   bs.removeEventListener('touchend',_onSwipeEnd);
 }
-
 function expandRevModal(){}
 function collapseRevModal(){}
 
@@ -465,10 +538,7 @@ let _editingId=null;
 
 function openAdminForm(postId=null){
   _editingId=postId;
-  const f=document.getElementById('adminFormModal');
-  if(!f)return;
-
-  // Reset
+  const f=document.getElementById('adminFormModal');if(!f)return;
   ['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afBody'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
@@ -476,7 +546,6 @@ function openAdminForm(postId=null){
   document.getElementById('afDayType').value='senin';
   document.getElementById('afPublished').checked=true;
   document.getElementById('adminFormErr').textContent='';
-
   const formTitle=document.getElementById('adminFormModalTitle');
 
   if(postId){
@@ -504,6 +573,18 @@ function openAdminForm(postId=null){
 }
 
 function closeAdminForm(){
+  // Item 6: Dirty state warning
+  if(_formDirty){
+    const msg=_lang==='en'?'There are unsaved changes. Close without saving?':'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?';
+    showConfirmModal(msg,()=>{
+      _formDirty=false;
+      _closeAdminFormForce();
+    },'OK');
+    return;
+  }
+  _closeAdminFormForce();
+}
+function _closeAdminFormForce(){
   const f=document.getElementById('adminFormModal');if(f)f.classList.remove('open');
   const o=document.getElementById('adminFormOverlay');if(o)o.classList.remove('open');
   document.body.style.overflow='';
@@ -526,7 +607,6 @@ async function saveAdminForm(){
 
   const isEdit=!!_editingId;
   const id=isEdit?_editingId:generatePostId(dateVal);
-
   const payload={
     title:titleVal,
     series:document.getElementById('afSeries').value.trim()||'Reversement',
@@ -545,20 +625,13 @@ async function saveAdminForm(){
 
   try{
     if(isEdit){
-      await sb(`reversement_posts?id=eq.${encodeURIComponent(id)}`,{
-        method:'PATCH',
-        prefer:'return=minimal',
-        body:payload
-      });
+      await sb(`reversement_posts?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',prefer:'return=minimal',body:payload});
     } else {
-      await sb('reversement_posts',{
-        method:'POST',
-        prefer:'return=minimal',
-        body:payload
-      });
+      await sb('reversement_posts',{method:'POST',prefer:'return=minimal',body:payload});
     }
+    _formDirty=false;
     showToast(tx('saveOk'),'ok');
-    closeAdminForm();
+    _closeAdminFormForce();
     await loadPosts();
   }catch(e){
     console.error('saveAdminForm:',e);
@@ -567,24 +640,27 @@ async function saveAdminForm(){
   btn.disabled=false;btn.textContent=tx('btnSave');
 }
 
+/* Item 3+4: deletePost — pakai showConfirmModal, tampilkan judul ── */
 async function deletePost(){
   if(!_activePost)return;
-  if(!confirm(tx('confirmDelete')))return;
-  const btn=document.getElementById('revModalDeleteBtn');
-  if(btn){btn.disabled=true;btn.textContent=tx('deleting');}
-  try{
-    await sb(`reversement_posts?id=eq.${encodeURIComponent(_activePost.id)}`,{
-      method:'DELETE',
-      prefer:'return=minimal'
-    });
-    showToast(tx('delOk'),'ok');
-    closeRevModal();
-    await loadPosts();
-  }catch(e){
-    console.error('deletePost:',e);
-    showToast(tx('errDel'),'err');
-    if(btn){btn.disabled=false;btn.textContent=tx('btnDelete');}
-  }
+  const title=_activePost.title||(_lang==='en'?'this post':'post ini');
+  const msg=_lang==='en'
+    ?`Delete "${title}"? This cannot be undone.`
+    :`Hapus post "${title}"? Tindakan ini tidak bisa dibatalkan.`;
+  showConfirmModal(msg,async()=>{
+    const btn=document.getElementById('revModalDeleteBtn');
+    if(btn){btn.disabled=true;btn.textContent=tx('deleting');}
+    try{
+      await sb(`reversement_posts?id=eq.${encodeURIComponent(_activePost.id)}`,{method:'DELETE',prefer:'return=minimal'});
+      showToast(tx('delOk'),'ok');
+      closeRevModal();
+      await loadPosts();
+    }catch(e){
+      console.error('deletePost:',e);
+      showToast(tx('errDel'),'err');
+      if(btn){btn.disabled=false;btn.textContent=tx('btnDelete');}
+    }
+  });
 }
 
 document.addEventListener('keydown',e=>{
@@ -618,6 +694,32 @@ async function trackVisit(){
   }catch(_){return {total:'–'};}
 }
 
+/* ══ Item 9: Scroll to Top ══ */
+function initScrollTop(){
+  const btn=document.getElementById('scrollTopBtn');if(!btn)return;
+  window.addEventListener('scroll',()=>{
+    btn.classList.toggle('visible',window.scrollY>300);
+  },{passive:true});
+}
+
+/* ══ Item 6: Dirty State tracking for admin form ══ */
+let _formDirty=false;
+function initDirtyState(){
+  const watchIds=['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afBody'];
+  watchIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('input',()=>{_formDirty=true;});
+  });
+  const dayEl=document.getElementById('afDayType');
+  if(dayEl)dayEl.addEventListener('change',()=>{_formDirty=true;});
+  const pubEl=document.getElementById('afPublished');
+  if(pubEl)pubEl.addEventListener('change',()=>{_formDirty=true;});
+
+  // Reset dirty saat form dibuka
+  const _origOpen=window.openAdminForm;
+  window.openAdminForm=function(postId=null){_formDirty=false;_origOpen(postId);};
+}
+
 /* ══ INIT ══ */
 (async function init(){
   applyDark();
@@ -634,6 +736,98 @@ async function trackVisit(){
   if(fv)fv.textContent=visits.total||'–';
 
   await loadPosts();
+
+  const deepId=new URLSearchParams(location.search).get('id');
+  if(deepId){
+    const target=POSTS.find(p=>p.id===deepId);
+    if(target)openRevModal(target.id);
+  }
+
+  initScrollTop();   // Item 9
+  initDirtyState();  // Item 6
+  initPullToRefresh();
+})();
+
+/* ══ PULL TO REFRESH ══ */
+function initPullToRefresh(){
+  let startY=0,pulling=false,triggered=false;
+  const THRESHOLD=60;
+  const spinner=document.createElement('div');
+  spinner.className='ptr-spinner';
+  spinner.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/></svg><span id="ptrLabel">${_lang==='en'?'Refreshing…':'Memuat ulang…'}</span>`;
+  document.body.appendChild(spinner);
+  function showSpinner(){spinner.classList.add('ptr-visible');}
+  function hideSpinner(){spinner.classList.remove('ptr-visible');}
+  document.addEventListener('touchstart',e=>{
+    if(window.scrollY!==0)return;
+    startY=e.touches[0].clientY;pulling=true;triggered=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!pulling)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>=THRESHOLD&&!triggered){triggered=true;showSpinner();}
+  },{passive:true});
+  document.addEventListener('touchend',async()=>{
+    if(!pulling)return;pulling=false;
+    if(!triggered)return;
+    const lbl=document.getElementById('ptrLabel');
+    if(lbl)lbl.textContent=_lang==='en'?'Refreshing…':'Memuat ulang…';
+    await loadPosts();
+    hideSpinner();
+  },{passive:true});
+}
+
+/* ══════════════════════════════
+   SESI 35 — BOTTOM NAV
+   ══════════════════════════════ */
+function openBnSheet(){
+  document.getElementById('bnSheet').classList.add('open');
+  document.getElementById('bnSheetOverlay').classList.add('open');
+  const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
+  const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
+  const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='0';
+}
+function closeBnSheet(){
+  document.getElementById('bnSheet').classList.remove('open');
+  document.getElementById('bnSheetOverlay').classList.remove('open');
+  const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='';
+}
+function _syncBnAdminUI(name){
+  const adminSec=document.getElementById('bnAdminSection');
+  const guestSec=document.getElementById('bnGuestSection');
+  const bnName=document.getElementById('bnAdminName');
+  const bnNameTop=document.getElementById('bnAdminNameTop');
+  const bnTopRow=document.getElementById('bnAdminTopName');
+  const bnIcon=document.getElementById('bnLoginIcon');
+  const bnLabel=document.getElementById('bnLoginLabel');
+  if(name){
+    if(adminSec)adminSec.style.display='flex';
+    if(guestSec)guestSec.style.display='none';
+    if(bnName)bnName.textContent=name;
+    if(bnNameTop)bnNameTop.textContent=name;
+    if(bnTopRow)bnTopRow.style.display='block';
+    if(bnIcon)bnIcon.textContent='✓';
+    if(bnLabel)bnLabel.textContent=name.split(' ')[0];
+  } else {
+    if(adminSec)adminSec.style.display='none';
+    if(guestSec)guestSec.style.display='block';
+    if(bnTopRow)bnTopRow.style.display='none';
+    if(bnIcon)bnIcon.textContent='🔐';
+    if(bnLabel)bnLabel.textContent=tx('loginBtnTxt')||'Login';
+  }
+}
+// Tutup sheet saat Escape (reversement sudah punya keydown listener, tambah pengecekan di sini)
+(function(){
+  const _origKeydown=window._bnKeydownAttached;
+  if(!_origKeydown){
+    window._bnKeydownAttached=true;
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){
+        const sh=document.getElementById('bnSheet');
+        if(sh&&sh.classList.contains('open')){closeBnSheet();}
+      }
+    });
+  }
 })();
 
 /* ══ PWA SERVICE WORKER ══ */

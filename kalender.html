@@ -12,6 +12,17 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Naposo HKBP"/>
 <link rel="apple-touch-icon" href="img/icon-192.png"/>
+  <!-- ══ SEO: Open Graph & Twitter Card ══ -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Kalender Pelayanan · Naposo HKBP Ujung Menteng"/>
+  <meta property="og:description" content="Lihat jadwal lengkap kegiatan Naposo HKBP Ujung Menteng dalam tampilan kalender interaktif."/>
+  <meta property="og:url" content="https://naposo-hkbp-um.github.io/kalender.html"/>
+  <meta property="og:image" content="https://naposo-hkbp-um.github.io/img/icon-512.png"/>
+  <meta property="og:locale" content="id_ID"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Kalender Pelayanan · Naposo HKBP Ujung Menteng"/>
+  <meta name="twitter:description" content="Lihat jadwal lengkap kegiatan Naposo HKBP Ujung Menteng dalam tampilan kalender interaktif."/>
+  <meta name="twitter:image" content="https://naposo-hkbp-um.github.io/img/icon-512.png"/>
 </head>
 <body>
 
@@ -77,6 +88,50 @@
 </div>
 </header>
 
+<!-- ══ BOTTOM NAV (mobile only) ══ -->
+<nav class="bottom-nav" id="bottomNav" aria-label="Navigasi bawah">
+  <a class="bn-tab" href="index.html" aria-label="Home">
+    <span class="bn-icon">🏠</span>
+    <span class="bn-label" id="bnHome">Home</span>
+  </a>
+  <a class="bn-tab bn-tab--active" href="kalender.html" aria-label="Kalender">
+    <span class="bn-icon">📅</span>
+    <span class="bn-label" id="bnKalender">Kalender</span>
+  </a>
+  <a class="bn-tab" href="reversement.html" aria-label="Reversement">
+    <span class="bn-icon">✝️</span>
+    <span class="bn-label" id="bnRev">Reversement</span>
+  </a>
+  <button class="bn-tab" id="bnLoginTab" onclick="openBnSheet()" aria-label="Login / Menu">
+    <span class="bn-icon" id="bnLoginIcon">🔐</span>
+    <span class="bn-label" id="bnLoginLabel">Login</span>
+  </button>
+</nav>
+
+<!-- ══ BOTTOM NAV ACTION SHEET ══ -->
+<div class="bn-sheet-overlay" id="bnSheetOverlay" onclick="closeBnSheet()"></div>
+<div class="bn-sheet" id="bnSheet">
+  <div class="bn-sheet-handle"></div>
+  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span></div>
+  <div class="bn-sheet-item" onclick="toggleDark();closeBnSheet()">
+    <span>🌙 <span id="bnDarkLbl">Dark Mode</span></span>
+    <div class="tog-track" id="bnDarkTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="bn-sheet-item" onclick="toggleLang();closeBnSheet()">
+    <span>🌐 <span id="bnLangLbl">Bahasa</span></span>
+    <div class="tog-track" id="bnLangTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
+  </div>
+  <div class="bn-sheet-sep"></div>
+  <div id="bnAdminSection" style="display:none;flex-direction:column;gap:0">
+    <button class="bn-sheet-item bn-sheet-action" onclick="closeHamburger();openModal('eventModal')">📝 <span id="bnAddEvent">Tambah Event</span></button>
+    <div class="bn-sheet-sep"></div>
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="doLogout();closeBnSheet()"><span id="bnLogout">Logout</span></button>
+  </div>
+  <div id="bnGuestSection">
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-login" onclick="closeBnSheet();handleLoginBtn()">🔐 <span id="bnLoginLbl">Login Admin</span></button>
+  </div>
+</div>
+
 <!-- ══ ADMIN BAR ══ -->
 <div class="admin-bar" id="adminBar">
   <span class="admin-bar-txt" id="adminBarTxt"></span>
@@ -87,6 +142,10 @@
   <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.2);" onclick="undoLast()" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
     <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/></svg>
     <span id="undoBtnTxt">Undo</span>
+  </button>
+  <button class="btn btn-sm" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.2);" onclick="redoLast()" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+    <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966a.25.25 0 0 1 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+    <span id="redoBtnTxt">Redo</span>
   </button>
   <button class="btn btn-sm" id="pasteBtn" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.2);opacity:.4;" onclick="pasteEvent()" disabled title="Paste event yang disalin">
     <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5H3.5a.5.5 0 0 0 0 1H5v.5A1.5 1.5 0 0 0 6.5 4.5h3A1.5 1.5 0 0 0 11 3V2.5h1.5a.5.5 0 0 0 0-1H11A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
@@ -150,7 +209,7 @@
       <div class="search-dropdown" id="searchDropdown" style="display:none"></div>
     </div>
     <div class="cat-filter-wrap" id="catFilterWrap">
-      <button class="cat-filter-btn" id="catFilterBtn" onclick="toggleCatFilter()">
+      <button class="cat-filter-btn" id="catFilterBtn" onclick="toggleCatFilterDropdown()">
         <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
         <span id="catFilterLabel">Semua Kategori</span>
         <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10"><path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/></svg>
@@ -187,7 +246,6 @@
     <button class="mob-icon-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Filter">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
     </button>
-    <button class="btn btn-primary btn-sm" id="addEventBtnMob" onclick="openAddModal(null)" style="display:none;padding:0 10px;height:30px">+</button>
   </div>
 
   <!-- MOBILE: search bar (hidden by default) -->
@@ -395,11 +453,34 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ══ MOBILE ADD FAB ══ -->
+<button class="mob-add-fab" id="addEventBtnMob" onclick="openAddModal(null)" style="display:none" aria-label="Tambah kegiatan">+</button>
+
 <!-- ══ FEEDBACK BUTTON ══ -->
 <a class="feedback-fab" href="https://forms.gle/7Um3RetNVywWrmV66" target="_blank" rel="noopener" aria-label="Beri saran">
   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0L10.7 12.4a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/></svg>
-  <span id="feedbackFabTxt">Beri Saran</span>
+  <span class="fab-txt" id="feedbackFabTxt">Beri Saran</span>
 </a>
+
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <h2 id="confirmModalTitle">Konfirmasi</h2>
+      <button class="modal-x" onclick="closeConfirmModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmModalMsg" style="font-size:.87rem;line-height:1.6;color:var(--text)"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeConfirmModal()" id="confirmCancelBtn">Batal</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCROLL TO TOP ══ -->
+<button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll ke atas">↑</button>
 
 <script src="js/kalender.js" defer></script>
 

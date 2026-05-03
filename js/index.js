@@ -20,6 +20,12 @@ function driveToThumbnail(url){
   return url;
 }
 
+/* ── Item 1: escapeHTML — cegah XSS sebelum inject ke innerHTML ── */
+function escapeHTML(str){
+  if(!str)return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 /* poster via Google Drive — no upload needed */
 
 const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
@@ -141,6 +147,8 @@ function applyLang(){
   Object.keys(T).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tx(id);});
   const ltm=document.getElementById('langTrackMobile');if(ltm)ltm.classList.toggle('on',_lang==='en');
   const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
+  // sync bottom nav sheet lang toggle
+  const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
   // update admin bar teks saat bahasa ganti, kalau admin sedang login
   if(isAdmin&&_adminName){const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+_adminName+'.';}
   // update status banner saat modal terbuka
@@ -156,6 +164,8 @@ function applyDark(){
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
   const dtm=document.getElementById('darkTrackMobile');if(dtm)dtm.classList.toggle('on',darkMode);
   const dbt=document.getElementById('darkToggleBtn');if(dbt)dbt.textContent=darkMode?'☀️':'🌙';
+  // sync bottom nav sheet toggle
+  const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
 }
 function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
 function toggleDarkMobile(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
@@ -164,9 +174,56 @@ function toggleDarkMobile(){darkMode=!darkMode;localStorage.setItem('naposo_dark
 function toggleHamburger(){document.getElementById('hdrMenuPanel').classList.toggle('open');}
 function closeHamburger(){document.getElementById('hdrMenuPanel').classList.remove('open');}
 
+/* ── Item 3: Custom confirm modal ── */
+let _confirmCallback=null;
+function showConfirmModal(msg,onConfirm,okLabel){
+  const msgEl=document.getElementById('confirmModalMsg');
+  const okBtn=document.getElementById('confirmOkBtn');
+  const cancelBtn=document.getElementById('confirmCancelBtn');
+  if(msgEl)msgEl.innerHTML=escapeHTML(msg);
+  const okTxt=okLabel||(typeof _lang!=='undefined'&&_lang==='en'?'Delete':'Hapus');
+  if(okBtn)okBtn.textContent=okTxt;
+  if(cancelBtn)cancelBtn.textContent=_lang==='en'?'Cancel':'Batal';
+  _confirmCallback=onConfirm;
+  if(okBtn)okBtn.onclick=()=>{closeConfirmModal();if(_confirmCallback)_confirmCallback();};
+  openModal('confirmModal');
+}
+function closeConfirmModal(){closeModal('confirmModal');_confirmCallback=null;}
+
 /* ══ MODALS ══ */
-function openModal(id){const el=document.getElementById(id);if(!el)return;el.classList.add('on');document.body.style.overflow='hidden';}
-function closeModal(id){const el=document.getElementById(id);if(!el)return;el.classList.remove('on');if(!document.querySelector('.overlay.on'))document.body.style.overflow='';}
+/* ── Item A11Y: Focus Trap ── */
+const FOCUSABLE_SEL='button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';
+let _trapEl=null,_trapHandler=null;
+function _attachFocusTrap(el){
+  _detachFocusTrap();
+  const nodes=[...el.querySelectorAll(FOCUSABLE_SEL)].filter(n=>!n.closest('[hidden]')&&n.offsetParent!==null);
+  if(!nodes.length)return;
+  const first=nodes[0],last=nodes[nodes.length-1];
+  setTimeout(()=>first.focus(),50);
+  _trapEl=el;
+  _trapHandler=e=>{
+    if(e.key!=='Tab')return;
+    if(e.shiftKey){if(document.activeElement===first){e.preventDefault();last.focus();}}
+    else{if(document.activeElement===last){e.preventDefault();first.focus();}}
+  };
+  el.addEventListener('keydown',_trapHandler);
+}
+function _detachFocusTrap(){
+  if(_trapEl&&_trapHandler){_trapEl.removeEventListener('keydown',_trapHandler);}
+  _trapEl=null;_trapHandler=null;
+}
+function openModal(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.add('on');
+  document.body.style.overflow='hidden';
+  _attachFocusTrap(el);
+}
+function closeModal(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.remove('on');
+  _detachFocusTrap();
+  if(!document.querySelector('.overlay.on'))document.body.style.overflow='';
+}
 
 /* ══ LOGIN ══ */
 function buildLoginDropdown(){
@@ -237,6 +294,8 @@ function _applyAdminUI(name){
   const ant=document.getElementById('adminMobileNameTxt');if(ant)ant.textContent=name;
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
   const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
+  // sync bottom nav sheet
+  _syncBnAdminUI(name);
 }
 function _resetAuthUI(){
   _adminName='';
@@ -246,6 +305,8 @@ function _resetAuthUI(){
   const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='';
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='none';
   const bar=document.getElementById('adminBar');if(bar)bar.classList.remove('on');
+  // sync bottom nav sheet
+  _syncBnAdminUI(null);
   applyLang(); /* re-apply agar teks ikut bahasa aktif */
 }
 
@@ -312,18 +373,19 @@ async function saveAnnounce(){
   }catch(e){showToast('Gagal simpan: '+e.message,'err');}
 }
 async function deleteAnnounce(){
-  const confirmMsg=_lang==='en'
+  const msg=_lang==='en'
     ?'Delete this banner? This cannot be undone.'
-    :'Hapus banner ini? Tindakan ini tidak bisa dibatalkan.';
-  if(!confirm(confirmMsg))return;
-  const empty={title:'',sub:'',link:'',cta:'',expiry:'',active:false,updated_at:new Date().toISOString()};
-  try{
-    await dbUpd('home_announcement','id=eq.config',empty);
-    ANNOUNCE=empty;
-    document.getElementById('announceBanner').classList.remove('on');
-    closeModal('announceModal');
-    showToast(_lang==='en'?'Banner deleted.':'Banner dihapus.','ok');
-  }catch(e){showToast('Gagal hapus: '+e.message,'err');}
+    :'Hapus banner pengumuman ini? Tindakan ini tidak bisa dibatalkan.';
+  showConfirmModal(msg,async()=>{
+    const empty={title:'',sub:'',link:'',cta:'',expiry:'',active:false,updated_at:new Date().toISOString()};
+    try{
+      await dbUpd('home_announcement','id=eq.config',empty);
+      ANNOUNCE=empty;
+      document.getElementById('announceBanner').classList.remove('on');
+      closeModal('announceModal');
+      showToast(_lang==='en'?'Banner deleted.':'Banner dihapus.','ok');
+    }catch(e){showToast('Gagal hapus: '+e.message,'err');}
+  });
 }
 function closeBanner(){
   document.getElementById('announceBanner').classList.remove('on');
@@ -421,91 +483,113 @@ function getDisplayEvents(){
   });
   return combined.slice(0,6);
 }
-function linkifyNote(text){
-  if(!text)return '';
-  return text.replace(/(https?:\/\/[^\s]+)/g,url=>`<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
+function renderSkeletonEvents(){
+  const grid=document.getElementById('eventsGrid');if(!grid)return;
+  grid.innerHTML=Array(6).fill(0).map(()=>`
+    <div class="sk-card">
+      <div class="sk-img"></div>
+      <div class="sk-body">
+        <div class="sk-line sk-line-sm"></div>
+        <div class="sk-line sk-line-lg"></div>
+        <div class="sk-line sk-line-md"></div>
+        <div class="sk-line sk-line-xs"></div>
+      </div>
+    </div>`).join('');
 }
 function renderEvents(){
   const grid=document.getElementById('eventsGrid');if(!grid)return;
   const evs=getDisplayEvents();
   const MS=_lang==='en'?MS_EN:MS_ID;
-  if(!evs.length){grid.innerHTML=`<div class="ev-empty">${_lang==='en'?'No upcoming events.':'Belum ada kegiatan dalam waktu dekat.'}</div>`;return;}
+  if(!evs.length){
+    grid.innerHTML=`<div class="ev-empty-state">
+      <div class="ev-empty-state-icon">📅</div>
+      <div class="ev-empty-state-title">${_lang==='en'?'No upcoming events':'Belum ada kegiatan'}</div>
+      <div class="ev-empty-state-sub">${_lang==='en'?'Check back soon for the latest schedule.':'Jadwal kegiatan akan muncul di sini.'}</div>
+    </div>`;
+    return;
+  }
   const todayStr=new Date().toISOString().slice(0,10);
   const nowHHMM=new Date().toTimeString().slice(0,5);
-  grid.innerHTML=evs.map(ev=>{
+  grid.innerHTML=evs.map((ev,idx)=>{
     const d=new Date(ev.date+'T00:00:00');
     const col=catColor(ev.category);
     const isPast=ev.date<todayStr;
     const sameDay=ev.date===todayStr;
-    const endTime=ev.time_end||(ev.time?ev.time.split(/[–\-]/).pop().trim():'');
+    const endTime=ev.time_end||(ev.time?ev.time.split(/[\u2013-]/).pop().trim():'');
     const isFinished=isPast||(sameDay&&!!endTime&&endTime<=nowHHMM);
     const note=ev.note||'';
     const hasPoster=!!(ev.poster_url);
-
-    // build time string
     let timeStr='';
-    if(ev.time_start&&ev.time_end)timeStr=`${ev.time_start}–${ev.time_end}`;
+    if(ev.time_start&&ev.time_end)timeStr=`${ev.time_start}\u2013${ev.time_end}`;
     else if(ev.time)timeStr=ev.time;
-
-    // extra fields
     let extraParts=[];
     if(ev.extra){
-      if(ev.extra.judul_lagu)extraParts.push('🎵 '+ev.extra.judul_lagu);
-      if(ev.extra.tema_acara)extraParts.push('📖 '+ev.extra.tema_acara);
-      if(ev.extra.jenis_olahraga)extraParts.push('⚽ '+ev.extra.jenis_olahraga);
+      if(ev.extra.judul_lagu)extraParts.push('\ud83c\udfb5 '+ev.extra.judul_lagu);
+      if(ev.extra.tema_acara)extraParts.push('\ud83d\udcd6 '+ev.extra.tema_acara);
+      if(ev.extra.jenis_olahraga)extraParts.push('\u26bd '+ev.extra.jenis_olahraga);
     }
-
-    // date compact
     const dayNum=d.getDate();
     const monStr=MS[d.getMonth()];
     const yrStr=d.getFullYear();
-
-    // image area
     const catThumb=getCatThumb(ev);
     const posterSrc=hasPoster?driveToThumbnail(ev.poster_url):catThumb;
     const hasImg=hasPoster||!!catThumb;
-
+    const fallbackSrc=catThumb||'';
+    const onerrorAttr=fallbackSrc
+      ?`onerror="if(this.src!=='${fallbackSrc}'){this.src='${fallbackSrc}';}else{this.style.display='none';}this.onerror=null;"`
+      :`onerror="this.style.display='none';this.onerror=null;"`;
     const imgWrap=hasImg
-      ?`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')"
-          style="background-image:url('${posterSrc}');background-size:cover;background-position:center;background-color:${col}22;">
-          <div class="ev-card-img-overlay">🔍 Lihat Poster</div>
+      ?`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')">
+          <img src="${posterSrc}" loading="lazy" alt="${escapeHTML(ev.title)}" class="ev-card-poster" ${onerrorAttr}>
+          <div class="ev-card-img-overlay">\ud83d\udd0d Lihat Poster</div>
         </div>`
       :`<div class="ev-card-img-wrap ev-card-img-placeholder" onclick="openPosterModal('${ev.id}')"
           style="background:linear-gradient(135deg,${col}18,${col}38);">
           <div class="ev-card-poster-ph-icon" style="font-size:2.2rem">${catIcon(ev.category)}</div>
           <div class="ev-card-poster-ph-label" style="font-size:10px;font-weight:700;color:${col};margin-top:4px;letter-spacing:.05em">${catLabel(ev.category)}</div>
         </div>`;
-
-    return `<div class="ev-card${isFinished?' ev-card-past':''}">
+    let countdownHtml='';
+    if(!isFinished){
+      const todayDate=new Date(todayStr+'T00:00:00');
+      const evDate=new Date(ev.date+'T00:00:00');
+      const diffDays=Math.round((evDate-todayDate)/(1000*60*60*24));
+      if(diffDays===0)countdownHtml=`<span class="ev-countdown ev-countdown-today">\ud83d\udd14 Hari ini!</span>`;
+      else if(diffDays===1)countdownHtml=`<span class="ev-countdown">\ud83d\udcc5 Besok!</span>`;
+      else if(diffDays>1)countdownHtml=`<span class="ev-countdown">\u23f3 ${diffDays} hari lagi</span>`;
+    }
+    const delay=idx*55;
+    return `<div class="ev-card card-animate${isFinished?' ev-card-past':''}" style="animation-delay:${delay}ms">
       ${imgWrap}
       <div class="ev-card-accent" style="background:${col}"></div>
       <div class="ev-card-body">
         <div class="ev-card-top">
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
           <div class="ev-card-date">
             <span class="day">${dayNum}</span>
-            <span class="sep">·</span>
+            <span class="sep">\u00b7</span>
             <span class="mon">${monStr}</span>
-            <span class="sep">·</span>
+            <span class="sep">\u00b7</span>
             <span class="yr">${yrStr}</span>
+          </div>
+          ${countdownHtml}
           </div>
           <div class="ev-card-admin">
             <button class="ev-card-edit-btn" onclick="openEditEvent('${ev.id}');event.stopPropagation()">✎ Ubah</button>
-            <button class="ev-card-unfeature-btn${ev.featured?' is-pinned':''}" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'★':'☆'}</button>
+            <button class="ev-card-unfeature-btn${ev.featured?' is-pinned':''}" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'\u2605':'\u2606'}</button>
           </div>
         </div>
-        <div class="ev-card-title">${ev.title}</div>
+        <div class="ev-card-title">${escapeHTML(ev.title)}</div>
         <div class="ev-card-meta">
           <span class="ev-cat-badge" style="background:${col}">${catLabel(ev.category)}</span>
-          ${timeStr?`<span class="ev-card-time">⏰ ${timeStr}</span>`:''}
-          ${isFinished?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">${_lang==='en'?'✓ Finished':'✓ Sudah Selesai'}</span>`:''}
+          ${timeStr?`<span class="ev-card-time">\u23f0 ${timeStr}</span>`:''}
+          ${isFinished?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">${_lang==='en'?'\u2713 Finished':'\u2713 Sudah Selesai'}</span>`:''}
         </div>
-        ${extraParts.length?`<div style="font-size:11px;color:var(--text3)">${extraParts.join(' · ')}</div>`:''}
-        ${note?`<div class="ev-card-note">${note.replace(/<[^>]+>/g,'').slice(0,120)}${note.length>120?'…':''}</div>`:''}
+        ${extraParts.length?`<div style="font-size:11px;color:var(--text3)">${extraParts.join(' \u00b7 ')}</div>`:''}
+        ${note?`<div class="ev-card-note">${escapeHTML(note).slice(0,120)}${note.length>120?'\u2026':''}</div>`:''}
       </div>
     </div>`;
   }).join('');
 }
-
 
 /* ══ POSTER MODAL ══ */
 function openPosterModal(evId){
@@ -517,8 +601,11 @@ function openPosterModal(evId){
   const posterSrc=ev.poster_url?driveToThumbnail(ev.poster_url):catThumb;
   const img=document.getElementById('pmImg');
   if(img){
-    if(posterSrc){img.src=posterSrc;img.style.display='block';}
-    else{img.src='';img.style.display='none';}
+    if(posterSrc){
+      img.src=posterSrc;
+      img.style.display='block';
+      img.onerror=()=>{if(catThumb&&img.src!==catThumb){img.src=catThumb;}else{img.style.display='none';}img.onerror=null;};
+    }else{img.src='';img.style.display='none';}
   }
   const pmImgWrap=document.getElementById('pmImgWrap');
   if(pmImgWrap){
@@ -543,14 +630,16 @@ function openPosterModal(evId){
   const capEl=document.getElementById('pmCaption');
   if(capEl){
     const cap=ev.caption||ev.note||'';
-    if(cap){capEl.textContent=cap;capEl.style.display='block';}
+    if(cap){capEl.textContent=cap;capEl.style.display='block';}  // textContent auto-escapes
     else capEl.style.display='none';
   }
   const actEl=document.getElementById('pmActions');
   if(actEl){
     let btns='';
+    // Item 2: render ev.link jika ada
+    if(ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${escapeHTML(ev.link)}" target="_blank" rel="noopener">🔗 ${_lang==='en'?'Open Link':'Buka Link'}</a>`;
     const urlMatch=(ev.note||'').match(/(https?:\/\/[^\s]+)/);
-    if(urlMatch)btns+=`<a class="btn btn-primary btn-sm" href="${urlMatch[1]}" target="_blank" rel="noopener">🔗 Buka Link</a>`;
+    if(urlMatch&&!ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${urlMatch[1]}" target="_blank" rel="noopener">🔗 Buka Link</a>`;
     if(isAdmin)btns+=`<button class="btn btn-ghost btn-sm" onclick="closePosterModalDirect();openEditEvent('${ev.id}')">✎ Ubah</button>`;
     actEl.innerHTML=btns;
   }
@@ -600,6 +689,7 @@ function openEditEvent(id){
   document.getElementById('editCat').value=ev.category||'other';
   document.getElementById('editExtra').value=(ev.extra&&ev.extra.tema_acara)||'';
   document.getElementById('editNote').value=ev.note||'';
+  const lnkFld=document.getElementById('editLink');if(lnkFld)lnkFld.value=ev.link||'';
   document.getElementById('editFeatured').checked=!!ev.featured;
   const capFld=document.getElementById('editCaption');if(capFld)capFld.value=ev.caption||'';
   document.getElementById('adminDd').classList.remove('open');
@@ -614,6 +704,7 @@ async function saveEditEvent(){
   const category=document.getElementById('editCat').value;
   const extraVal=document.getElementById('editExtra').value.trim();
   const note=document.getElementById('editNote').value.trim();
+  const link=document.getElementById('editLink')?.value.trim()||'';
   const featured=document.getElementById('editFeatured').checked;
   if(!title||!date){showToast('Judul dan tanggal wajib diisi.','err');return;}
   const btn=document.getElementById('editSubmitBtn');
@@ -624,9 +715,9 @@ async function saveEditEvent(){
   const extra=extraVal?{tema_acara:extraVal}:null;
   try{
     const caption=document.getElementById('editCaption')?.value.trim()||'';
-    await dbUpd('events',`id=eq.${id}`,{title,date,time:timeStr,time_start:timeStart||null,time_end:timeEnd||null,category,extra,note,featured,caption});
+    await dbWrite('events','UPDATE',{title,date,time:timeStr,time_start:timeStart||null,time_end:timeEnd||null,category,extra,note,link,featured,caption},{id});
     const ev=EVENTS.find(e=>e.id===id);
-    if(ev){Object.assign(ev,{title,date,time:timeStr,time_start:timeStart,time_end:timeEnd,category,extra,note,featured,caption});}
+    if(ev){Object.assign(ev,{title,date,time:timeStr,time_start:timeStart,time_end:timeEnd,category,extra,note,link,featured,caption});}
     closeModal('editEventModal');
     renderEvents();
     showToast('Tersimpan ✓','ok');
@@ -647,7 +738,7 @@ function renderRecap(){
       <div class="recap-gradient"></div>
       <div class="recap-content">
         <span class="recap-tag">• ${catLabel(r.category).toUpperCase()}</span>
-        <div class="recap-title">${r.title}</div>
+        <div class="recap-title">${escapeHTML(r.title)}</div>
         <div class="recap-meta">${r.meta}</div>
       </div>
     </div>`).join('');
@@ -702,7 +793,7 @@ function renderDocs(){
     card.innerHTML=`
       <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
       <div class="doc-info">
-        <div class="doc-title">${doc.title}</div>
+        <div class="doc-title">${escapeHTML(doc.title)}</div>
         <div class="doc-meta">${doc.category==='pengurus'?'🔒 Pengurus':'📂 Publik'}</div>
       </div>
       <svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
@@ -721,7 +812,7 @@ function renderDocAdmList(){
   if(!DOCS.length){list.innerHTML='<p class="doc-empty" style="margin-top:8px">Belum ada dokumen.</p>';return;}
   DOCS.forEach(doc=>{
     const item=document.createElement('div');item.className='doc-adm-item';
-    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${doc.title}</div><div class="doc-adm-meta">${doc.category==='pengurus'?'🔒':'📂'} ${doc.category}</div></div><button class="doc-del" onclick="deleteDoc('${doc.id}')">×</button>`;
+    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${escapeHTML(doc.title)}</div><div class="doc-adm-meta">${doc.category==='pengurus'?'🔒':'📂'} ${doc.category}</div></div><button class="doc-del" onclick="deleteDoc('${doc.id}')">×</button>`;
     list.appendChild(item);
   });
 }
@@ -745,13 +836,19 @@ async function addDoc(){
   }catch(e){showToast('Gagal: '+e.message,'err');}
 }
 async function deleteDoc(id){
-  if(!confirm('Hapus dokumen ini?'))return;
-  try{
-    await dbDel('home_docs',`id=eq.${id}`);
-    DOCS=DOCS.filter(d=>d.id!==id);
-    renderDocs();renderDocAdmList();
-    showToast('Dokumen dihapus.');
-  }catch(e){showToast('Gagal: '+e.message,'err');}
+  const doc=DOCS.find(d=>d.id===id);
+  const name=doc?doc.title:'dokumen ini';
+  const msg=_lang==='en'
+    ?`Delete "${name}"? This cannot be undone.`
+    :`Hapus dokumen "${name}"? Tindakan ini tidak bisa dibatalkan.`;
+  showConfirmModal(msg,async()=>{
+    try{
+      await dbDel('home_docs',`id=eq.${id}`);
+      DOCS=DOCS.filter(d=>d.id!==id);
+      renderDocs();renderDocAdmList();
+      showToast('Dokumen dihapus.');
+    }catch(e){showToast('Gagal: '+e.message,'err');}
+  });
 }
 
 /* ══ VISIT COUNTER ══ */
@@ -788,6 +885,25 @@ function initScrollReveal(){
   window._observeCards=observeCards;
 }
 
+/* ══ PARALLAX HERO ══ */
+function initParallax(){
+  const wm=document.querySelector('.hero-watermark');
+  const hero=document.querySelector('.hero');
+  if(!wm||!hero)return;
+  let ticking=false;
+  window.addEventListener('scroll',()=>{
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(()=>{
+      const heroBottom=hero.getBoundingClientRect().bottom;
+      if(heroBottom>0){
+        wm.style.transform=`translateY(${window.scrollY*0.28}px)`;
+      }
+      ticking=false;
+    });
+  },{passive:true});
+}
+
 /* ══ TOAST ══ */
 let _tt;
 function showToast(msg,type=''){
@@ -813,7 +929,50 @@ async function init(){
   if(savedToken&&savedName){isAdmin=true;_applyAdminUI(savedName);}
   await loadAnnounce();
   trackVisit();
-  // load data
+  await loadData();
+  initPullToRefresh();
+  initScrollTop();
+  initDirtyState();
+}
+
+/* ── Item 9: Scroll to Top ── */
+function initScrollTop(){
+  const btn=document.getElementById('scrollTopBtn');if(!btn)return;
+  window.addEventListener('scroll',()=>{
+    btn.classList.toggle('visible',window.scrollY>300);
+  },{passive:true});
+}
+
+/* ── Item 6: Dirty State — peringatan sebelum tutup form ── */
+function initDirtyState(){
+  let _dirty=false;
+  const formInputs=['editTitle','editDate','editTimeStart','editTimeEnd','editCat','editExtra','editNote','editLink','editCaption','editFeatured'];
+  function markDirty(){_dirty=true;}
+  formInputs.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener(el.type==='checkbox'?'change':'input',markDirty);
+  });
+  // Override closeModal untuk editEventModal
+  const _origClose=window.closeModal;
+  window.closeModal=function(id){
+    if(id==='editEventModal'&&_dirty){
+      const msg=_lang==='en'?'There are unsaved changes. Close without saving?':'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?';
+      showConfirmModal(msg,()=>{_dirty=false;_origClose(id);},'OK');
+      return;
+    }
+    _origClose(id);
+  };
+  // Reset dirty setelah simpan berhasil
+  const _origSave=window.saveEditEvent;
+  window.saveEditEvent=async function(){
+    await _origSave();
+    _dirty=false;
+  };
+}
+
+/* ══ LOAD DATA ══ */
+async function loadData(){
+  renderSkeletonEvents(); // Item 8: skeleton loader
   try{
     try{
       const cats=await dbGet('categories','select=*&order=sort_order.asc');
@@ -825,12 +984,101 @@ async function init(){
     renderEvents();renderRecap();renderDocs();
     if(isAdmin)renderDocAdmList();
     initScrollReveal();
+    initParallax();
     if(window._observeCards)window._observeCards();
   }catch(e){
     const g=document.getElementById('eventsGrid');
     if(g)g.innerHTML=`<div class="ev-empty">Gagal memuat data.</div>`;
   }
 }
+
+/* ══ PULL TO REFRESH ══ */
+function initPullToRefresh(){
+  let startY=0,pulling=false,triggered=false;
+  const THRESHOLD=60;
+
+  const spinner=document.createElement('div');
+  spinner.className='ptr-spinner';
+  spinner.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/></svg><span id="ptrLabel">${_lang==='en'?'Refreshing…':'Memuat ulang…'}</span>`;
+  document.body.appendChild(spinner);
+
+  function showSpinner(){spinner.classList.add('ptr-visible');}
+  function hideSpinner(){spinner.classList.remove('ptr-visible');}
+
+  document.addEventListener('touchstart',e=>{
+    if(window.scrollY!==0)return;
+    startY=e.touches[0].clientY;
+    pulling=true;triggered=false;
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    if(!pulling)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>=THRESHOLD&&!triggered){triggered=true;showSpinner();}
+  },{passive:true});
+
+  document.addEventListener('touchend',async()=>{
+    if(!pulling)return;
+    pulling=false;
+    if(!triggered)return;
+    const lbl=document.getElementById('ptrLabel');
+    if(lbl)lbl.textContent=_lang==='en'?'Refreshing…':'Memuat ulang…';
+    await loadData();
+    hideSpinner();
+  },{passive:true});
+}
+
+/* ══════════════════════════════
+   SESI 35 — BOTTOM NAV
+   ══════════════════════════════ */
+function openBnSheet(){
+  document.getElementById('bnSheet').classList.add('open');
+  document.getElementById('bnSheetOverlay').classList.add('open');
+  // Sync state saat sheet dibuka
+  const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
+  const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
+  // Sembunyikan scroll-to-top agar tidak muncul di atas sheet
+  const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='0';
+}
+function closeBnSheet(){
+  document.getElementById('bnSheet').classList.remove('open');
+  document.getElementById('bnSheetOverlay').classList.remove('open');
+  // Kembalikan scroll-to-top jika memang harusnya visible
+  const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='';
+}
+function _syncBnAdminUI(name){
+  const adminSec=document.getElementById('bnAdminSection');
+  const guestSec=document.getElementById('bnGuestSection');
+  const bnName=document.getElementById('bnAdminName');
+  const bnNameTop=document.getElementById('bnAdminNameTop');
+  const bnTopRow=document.getElementById('bnAdminTopName');
+  const bnTab=document.getElementById('bnLoginTab');
+  const bnIcon=document.getElementById('bnLoginIcon');
+  const bnLabel=document.getElementById('bnLoginLabel');
+  if(name){
+    if(adminSec)adminSec.style.display='flex';
+    if(guestSec)guestSec.style.display='none';
+    if(bnName)bnName.textContent=name;
+    if(bnNameTop)bnNameTop.textContent=name;
+    if(bnTopRow)bnTopRow.style.display='block';
+    if(bnIcon)bnIcon.textContent='✓';
+    if(bnLabel)bnLabel.textContent=name.split(' ')[0];
+  } else {
+    if(adminSec)adminSec.style.display='none';
+    if(guestSec)guestSec.style.display='block';
+    if(bnTopRow)bnTopRow.style.display='none';
+    if(bnIcon)bnIcon.textContent='🔐';
+    if(bnLabel)bnLabel.textContent=tx('loginBtnTxt')||'Login';
+  }
+}
+// Tutup sheet saat Escape
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const sh=document.getElementById('bnSheet');
+    if(sh&&sh.classList.contains('open')){closeBnSheet();return;}
+  }
+});
+
 init();
 
 /* ══ PWA SERVICE WORKER ══ */

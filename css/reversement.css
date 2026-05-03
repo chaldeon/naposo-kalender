@@ -193,7 +193,7 @@
 }
 .rev-modal-close{
   position:absolute;top:12px;right:12px;
-  width:32px;height:32px;border-radius:50%;
+  width:44px;height:44px;border-radius:50%;
   background:rgba(0,0,0,.5);border:none;
   color:#fff;font-size:15px;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
@@ -394,6 +394,25 @@ body.is-admin .admin-only{display:inline-flex!important}
   border-color:var(--gold)!important;
 }
 
+/* Tombol tambah di luar filter wrap (standalone) */
+.rev-add-wrap{
+  display:none; /* dikontrol JS via .is-admin */
+  padding:8px 20px 4px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+body.is-admin .rev-add-wrap{display:block}
+.rev-add-btn-standalone{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 16px;border-radius:20px;
+  border:1px solid rgba(201,162,39,.5);
+  background:rgba(201,162,39,.1);
+  color:var(--gold);font-size:.8rem;font-weight:700;
+  cursor:pointer;font-family:var(--font-b);
+  transition:all .18s;min-height:36px;
+}
+.rev-add-btn-standalone:hover{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+
 /* ══ DRAFT BADGE (di atas card) ══ */
 .rev-draft-badge{
   position:absolute;top:10px;left:10px;
@@ -466,7 +485,171 @@ body.is-admin .admin-only{display:inline-flex!important}
 .rev-card-poster-wrap{position:relative;overflow:hidden;border-radius:16px 16px 0 0}
 
 
+/* ══ PULL TO REFRESH ══ */
+.ptr-spinner{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-80px);z-index:500;display:flex;align-items:center;gap:8px;background:var(--card);color:var(--text);border-radius:20px;padding:7px 16px 7px 12px;font-size:.8rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none}
+.ptr-spinner.ptr-visible{transform:translateX(-50%) translateY(0);opacity:1}
+.ptr-spinner svg{animation:ptr-spin .8s linear infinite}
+@keyframes ptr-spin{to{transform:rotate(360deg)}}
+
 /* ══ FEEDBACK BUTTON ══ */
 .feedback-fab{position:fixed;bottom:24px;right:20px;z-index:998;display:flex;align-items:center;gap:7px;background:rgba(var(--blue-rgb,30,90,200),.55);color:#fff;border:none;border-radius:24px;padding:10px 16px 10px 13px;font-size:.8rem;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 18px rgba(10,31,68,.2);transition:background .18s,transform .18s,box-shadow .18s,opacity .18s;white-space:nowrap;backdrop-filter:blur(6px)}
 .feedback-fab:hover{background:var(--blue);transform:translateY(-2px);box-shadow:0 8px 24px rgba(10,31,68,.45)}
 .feedback-fab svg{flex-shrink:0}
+
+/* ══════════════════════════════════════════
+   SESI 34 — ADDITIONS
+   Items: 3,6,7,8,9,10,11
+   ══════════════════════════════════════════ */
+
+/* ── Item 3: Confirm Modal ── */
+/* Pakai inline style di HTML reversement (berbeda struktur modal) */
+
+/* ── Item 7: Empty State ── */
+.rev-empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:56px 20px;text-align:center;gap:10px;
+  grid-column:1/-1;
+}
+.rev-empty-state-icon{font-size:3rem;line-height:1;opacity:.55}
+.rev-empty-state-title{font-size:.92rem;font-weight:700;color:var(--text2)}
+.rev-empty-state-sub{font-size:.8rem;color:var(--text3);line-height:1.5;max-width:260px}
+
+/* ── Item 8: Skeleton Loader ── */
+@keyframes shimmer{
+  0%{background-position:-400px 0}
+  100%{background-position:400px 0}
+}
+.sk-rev-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.sk-rev-img{
+  width:100%;aspect-ratio:3/4;
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
+  background-size:800px 100%;animation:shimmer 1.4s infinite linear;
+}
+.sk-rev-body{padding:14px;display:flex;flex-direction:column;gap:8px}
+.sk-line{
+  border-radius:4px;
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);
+  background-size:800px 100%;animation:shimmer 1.4s infinite linear;
+}
+.sk-line-sm{height:9px;width:45%}
+.sk-line-md{height:12px;width:75%}
+.sk-line-lg{height:12px;width:90%}
+
+/* ── Item 9: Scroll to Top ── */
+.scroll-top-btn{
+  position:fixed;bottom:72px;left:20px;z-index:997;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  border:none;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(10,31,68,.25);
+  opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s;
+  transform:translateY(8px);
+}
+.scroll-top-btn.visible{opacity:1;pointer-events:auto;transform:translateY(0)}
+.scroll-top-btn:hover{background:var(--blue-mid);transform:translateY(-2px)}
+
+/* ── Item 10: Card entrance animation ── */
+@keyframes fadeUpCard{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.rev-card.card-animate{animation:fadeUpCard .4s ease both}
+
+/* ── Item 11: A11Y tap targets ── */
+@media(max-width:680px){
+  .rev-filter-btn{min-height:44px;padding:0 18px}
+  .rev-bs-expand-btn{min-height:44px}
+  .rev-modal-edit-btn,.rev-delete-btn{min-height:44px;padding:0 16px}
+}
+
+/* ══════════════════════════════════════════
+   SESI 35 — BOTTOM NAVIGATION BAR (MOBILE)
+   ══════════════════════════════════════════ */
+
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:60px;
+  background:var(--navy);
+  border-top:1px solid rgba(255,255,255,.12);
+  z-index:450;
+  align-items:stretch;
+  box-shadow:0 -4px 20px rgba(0,0,0,.25);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(max-width:680px){
+  .bottom-nav{display:flex}
+  .hdr-menu-btn{display:none!important}
+  body{padding-bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(70px + env(safe-area-inset-bottom,0px))!important}
+  .feedback-fab{display:none!important}
+  .scroll-top-btn{bottom:calc(120px + env(safe-area-inset-bottom,0px))!important;left:12px;right:auto}
+}
+.bn-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;cursor:pointer;
+  color:rgba(255,255,255,.5);text-decoration:none;
+  font-family:var(--font-b);padding:6px 4px;
+  transition:color .18s;
+  min-height:44px;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.bn-tab:hover,.bn-tab:focus-visible{color:rgba(255,255,255,.85);outline:none}
+.bn-tab--active{color:#fff}
+.bn-tab--active .bn-icon{transform:scale(1.1)}
+.bn-tab--active::before{
+  content:'';display:block;
+  width:4px;height:4px;border-radius:50%;
+  background:var(--gold);
+  position:absolute;top:6px;left:50%;transform:translateX(-50%);
+}
+.bn-icon{font-size:1.25rem;line-height:1;transition:transform .18s}
+.bn-label{font-size:.6rem;font-weight:600;letter-spacing:.02em;line-height:1;margin-top:1px}
+.bn-sheet-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:449;
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+.bn-sheet-overlay.open{display:block}
+.bn-sheet{
+  display:block;
+  position:fixed;bottom:-100%;left:0;right:0;
+  background:var(--navy);
+  border-top:1px solid rgba(255,255,255,.15);
+  border-radius:16px 16px 0 0;
+  z-index:451;
+  padding:8px 0 calc(12px + env(safe-area-inset-bottom,0px));
+  transition:bottom .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 -8px 32px rgba(0,0,0,.35);
+}
+.bn-sheet.open{bottom:60px}
+.bn-sheet-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.25);
+  margin:0 auto 12px;
+}
+.bn-sheet-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+  font-size:.88rem;color:rgba(255,255,255,.85);
+  font-family:var(--font-b);font-weight:500;
+  width:100%;background:none;border:none;cursor:pointer;
+  text-align:left;gap:10px;
+  transition:background .15s;
+  min-height:44px;
+}
+.bn-sheet-item:hover,.bn-sheet-item:active{background:rgba(255,255,255,.07)}
+.bn-sheet-action{justify-content:flex-start;gap:8px}
+.bn-sheet-login{color:var(--gold-lt);font-weight:600}
+.bn-sheet-danger{color:#fca5a5}
+.bn-sheet-admin-name{
+  font-size:.75rem;color:var(--gold-lt);
+  text-align:center;padding:6px 20px 2px;
+  font-weight:600;
+}
+.bn-sheet-sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}

@@ -1,7 +1,8 @@
 // ══ SERVICE WORKER — Naposo HKBP Ujung Menteng ══
 // Strategi: cache-first untuk asset statis, network-first untuk API Supabase
 
-const CACHE_NAME = 'naposo-v1';
+// ⚠️ Bump versi ini setiap deploy agar cache lama dihapus
+const CACHE_NAME = 'naposo-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -17,8 +18,8 @@ const STATIC_ASSETS = [
   '/img/icon-512.png',
   '/img/categories/ibadah.png',
   '/img/categories/latihan-choir.png',
-  '/img/categories/Badminton.png',
-  '/img/categories/Basket.png',
+  '/img/categories/badminton.png',
+  '/img/categories/basket.png',
   'https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap'
 ];
 
