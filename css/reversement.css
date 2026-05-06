@@ -90,7 +90,7 @@
 
 /* Poster area */
 .rev-card-poster{
-  width:100%;aspect-ratio:16/9;object-fit:cover;
+  width:100%;aspect-ratio:16/9;object-fit:cover;object-position:top;
   background:var(--surface2);
   display:block;cursor:zoom-in
 }

@@ -270,6 +270,10 @@
 </div>
 
 <!-- ══ MAIN ══ -->
+<!-- [Sesi 40 Item 5] Breadcrumb deep link -->
+<div id="backToHome" style="display:none;align-items:center;gap:6px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px">
+  <a href="index.html" style="color:var(--blue);text-decoration:none;font-weight:600">← Beranda</a>
+</div>
 <main>
   <div class="cal-section" id="calSection">
     <div id="calWrap"><div class="loading-box"><div class="spinner"></div><p>Memuat data…</p></div></div>
@@ -312,9 +316,12 @@
         </div>
       </div>
     </div>
+    <div id="gabunganWrap" style="display:none;align-items:center;gap:8px;margin-bottom:6px;padding:2px 0">
+      <input type="checkbox" id="evGabungan" style="width:16px;height:16px;cursor:pointer"/>
+      <label for="evGabungan" style="font-size:.78rem;font-weight:600;letter-spacing:.05em;cursor:pointer">GABUNGAN?</label>
+    </div>
     <div id="extraFieldWrap" style="display:none"></div>
     <div class="form-g"><label id="lbNote">Catatan (opsional)</label><textarea id="evNote" rows="2" placeholder="Detail tambahan…"></textarea></div>
-    <div class="form-g"><label id="lbPoster">Link Poster (Google Drive)</label><input type="text" id="evPoster" placeholder="https://drive.google.com/file/d/…"/></div>
     <div class="form-g" style="display:flex;align-items:center;gap:8px;padding:4px 0">
       <input type="checkbox" id="evFeatured" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0"/>
       <label for="evFeatured" style="font-size:.82rem;color:var(--text2);cursor:pointer;margin:0">⭐ Tampilkan di Beranda</label>

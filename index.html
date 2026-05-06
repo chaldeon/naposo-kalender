@@ -195,6 +195,15 @@
     <div class="events-grid" id="eventsGrid"></div>
   </section>
 
+  <!-- [Sesi 40 Item 3] Widget Renungan Terbaru -->
+  <section class="rev-widget-section reveal reveal-delay-2" id="revWidgetSection" style="display:none">
+    <div class="sec-hdr">
+      <h2 class="sec-title">Renungan Terbaru</h2>
+      <a href="reversement.html" class="sec-link">Lihat semua →</a>
+    </div>
+    <div id="revWidgetInner"></div>
+  </section>
+
   <!-- Recap Kegiatan -->
   <section class="recap-section anim-2 reveal reveal-delay-2">
     <div class="sec-hdr">
@@ -436,14 +445,16 @@
 <!-- ══ POSTER MODAL ══ -->
 <div class="poster-overlay" id="posterOverlay" onclick="closePosterModal(event)">
   <div class="poster-modal" id="posterModal">
+    <button class="pm-close pm-close-desktop" onclick="closePosterModalDirect()">×</button>
     <div class="poster-modal-img" id="pmImgWrap">
       <img id="pmImg" src="" alt="Poster"/>
-      <button class="pm-close" onclick="closePosterModalDirect()">×</button>
     </div>
     <div class="poster-modal-info">
       <div class="pm-meta" id="pmMeta"></div>
       <div class="pm-title" id="pmTitle"></div>
       <div class="pm-date" id="pmDate"></div>
+      <div class="pm-extra" id="pmExtra" style="display:none"></div>
+      <div class="pm-note" id="pmNote" style="display:none"></div>
       <div class="pm-caption" id="pmCaption" style="display:none"></div>
       <div class="pm-actions" id="pmActions"></div>
     </div>

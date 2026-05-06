@@ -29,8 +29,22 @@ function escapeHTML(str){
 /* poster via Google Drive — no upload needed */
 
 const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
-const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9','event-gabungan':'#059669',bph:'#7c3aed','perayaan-ulang-tahun':'#f59e0b',olahraga:'#10b981',other:'#94a3b8'};
-const DEF_LABELS={koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH',olahraga:'Olahraga','perayaan-ulang-tahun':'Perayaan Ulang Tahun',other:'Lainnya'};
+const DEF_COLORS={
+  /* current — synced dengan tabel categories di Supabase */
+  koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2',
+  event:'#ec89b0',bph:'#dc2626',ultah:'#06b6d4',olahraga:'#08e7c2',other:'#94a3b8',
+  /* legacy keys — fallback agar badge lama tidak abu-abu */
+  'event-gabungan':'#ec89b0','perayaan-ulang-tahun':'#06b6d4',
+  'ibadah/pelayanan':'#d97706','ibadah-pelayanan':'#d97706','ibadah / pelayanan':'#d97706',
+  pelayanan:'#f97316',kesehatian:'#ec4899',acara:'#eab308','ulang-tahun':'#06b6d4'};
+const DEF_LABELS={
+  /* current — synced dengan tabel categories di Supabase */
+  koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',
+  event:'Event Gabungan',bph:'BPH',ultah:'Perayaan Ulang Tahun',olahraga:'Olahraga',other:'Lainnya',
+  /* legacy keys */
+  'event-gabungan':'Event Gabungan','perayaan-ulang-tahun':'Perayaan Ulang Tahun',
+  'ibadah/pelayanan':'Ibadah / Pelayanan','ibadah-pelayanan':'Ibadah / Pelayanan','ibadah / pelayanan':'Ibadah / Pelayanan',
+  pelayanan:'Pelayanan',kesehatian:'Kesehatian',acara:'Acara','ulang-tahun':'Perayaan Ulang Tahun'};
 let CATS={...DEF_COLORS},CNAMES={...DEF_LABELS};
 function catColor(c){return CATS[c]||'#94a3b8';}
 function catLabel(c){return CNAMES[c]||c;}
@@ -46,22 +60,45 @@ function catIcon(c){return CAT_ICONS[c]||'📅';}
 /* ══ CATEGORY DEFAULT THUMBNAILS ══ */
 const CAT_THUMBS={
   ibadah:'img/categories/ibadah.png',
-  koor:'img/categories/latihan-choir.png',
-  latihan:'img/categories/latihan-choir.png',
+  koor:'img/categories/koor.png',
+  latihan:'img/categories/latihan-koor.png',
+  reversement:'img/categories/reversement.png',
+  'perayaan-ulang-tahun':'img/categories/ulang-tahun.png',
+  doa:'img/categories/doa.png',
 };
-const SPORT_THUMBS={
-  badminton:'img/categories/badminton.png',
-  basket:'img/categories/basket.png',
-  basketball:'img/categories/basket.png',
+const VARIANT_THUMBS={
+  koor:{
+    gabungan:'img/categories/koor-gabungan.png',
+  },
+  latihan:{
+    gabungan:'img/categories/latihan-koor-gabungan.png',
+  },
+  ibadah:{
+    gabungan:'img/categories/ibadah-gabungan.png',
+  },
+  olahraga:{
+    badminton:'img/categories/badminton.png',
+    basket:'img/categories/basket.png',
+    basketball:'img/categories/basket.png',
+    futsal:'img/categories/futsal.png',
+    renang:'img/categories/renang.png',
+  },
 };
 function getCatThumb(ev){
-  if(ev.category==='olahraga'&&ev.extra&&ev.extra.jenis_olahraga){
-    const sport=ev.extra.jenis_olahraga.toLowerCase().trim();
-    for(const key of Object.keys(SPORT_THUMBS)){
-      if(sport.includes(key))return SPORT_THUMBS[key];
+  const cat=ev.category;
+  const extra=ev.extra||{};
+  // Koor & Ibadah: pakai checkbox gabungan (boolean)
+  if((cat==='koor'||cat==='ibadah'||cat==='latihan')&&extra.gabungan){
+    return VARIANT_THUMBS[cat]?.gabungan||CAT_THUMBS[cat]||'';
+  }
+  // Olahraga: pakai variant string (select)
+  if(cat==='olahraga'&&extra.variant){
+    const v=extra.variant.toLowerCase().trim();
+    for(const key of Object.keys(VARIANT_THUMBS.olahraga)){
+      if(v.includes(key))return VARIANT_THUMBS.olahraga[key];
     }
   }
-  return CAT_THUMBS[ev.category]||'';
+  return CAT_THUMBS[cat]||'';
 }
 
 
@@ -518,7 +555,6 @@ function renderEvents(){
     const endTime=ev.time_end||(ev.time?ev.time.split(/[\u2013-]/).pop().trim():'');
     const isFinished=isPast||(sameDay&&!!endTime&&endTime<=nowHHMM);
     const note=ev.note||'';
-    const hasPoster=!!(ev.poster_url);
     let timeStr='';
     if(ev.time_start&&ev.time_end)timeStr=`${ev.time_start}\u2013${ev.time_end}`;
     else if(ev.time)timeStr=ev.time;
@@ -526,14 +562,14 @@ function renderEvents(){
     if(ev.extra){
       if(ev.extra.judul_lagu)extraParts.push('\ud83c\udfb5 '+ev.extra.judul_lagu);
       if(ev.extra.tema_acara)extraParts.push('\ud83d\udcd6 '+ev.extra.tema_acara);
-      if(ev.extra.jenis_olahraga)extraParts.push('\u26bd '+ev.extra.jenis_olahraga);
+      if(ev.extra.variant&&ev.category==='olahraga')extraParts.push('\u26bd '+ev.extra.variant);
     }
     const dayNum=d.getDate();
     const monStr=MS[d.getMonth()];
     const yrStr=d.getFullYear();
     const catThumb=getCatThumb(ev);
-    const posterSrc=hasPoster?driveToThumbnail(ev.poster_url):catThumb;
-    const hasImg=hasPoster||!!catThumb;
+    const posterSrc=catThumb;
+    const hasImg=!!catThumb;
     const fallbackSrc=catThumb||'';
     const onerrorAttr=fallbackSrc
       ?`onerror="if(this.src!=='${fallbackSrc}'){this.src='${fallbackSrc}';}else{this.style.display='none';}this.onerror=null;"`
@@ -580,7 +616,7 @@ function renderEvents(){
         </div>
         <div class="ev-card-title">${escapeHTML(ev.title)}</div>
         <div class="ev-card-meta">
-          <span class="ev-cat-badge" style="background:${col}">${catLabel(ev.category)}</span>
+          <span class="ev-cat-badge" style="background:${col};cursor:pointer" onclick="window.location.href='kalender.html?cat='+encodeURIComponent('${ev.category}')" title="Filter di Kalender">${catLabel(ev.category)}</span>
           ${timeStr?`<span class="ev-card-time">\u23f0 ${timeStr}</span>`:''}
           ${isFinished?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">${_lang==='en'?'\u2713 Finished':'\u2713 Sudah Selesai'}</span>`:''}
         </div>
@@ -598,7 +634,7 @@ function openPosterModal(evId){
   const d=new Date(ev.date+'T00:00:00');
   const col=catColor(ev.category);
   const catThumb=getCatThumb(ev);
-  const posterSrc=ev.poster_url?driveToThumbnail(ev.poster_url):catThumb;
+  const posterSrc=catThumb;
   const img=document.getElementById('pmImg');
   if(img){
     if(posterSrc){
@@ -626,12 +662,45 @@ function openPosterModal(evId){
     dateEl.innerHTML=`📅 ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}${timeStr}`;
   }
   const meta=document.getElementById('pmMeta');
-  if(meta)meta.innerHTML=`<span class="ev-cat-badge" style="background:${col};font-size:11px;padding:3px 10px">${catLabel(ev.category)}</span>`;
+  if(meta){
+    const _ts=new Date().toISOString().slice(0,10);
+    const _hm=new Date().toTimeString().slice(0,5);
+    const _et=ev.time_end||(ev.time?ev.time.split(/[-\u2013]/).pop().trim():'');
+    const _fin=(ev.date<_ts)||(ev.date===_ts&&!!_et&&_et<=_hm);
+    let _cb='';
+    if(_fin){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.12);color:var(--red);border:1px solid rgba(220,38,38,.2)">\u2713 Sudah Selesai</span>';}
+    else{const _dd=Math.round((new Date(ev.date+'T00:00:00')-new Date(_ts+'T00:00:00'))/86400000);
+      if(_dd===0){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(234,179,8,.15);color:#ca8a04;border:1px solid rgba(234,179,8,.3)">\ud83d\udd14 Hari ini!</span>';}
+      else if(_dd===1){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)">\ud83d\udcc5 Besok!</span>';}
+      else if(_dd>1){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)">\u23f3 '+_dd+' hari lagi</span>';}
+    }
+    meta.innerHTML='<span class="ev-cat-badge" style="background:'+col+';font-size:11px;padding:3px 10px">'+catLabel(ev.category)+'</span>'+_cb;
+  }
   const capEl=document.getElementById('pmCaption');
   if(capEl){
-    const cap=ev.caption||ev.note||'';
-    if(cap){capEl.textContent=cap;capEl.style.display='block';}  // textContent auto-escapes
+    const cap=ev.caption||'';
+    if(cap){capEl.textContent=cap;capEl.style.display='block';}
     else capEl.style.display='none';
+  }
+  // extra fields (judul_lagu, tema_acara, dll)
+  const extraEl=document.getElementById('pmExtra');
+  if(extraEl){
+    const parts=[];
+    if(ev.extra){
+      if(ev.extra.judul_lagu)parts.push(`🎵 ${escapeHTML(ev.extra.judul_lagu)}`);
+      if(ev.extra.tema_acara)parts.push(`📖 ${escapeHTML(ev.extra.tema_acara)}`);
+      if(ev.extra.variant&&ev.category==='olahraga')parts.push(`⚽ ${escapeHTML(ev.extra.variant)}`);
+      if(ev.extra.link_guide)parts.push(`📌 Link Guide: <a href="${escapeHTML(ev.extra.link_guide)}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all">${escapeHTML(ev.extra.link_guide)}</a>`);
+    }
+    if(parts.length){extraEl.innerHTML=parts.join('<br>');extraEl.style.display='flex';}
+    else extraEl.style.display='none';
+  }
+  // note
+  const noteEl=document.getElementById('pmNote');
+  if(noteEl){
+    const n=ev.note||'';
+    if(n){noteEl.textContent=n;noteEl.style.display='block';}
+    else noteEl.style.display='none';
   }
   const actEl=document.getElementById('pmActions');
   if(actEl){
@@ -640,6 +709,8 @@ function openPosterModal(evId){
     if(ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${escapeHTML(ev.link)}" target="_blank" rel="noopener">🔗 ${_lang==='en'?'Open Link':'Buka Link'}</a>`;
     const urlMatch=(ev.note||'').match(/(https?:\/\/[^\s]+)/);
     if(urlMatch&&!ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${urlMatch[1]}" target="_blank" rel="noopener">🔗 Buka Link</a>`;
+    // [Sesi 40 Item 1] Deep link ke kalender
+    btns+=`<a class="btn btn-ghost btn-sm" href="kalender.html?event=${encodeURIComponent(ev.id)}">📅 ${_lang==='en'?'View in Calendar':'Lihat di Kalender'}</a>`;
     if(isAdmin)btns+=`<button class="btn btn-ghost btn-sm" onclick="closePosterModalDirect();openEditEvent('${ev.id}')">✎ Ubah</button>`;
     actEl.innerHTML=btns;
   }
@@ -970,6 +1041,33 @@ function initDirtyState(){
   };
 }
 
+/* ══ [Sesi 40 Item 3] WIDGET RENUNGAN TERBARU ══ */
+function driveToThumbnailIdx(url){if(!url)return '';const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`:url;}
+function renderRevWidget(post){
+  const sec=document.getElementById('revWidgetSection');
+  if(!sec)return;
+  if(!post){sec.style.display='none';return;}
+  sec.style.display='';
+  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const d=new Date(post.date+'T00:00:00');
+  const dateLbl=`${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
+  const imgSrc=driveToThumbnailIdx(post.poster_url);
+  const dayLbl=post.day_type==='senin'?'Senin':'Jumat';
+  document.getElementById('revWidgetInner').innerHTML=`
+    <div class="rev-widget-card" onclick="window.location.href='reversement.html?id='+encodeURIComponent('${post.id}')" style="cursor:pointer">
+      ${imgSrc?`<div class="rev-widget-img-wrap"><img src="${escapeHTML(imgSrc)}" alt="${escapeHTML(post.title)}" class="rev-widget-img" onerror="this.parentElement.style.display='none'"></div>`:''}
+      <div class="rev-widget-body">
+        <div class="rev-widget-meta">
+          <span class="rev-day-badge ${post.day_type||''}" style="font-size:10px;padding:2px 8px">${dayLbl}</span>
+          <span style="font-size:11px;color:var(--text3)">${dateLbl}</span>
+        </div>
+        <div class="rev-widget-title">${escapeHTML(post.title)}</div>
+        ${post.verse_ref?`<div class="rev-widget-verse">📖 ${escapeHTML(post.verse_ref)}</div>`:''}
+        <a class="rev-widget-cta" href="reversement.html?id=${encodeURIComponent(post.id)}">Baca selengkapnya →</a>
+      </div>
+    </div>`;
+}
+
 /* ══ LOAD DATA ══ */
 async function loadData(){
   renderSkeletonEvents(); // Item 8: skeleton loader
@@ -981,6 +1079,11 @@ async function loadData(){
     EVENTS=await dbGet('events','select=*&order=date.asc');
     window.EVENTS=EVENTS;
     try{DOCS=await dbGet('home_docs','select=*&order=created_at.asc');}catch(e){DOCS=[];}
+    // [Sesi 40 Item 3] Fetch 1 post reversement terbaru untuk widget homepage
+    try{
+      const revPosts=await dbGet('reversement_posts','select=id,title,verse_ref,poster_url,date,day_type&published=eq.true&order=date.desc&limit=1');
+      renderRevWidget(revPosts&&revPosts.length?revPosts[0]:null);
+    }catch(e){renderRevWidget(null);}
     renderEvents();renderRecap();renderDocs();
     if(isAdmin)renderDocAdmList();
     initScrollReveal();

@@ -1,13 +1,9 @@
 // ══ SERVICE WORKER — Naposo HKBP Ujung Menteng ══
-// Strategi: cache-first untuk asset statis, network-first untuk API Supabase
+// Strategi: network-first untuk HTML, CSS, JS — cache-first untuk gambar & font
 
 // ⚠️ Bump versi ini setiap deploy agar cache lama dihapus
-const CACHE_NAME = 'naposo-v4';
+const CACHE_NAME = 'naposo-v5';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/kalender.html',
-  '/reversement.html',
   '/css/index.css',
   '/css/kalender.css',
   '/css/reversement.css',
@@ -17,13 +13,24 @@ const STATIC_ASSETS = [
   '/img/icon-192.png',
   '/img/icon-512.png',
   '/img/categories/ibadah.png',
-  '/img/categories/latihan-choir.png',
+  '/img/categories/ibadah-gabungan.png',
+  '/img/categories/koor.png',
+  '/img/categories/koor-gabungan.png',
+  '/img/categories/latihan-koor.png',
+  '/img/categories/latihan-koor-gabungan.png',
   '/img/categories/badminton.png',
   '/img/categories/basket.png',
+  '/img/categories/futsal.png',
+  '/img/categories/renang.png',
+  '/img/categories/doa.png',
+  '/img/categories/reversement.png',
+  '/img/categories/ulang-tahun.png',
   'https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap'
 ];
 
-// Install: pre-cache semua asset statis
+const HTML_PAGES = ['/', '/index.html', '/kalender.html', '/reversement.html'];
+
+// Install: pre-cache asset statis
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -32,12 +39,12 @@ self.addEventListener('install', e => {
   );
 });
 
-// Activate: hapus cache lama, lalu reload semua tab
+// Activate: hapus cache lama, lalu reload semua tab agar langsung pakai SW baru
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: 'window' }))
       .then(clients => clients.forEach(client => client.navigate(client.url)))
   );
@@ -47,7 +54,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Supabase API → network-first, fallback tidak cache
+  // Supabase API → network-only, fallback array kosong
   if (url.hostname.includes('supabase.co')) {
     e.respondWith(
       fetch(e.request).catch(() => new Response(JSON.stringify([]), {
@@ -57,7 +64,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Google Fonts → cache-first
+  // Google Fonts → cache-first (font jarang berubah)
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     e.respondWith(
       caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
@@ -69,20 +76,38 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Asset lokal → cache-first, network fallback
   if (url.origin === self.location.origin) {
+    const isImage = /\.(png|jpe?g|gif|webp|svg|ico)$/i.test(url.pathname);
+
+    if (isImage) {
+      // Gambar → cache-first (jarang berubah, hemat bandwidth)
+      e.respondWith(
+        caches.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(res => {
+            if (res.ok) {
+              const clone = res.clone();
+              caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            }
+            return res;
+          });
+        })
+      );
+      return;
+    }
+
+    // HTML, CSS, JS → network-first dengan timeout 3 detik, fallback cache
     e.respondWith(
-      caches.match(e.request).then(cached => {
-        if (cached) return cached;
-        return fetch(e.request).then(res => {
+      Promise.race([
+        fetch(e.request).then(res => {
           if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
           }
           return res;
-        });
-      })
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]).catch(() => caches.match(e.request))
     );
-    return;
   }
 });

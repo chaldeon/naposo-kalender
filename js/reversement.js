@@ -741,6 +741,9 @@ function initDirtyState(){
   if(deepId){
     const target=POSTS.find(p=>p.id===deepId);
     if(target)openRevModal(target.id);
+    // [Sesi 40 Item 5] Tampilkan breadcrumb
+    const _bb=document.getElementById('backToHome');
+    if(_bb)_bb.style.display='flex';
   }
 
   initScrollTop();   // Item 9

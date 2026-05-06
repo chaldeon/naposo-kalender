@@ -32,19 +32,19 @@ function escapeHTML(str){
 /* ══ CATEGORIES ══ */
 const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
 // Kategori bawaan — warna & label ini SELALU dipakai, tidak bisa di-override dari Supabase
-const DEF_COLORS={koor:'#7c3aed',ibadah:'#c9a227',rapat:'#0891b2',latihan:'#16a34a',reversement:'#db2777',doa:'#4a90d9',other:'#94a3b8'};
-const DEF_LBL_ID={koor:'Koor / Pelayanan',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
-const DEF_LBL_EN={koor:'Koor / Pelayanan',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const DEF_COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2',other:'#94a3b8'};
+const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
+const DEF_LBL_EN={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
 // CAT_EXTRA: map dari label kategori ke array field ekstra
 // Setiap field: {key, label, type} — type: 'text'|'url'|'money'
 const CAT_EXTRA={
-  'Koor / Pelayanan':   [{key:'judul_lagu',      label:'Judul Lagu',         type:'text'},
+  'Koor':               [{key:'judul_lagu',      label:'Judul Lagu',         type:'text'},
                          {key:'link_guide',       label:'Link Guide',         type:'url'}],
   'Ibadah':             [{key:'judul_tema',       label:'Judul Tema',         type:'text'}],
   'Latihan':            [{key:'judul_lagu',       label:'Judul Lagu',         type:'text'},
                          {key:'link_guide',       label:'Link Guide',         type:'url'}],
   'Reversement':        [{key:'tema_reversement', label:'Tema Reversement',   type:'text'}],
-  'Olahraga':           [{key:'jenis_olahraga',   label:'Jenis Olahraga',     type:'text'},
+  'Olahraga':           [{key:'variant',          label:'Cabang Olahraga',    type:'select', options:['badminton','basket','futsal','renang']},
                          {key:'tempat',           label:'Tempat / Lapangan',  type:'text'},
                          {key:'uang_patungan',    label:'Uang Patungan',      type:'money'}],
 };
@@ -58,9 +58,12 @@ function getExtraField(catId){
   const fields=getExtraFields(catId);
   return fields.length?fields[0]:null;
 }
+const GABUNGAN_CATS=['koor','ibadah','latihan'];
 function updateExtraField(){
   const cat=document.getElementById('evCat')?.value;
   const container=document.getElementById('extraFieldWrap');
+  const gabWrap=document.getElementById('gabunganWrap');
+  if(gabWrap) gabWrap.style.display=GABUNGAN_CATS.includes(cat)?'flex':'none';
   if(!container) return;
   const fields=getExtraFields(cat);
   if(!fields.length){
@@ -69,13 +72,29 @@ function updateExtraField(){
     return;
   }
   container.style.display='block';
-  container.innerHTML=fields.map(f=>`
-    <div class="form-g extra-field-item" style="margin-bottom:6px">
+  container.innerHTML=fields.map(f=>{
+    if(f.type==='checkbox'){
+      return `<div class="form-g extra-field-item" style="margin-bottom:6px;display:flex;align-items:center;gap:8px">
+        <input type="checkbox" class="extra-field-input" data-key="${f.key}" data-type="checkbox" id="ef_${f.key}" style="width:16px;height:16px;cursor:pointer"/>
+        <label class="extra-field-label" for="ef_${f.key}" style="margin:0;cursor:pointer">${f.label}</label>
+      </div>`;
+    }
+    if(f.type==='select'){
+      const opts=f.options.map(o=>`<option value="${o}">${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+      return `<div class="form-g extra-field-item" style="margin-bottom:6px">
+        <label class="extra-field-label">${f.label}</label>
+        <select class="extra-field-input" data-key="${f.key}" data-type="select" style="width:100%">
+          <option value="">— Pilih —</option>${opts}
+        </select>
+      </div>`;
+    }
+    return `<div class="form-g extra-field-item" style="margin-bottom:6px">
       <label class="extra-field-label">${f.label}</label>
       <input type="text" class="extra-field-input" data-key="${f.key}"
         placeholder="${f.type==='url'?'https://…':f.type==='money'?'contoh: Rp 20.000':''}"
         style="width:100%"/>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 let CATS={...DEF_COLORS},CNAMES_ID={...DEF_LBL_ID},CNAMES_EN={...DEF_LBL_EN};
@@ -140,7 +159,7 @@ const T={
     navHomeMob:'Home',navKalenderMob:'Kalender',navRevMob:'Reversement',
     logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Kegiatan',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
-    lbCat:'Kategori',lbNote:'Catatan (opsional)',lbPoster:'Link Poster (Google Drive)',cancelBtn:'Batal',saveBtn:'Simpan',
+    lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
     lbPw:'Password',loginErr:'Password salah atau nama tidak dipilih.',
     loginBtn2:'Masuk',detailTitle:'Detail Kegiatan',closeBtn:'Tutup',editBtn:'Ubah',deleteBtn:'Hapus',
@@ -172,7 +191,7 @@ const T={
     navHomeMob:'Home',navKalenderMob:'Calendar',navRevMob:'Reversement',
     logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
-    lbCat:'Category',lbNote:'Notes (optional)',lbPoster:'Poster Link (Google Drive)',cancelBtn:'Cancel',saveBtn:'Save',
+    lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
     lbPw:'Password',loginErr:'Wrong password or name not selected.',
     loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',deleteBtn:'Delete',
@@ -469,6 +488,14 @@ async function init(){
         setTimeout(()=>openDetail(_dlEv),200);
       }
     }
+    // [Sesi 40 Item 2] Deep link: ?cat=CATEGORY → set filter langsung
+    const _catParam=new URLSearchParams(location.search).get('cat');
+    if(_catParam&&CATS[_catParam]){filterCats.clear();filterCats.add(_catParam);buildCatFilterDropdown();applyFilters();if(currentView==='agenda')renderAgenda();}
+    // [Sesi 40 Item 5] Breadcrumb "← Beranda" jika masuk via deep link
+    if(_dlParam||_catParam){
+      const _bb=document.getElementById('backToHome');
+      if(_bb)_bb.style.display='flex';
+    }
   }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;}
 }
 
@@ -533,7 +560,7 @@ function applyLangUI(){
     navHomeMob:'navHomeMob',navKalenderMob:'navKalenderMob',navRevMob:'navRevMob',
     logoutBtnMobTxt:'logoutBtnMobTxt',loginBtnMobileTxt:'loginBtnMobileTxt',
     addBtnTxt:'addBtnTxt',lbDate:'lbDate',lbTitle:'lbTitle',lbStart:'lbStart',lbEnd:'lbEnd',
-    lbCat:'lbCat',lbNote:'lbNote',lbPoster:'lbPoster',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
+    lbCat:'lbCat',lbNote:'lbNote',cancelBtn:'cancelBtn',evSaveBtn:'saveBtn',
     loginTitle:'loginTitle',lbName:'lbName',lbPw:'lbPw',loginErr:'loginErr',
     loginBtn2:'loginBtn2',detailTitle:'detailTitle',cancelBtn2:'cancelBtn',
     catMgrBtn:'catMgrBtn',footerVisitLbl:'footerVisit',
@@ -1328,17 +1355,16 @@ function closeConfirmModal(){closeModal('confirmModal');_confirmCallback=null;}
 
 function openAddModal(ds){
   editingId=null;document.getElementById('evModalTitle').textContent=tx('evModalAdd');
-  const posterClr=document.getElementById('evPoster');if(posterClr)posterClr.value='';
   document.getElementById('evDate').value=ds||'';document.getElementById('evTitle').value='';
   document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
   document.getElementById('evNote').value='';
   const fc=document.getElementById('evFeatured');if(fc)fc.checked=false;
+  const gv=document.getElementById('evGabungan');if(gv)gv.checked=false;
   buildCatSelect();updateExtraField();openModal('eventModal');
 }
 
 function openEditModal(ev){
   editingId=ev.id;document.getElementById('evModalTitle').textContent=tx('evModalEdit');
-  const posterFld=document.getElementById('evPoster');if(posterFld)posterFld.value=ev.poster_url||'';
   document.getElementById('evDate').value=ev.date;document.getElementById('evTitle').value=ev.title;
   const ts=(ev.time||'').split('–');
   document.getElementById('evStart').value=ts[0]||'';document.getElementById('evEnd').value=ts[1]||'';
@@ -1350,10 +1376,16 @@ function openEditModal(ev){
     if(fields.length&&ev.extra){
       document.querySelectorAll('#extraFieldWrap .extra-field-input').forEach(inp=>{
         const key=inp.dataset.key;
-        if(key&&ev.extra[key]) inp.value=ev.extra[key];
+        if(!key)return;
+        if(inp.dataset.type==='checkbox'){
+          inp.checked=!!(ev.extra[key]);
+        }else{
+          if(ev.extra[key]) inp.value=ev.extra[key];
+        }
       });
     }
     const fc=document.getElementById('evFeatured');if(fc)fc.checked=!!ev.featured;
+    const gv2=document.getElementById('evGabungan');if(gv2)gv2.checked=!!(ev.extra&&ev.extra.gabungan);
   },30);
   openModal('eventModal');
 }
@@ -1371,12 +1403,26 @@ function openDetail(ev){
     ${ev.link?`<div class="det-link"><a href="${escapeHTML(ev.link)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${escapeHTML(ev.link)}</a></div>`:''}
     ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';return fields.map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
     ${ev.note?`<div class="det-note">${linkify(escapeHTML(ev.note).replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
+    ${ev.category==='reversement'?`<div id="detRevLink" style="margin-top:10px;min-height:18px"></div>`:''}
   </div>`;
   document.getElementById('detailFoot').innerHTML=`
     ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${window._detEv&&window._detEv.featured?'var(--gold)':'none'};border:1px solid ${window._detEv&&window._detEv.featured?'var(--gold)':'var(--border2)'};color:${window._detEv&&window._detEv.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${window._detEv&&window._detEv.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
     ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
     ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
+  // [Sesi 40 Item 4 Opsi A] Auto-match post reversement by date
+  if(ev.category==='reversement'){
+    (async()=>{
+      try{
+        const res=await sb(`reversement_posts?select=id&published=eq.true&date=eq.${ev.date}&limit=1`);
+        const rows=res.ok?await res.json():[];
+        const el=document.getElementById('detRevLink');
+        if(el&&rows&&rows.length){
+          el.innerHTML=`<a href="reversement.html?id=${encodeURIComponent(rows[0].id)}" style="color:var(--blue);font-size:.82rem;font-weight:600;text-decoration:none">✝️ Buka Renungan →</a>`;
+        }
+      }catch(e){}
+    })();
+  }
 }
 
 /* ══ CRUD ══ */
@@ -1396,8 +1442,6 @@ async function saveEvent(){
   const tS=document.getElementById('evStart').value,tE=document.getElementById('evEnd').value;
   const cat=document.getElementById('evCat').value,note=document.getElementById('evNote').value.trim();
   const link='';
-  const rawPoster=document.getElementById('evPoster')?.value.trim()||'';
-  const poster_url=driveToThumbnail(rawPoster);
   if(!date||!title){showToast(tx('fieldReq'),'err');return;}
   const time=tS?(tE?`${tS}–${tE}`:tS):'';
   const btn=document.getElementById('evSaveBtn');btn.disabled=true;btn.textContent=tx('saving');setSyncBadge('load',tx('saving'));
@@ -1407,21 +1451,28 @@ async function saveEvent(){
     if(fields.length){
       document.querySelectorAll('#extraFieldWrap .extra-field-input').forEach(inp=>{
         const key=inp.dataset.key;
-        const val=inp.value.trim();
-        if(key&&val) extra[key]=val;
+        if(!key)return;
+        if(inp.dataset.type==='checkbox'){
+          if(inp.checked) extra[key]=true;
+        }else{
+          const val=inp.value.trim();
+          if(val) extra[key]=val;
+        }
       });
     }
+    const gabEl=document.getElementById('evGabungan');
+    if(gabEl&&gabEl.closest('#gabunganWrap')?.style.display!=='none'&&gabEl.checked) extra.gabungan=true;
     const featured=!!(document.getElementById('evFeatured')?.checked);
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
-      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured,poster_url},{id:editingId});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured,poster_url};
+      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured},{id:editingId});
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured};
       pushUndo({type:'edit',prev});
     }else{
       const id='ev_'+Date.now();
-      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured,poster_url});
-      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured,poster_url});
-      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured,poster_url}});
+      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured});
+      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured});
+      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured}});
     }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
