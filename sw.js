@@ -2,7 +2,7 @@
 // Strategi: network-first untuk HTML, CSS, JS — cache-first untuk gambar & font
 
 // ⚠️ Bump versi ini setiap deploy agar cache lama dihapus
-const CACHE_NAME = 'naposo-v5';
+const CACHE_NAME = 'naposo-v6';
 const STATIC_ASSETS = [
   '/css/index.css',
   '/css/kalender.css',
@@ -28,25 +28,28 @@ const STATIC_ASSETS = [
   'https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap'
 ];
 
-const HTML_PAGES = ['/', '/index.html', '/kalender.html', '/reversement.html'];
-
-// Install: pre-cache asset statis
+// Install: pre-cache asset statis — pakai cache:'reload' agar dapat versi terbaru dari server
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(cache => Promise.all(
+        STATIC_ASSETS.map(url =>
+          fetch(url, { cache: 'reload' })
+            .then(res => { if (res.ok) cache.put(url, res); })
+            .catch(() => {})
+        )
+      ))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate: hapus cache lama, lalu reload semua tab agar langsung pakai SW baru
+// Activate: hapus cache lama, ambil alih semua tab
+// client.navigate() dihapus — tidak perlu reload paksa, clients.claim() sudah cukup
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window' }))
-      .then(clients => clients.forEach(client => client.navigate(client.url)))
   );
 });
 
@@ -96,10 +99,19 @@ self.addEventListener('fetch', e => {
       return;
     }
 
-    // HTML, CSS, JS → network-first dengan timeout 3 detik, fallback cache
+    // HTML, CSS, JS → network-first dengan cache:'reload' agar bypass browser HTTP cache,
+    // timeout 3 detik, fallback ke SW cache
+    const networkRequest = new Request(e.request.url, {
+      cache: 'reload',
+      headers: e.request.headers,
+      mode: e.request.mode === 'navigate' ? 'navigate' : e.request.mode,
+      credentials: e.request.credentials,
+      redirect: e.request.redirect
+    });
+
     e.respondWith(
       Promise.race([
-        fetch(e.request).then(res => {
+        fetch(networkRequest).then(res => {
           if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
