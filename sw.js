@@ -28,7 +28,8 @@ const STATIC_ASSETS = [
   'https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap'
 ];
 
-// Install: pre-cache asset statis — pakai cache:'reload' agar dapat versi terbaru dari server
+// Install: pre-cache satu per satu — kalau satu file gagal (404), yang lain tetap lanjut
+// Pakai cache:'reload' agar bypass browser HTTP cache saat precache
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -36,20 +37,21 @@ self.addEventListener('install', e => {
         STATIC_ASSETS.map(url =>
           fetch(url, { cache: 'reload' })
             .then(res => { if (res.ok) cache.put(url, res); })
-            .catch(() => {})
+            .catch(() => {}) // jangan gagalkan install hanya karena satu file 404
         )
       ))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()) // selalu aktif meski ada file gagal
   );
 });
 
-// Activate: hapus cache lama, ambil alih semua tab
-// client.navigate() dihapus — tidak perlu reload paksa, clients.claim() sudah cukup
+// Activate: hapus cache lama, ambil alih semua tab, lalu broadcast agar tab reload otomatis
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' })))
   );
 });
 
@@ -99,19 +101,12 @@ self.addEventListener('fetch', e => {
       return;
     }
 
-    // HTML, CSS, JS → network-first dengan cache:'reload' agar bypass browser HTTP cache,
-    // timeout 3 detik, fallback ke SW cache
-    const networkRequest = new Request(e.request.url, {
-      cache: 'reload',
-      headers: e.request.headers,
-      mode: e.request.mode === 'navigate' ? 'navigate' : e.request.mode,
-      credentials: e.request.credentials,
-      redirect: e.request.redirect
-    });
-
+    // HTML, CSS, JS → network-first
+    // Kunci fix: pakai cache:'no-cache' agar SW fetch langsung ke server,
+    // tidak tertipu browser HTTP cache yang mungkin masih simpan file lama
     e.respondWith(
       Promise.race([
-        fetch(networkRequest).then(res => {
+        fetch(e.request, { cache: 'no-cache' }).then(res => {
           if (res.ok) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then(c => c.put(e.request, clone));

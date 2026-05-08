@@ -16,32 +16,42 @@ async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.
 function driveToThumbnail(url){
   if(!url)return '';
   const m=url.match(/\/file\/d\/([^/?\s]+)/);
-  if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  if(m)return `https://lh3.googleusercontent.com/d/${m[1]}`;
   return url;
 }
 
-/* ── Item 1: escapeHTML — cegah XSS sebelum inject ke innerHTML ── */
 function escapeHTML(str){
   if(!str)return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-/* poster via Google Drive — no upload needed */
-
 const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
+
+/* ══ BIRTHDAY HELPERS (deklarasi di atas agar tersedia saat loadData) ══ */
+// Helper tanggal lokal — hindari bug timezone UTC vs WIB
+function localDateStr(d){const t=d||new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;}
+const BDAY_CATS=['perayaan-ulang-tahun','ultah','ulang-tahun','perayaan ulang tahun'];
+function isBirthdayEv(ev){
+  const c=(ev.category||'').toLowerCase().trim();
+  // Cek slug langsung
+  if(BDAY_CATS.includes(c))return true;
+  // Cek label kategori (untuk kategori custom seperti "Ulang Tahun Anggota")
+  const lbl=(catLabel(ev.category)||'').toLowerCase();
+  return lbl.includes('ulang tahun')||lbl.includes('birthday')||lbl.includes('ultah');
+}
+function getBirthdaysToday(){
+  const today=localDateStr();
+  return EVENTS.filter(e=>e.date===today&&isBirthdayEv(e));
+}
 const DEF_COLORS={
-  /* current — synced dengan tabel categories di Supabase */
   koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2',
   event:'#ec89b0',bph:'#dc2626',ultah:'#06b6d4',olahraga:'#08e7c2',other:'#94a3b8',
-  /* legacy keys — fallback agar badge lama tidak abu-abu */
   'event-gabungan':'#ec89b0','perayaan-ulang-tahun':'#06b6d4',
   'ibadah/pelayanan':'#d97706','ibadah-pelayanan':'#d97706','ibadah / pelayanan':'#d97706',
   pelayanan:'#f97316',kesehatian:'#ec4899',acara:'#eab308','ulang-tahun':'#06b6d4'};
 const DEF_LABELS={
-  /* current — synced dengan tabel categories di Supabase */
   koor:'Koor',ibadah:'Ibadah / Pelayanan',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',
   event:'Event Gabungan',bph:'BPH',ultah:'Perayaan Ulang Tahun',olahraga:'Olahraga',other:'Lainnya',
-  /* legacy keys */
   'event-gabungan':'Event Gabungan','perayaan-ulang-tahun':'Perayaan Ulang Tahun',
   'ibadah/pelayanan':'Ibadah / Pelayanan','ibadah-pelayanan':'Ibadah / Pelayanan','ibadah / pelayanan':'Ibadah / Pelayanan',
   pelayanan:'Pelayanan',kesehatian:'Kesehatian',acara:'Acara','ulang-tahun':'Perayaan Ulang Tahun'};
@@ -49,7 +59,6 @@ let CATS={...DEF_COLORS},CNAMES={...DEF_LABELS};
 function catColor(c){return CATS[c]||'#94a3b8';}
 function catLabel(c){return CNAMES[c]||c;}
 
-/* ══ CATEGORY ICONS ══ */
 const CAT_ICONS={
   koor:'🎵',ibadah:'🙏',rapat:'📋',latihan:'🎶',
   reversement:'✝️',doa:'🕊️','event-gabungan':'🎉',
@@ -57,7 +66,6 @@ const CAT_ICONS={
 };
 function catIcon(c){return CAT_ICONS[c]||'📅';}
 
-/* ══ CATEGORY DEFAULT THUMBNAILS ══ */
 const CAT_THUMBS={
   ibadah:'img/categories/ibadah.png',
   koor:'img/categories/koor.png',
@@ -67,116 +75,56 @@ const CAT_THUMBS={
   doa:'img/categories/doa.png',
 };
 const VARIANT_THUMBS={
-  koor:{
-    gabungan:'img/categories/koor-gabungan.png',
-  },
-  latihan:{
-    gabungan:'img/categories/latihan-koor-gabungan.png',
-  },
-  ibadah:{
-    gabungan:'img/categories/ibadah-gabungan.png',
-  },
-  olahraga:{
-    badminton:'img/categories/badminton.png',
-    basket:'img/categories/basket.png',
-    basketball:'img/categories/basket.png',
-    futsal:'img/categories/futsal.png',
-    renang:'img/categories/renang.png',
-  },
+  koor:{gabungan:'img/categories/koor-gabungan.png'},
+  latihan:{gabungan:'img/categories/latihan-koor-gabungan.png'},
+  ibadah:{gabungan:'img/categories/ibadah-gabungan.png'},
+  olahraga:{badminton:'img/categories/badminton.png',basket:'img/categories/basket.png',basketball:'img/categories/basket.png',futsal:'img/categories/futsal.png',renang:'img/categories/renang.png'},
 };
 function getCatThumb(ev){
-  const cat=ev.category;
-  const extra=ev.extra||{};
-  // Koor & Ibadah: pakai checkbox gabungan (boolean)
-  if((cat==='koor'||cat==='ibadah'||cat==='latihan')&&extra.gabungan){
-    return VARIANT_THUMBS[cat]?.gabungan||CAT_THUMBS[cat]||'';
-  }
-  // Olahraga: pakai variant string (select)
-  if(cat==='olahraga'&&extra.variant){
-    const v=extra.variant.toLowerCase().trim();
-    for(const key of Object.keys(VARIANT_THUMBS.olahraga)){
-      if(v.includes(key))return VARIANT_THUMBS.olahraga[key];
-    }
-  }
+  const cat=ev.category;const extra=ev.extra||{};
+  // Birthday selalu pakai thumbnail generik (foto pribadi hanya untuk confetti modal)
+  if(isBirthdayEv(ev))return 'img/categories/ulang-tahun.png';
+  if((cat==='koor'||cat==='ibadah'||cat==='latihan')&&extra.gabungan)return VARIANT_THUMBS[cat]?.gabungan||CAT_THUMBS[cat]||'';
+  if(cat==='olahraga'&&extra.variant){const v=extra.variant.toLowerCase().trim();for(const key of Object.keys(VARIANT_THUMBS.olahraga)){if(v.includes(key))return VARIANT_THUMBS.olahraga[key];}}
   return CAT_THUMBS[cat]||'';
 }
-
 
 const MS_ID=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const MS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 let darkMode=localStorage.getItem('naposo_dark')==='1';
 let _lang=localStorage.getItem('naposo_lang')||'id';
-let isAdmin=false,EVENTS=[],DOCS=[],ANNOUNCE={},_adminName='';
+let isAdmin=false,EVENTS=[],DOCS=[],_adminName='';
+// ══ BANNERS — array dari tabel announcements ══
+let BANNERS=[];
 
 /* ══ I18N ══ */
 const T={
-  navKalender:{id:'Kalender',en:'Calendar'},
-  navKalenderMob:{id:'Kalender',en:'Calendar'},
-  navRev:{id:'Reversement',en:'Reversement'},
-  navRevMob:{id:'Reversement',en:'Reversement'},
-  smIgLabel:{id:'Instagram',en:'Instagram'},
-  smYtLabel:{id:'YouTube',en:'YouTube'},
-  smTtLabel:{id:'TikTok',en:'TikTok'},
-  loginBtnTxt:{id:'Login',en:'Login'},
-  loginBtnMobileTxt:{id:'Login',en:'Login'},
-  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},
-  ddAnnounce:{id:'Pengumuman',en:'Announcement'},
-  ddLogout:{id:'Logout',en:'Logout'},
-  darkModeLbl:{id:'Dark Mode',en:'Dark Mode'},
-  langModeLbl:{id:'Bahasa',en:'Language'},
-  mobDocs:{id:'Kelola Dokumen',en:'Manage Documents'},
-  mobAnnounce:{id:'Pengumuman',en:'Announcement'},
-  logoutBtnMobTxt:{id:'Logout',en:'Logout'},
+  navKalender:{id:'Kalender',en:'Calendar'},navKalenderMob:{id:'Kalender',en:'Calendar'},
+  navRev:{id:'Reversement',en:'Reversement'},navRevMob:{id:'Reversement',en:'Reversement'},
+  smIgLabel:{id:'Instagram',en:'Instagram'},smYtLabel:{id:'YouTube',en:'YouTube'},smTtLabel:{id:'TikTok',en:'TikTok'},
+  loginBtnTxt:{id:'Login',en:'Login'},loginBtnMobileTxt:{id:'Login',en:'Login'},
+  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},ddAnnounce:{id:'Pengumuman',en:'Announcement'},ddLogout:{id:'Logout',en:'Logout'},
+  darkModeLbl:{id:'Dark Mode',en:'Dark Mode'},langModeLbl:{id:'Bahasa',en:'Language'},
+  mobDocs:{id:'Kelola Dokumen',en:'Manage Documents'},mobAnnounce:{id:'Pengumuman',en:'Announcement'},logoutBtnMobTxt:{id:'Logout',en:'Logout'},
   heroTitle:{id:'Naposo HKBP Ujung Menteng',en:'Naposo HKBP Ujung Menteng'},
   heroSub:{id:'Selamat datang Naps! Temukan jadwal kegiatan dan informasi terkini.',en:'Welcome! Find event schedules and the latest information here.'},
-  tagIbadah:{id:'Ibadah',en:'Worship'},
-  tagKoor:{id:'Koor',en:'Choir'},
-  tagPelayanan:{id:'Pelayanan',en:'Ministry'},
-  tagKesehatian:{id:'Kesehatian',en:'Fellowship'},
-  tagDoa:{id:'Doa',en:'Prayer'},
-  secEvents:{id:'Kegiatan Terdekat',en:'Upcoming Events'},
-  secEventsLink:{id:'Lihat semua →',en:'View all →'},
-  secRecap:{id:'Recap Kegiatan',en:'Activity Recap'},
-  secDocs:{id:'Dokumen',en:'Documents'},
-  secContact:{id:'Hubungi Kami',en:'Contact Us'},
-  cpLabel:{id:'Hubungi Contact Person',en:'Contact Person'},
-  footerVisitLbl:{id:'kunjungan',en:'visits'},
-  loginTitle:{id:'Login Pengurus',en:'Admin Login'},
-  lbName:{id:'Nama Pengurus',en:'Admin Name'},
-  lbPw:{id:'Password',en:'Password'},
-  loginCancelBtn:{id:'Batal',en:'Cancel'},
-  loginSubmitBtn:{id:'Masuk',en:'Sign In'},
-  editModalTitle:{id:'Ubah Kegiatan',en:'Edit Event'},
-  lbEditDate:{id:'Tanggal',en:'Date'},
-  lbEditTitle:{id:'Judul Event',en:'Event Title'},
-  lbEditTimeStart:{id:'Waktu Mulai',en:'Start Time'},
-  lbEditTimeEnd:{id:'Waktu Selesai',en:'End Time'},
-  lbEditCat:{id:'Kategori',en:'Category'},
-  lbEditExtra:{id:'Tema Acara',en:'Event Theme'},
-  lbEditNote:{id:'Catatan (Opsional)',en:'Notes (Optional)'},
-  lbEditFeatured:{id:'⭐ Tampilkan di Beranda',en:'⭐ Show on Homepage'},
-  lbEditCaption:{id:'Caption (untuk modal poster)',en:'Caption (shown in poster modal)'},
-  editCancelBtn:{id:'Batal',en:'Cancel'},
-  editSubmitBtn:{id:'Simpan',en:'Save'},
-  docsModalTitle:{id:'Kelola Dokumen',en:'Manage Documents'},
-  lbDocTitle:{id:'Judul Dokumen',en:'Document Title'},
-  lbDocLink:{id:'Link (Google Drive / URL)',en:'Link (Google Drive / URL)'},
-  lbDocCat:{id:'Kategori',en:'Category'},
-  addDocBtn:{id:'+ Tambah',en:'+ Add'},
-  docCloseBtn:{id:'Tutup',en:'Close'},
-  announceModalTitle:{id:'Kelola Pengumuman',en:'Manage Announcement'},
-  lbAnnTitle:{id:'Judul Pengumuman',en:'Announcement Title'},
-  lbAnnSub:{id:'Keterangan Singkat',en:'Short Description'},
-  lbAnnLink:{id:'Link Formulir',en:'Form Link'},
-  lbAnnCta:{id:'Teks Tombol',en:'Button Text'},
-  lbAnnExp:{id:'Berlaku Sampai (opsional)',en:'Valid Until (optional)'},
-  lbAnnActive:{id:'Aktifkan Banner',en:'Activate Banner'},
-  lbAnnPreview:{id:'Preview Banner',en:'Banner Preview'},
-  lbAnnDelete:{id:'Hapus Banner',en:'Delete Banner'},
-  annCancelBtn:{id:'Batal',en:'Cancel'},
-  annSaveBtn:{id:'Simpan',en:'Save'},
-  adminBarTxt:{id:'',en:''},
-  feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
+  tagIbadah:{id:'Ibadah',en:'Worship'},tagKoor:{id:'Koor',en:'Choir'},tagPelayanan:{id:'Pelayanan',en:'Ministry'},tagKesehatian:{id:'Kesehatian',en:'Fellowship'},tagDoa:{id:'Doa',en:'Prayer'},
+  secEvents:{id:'Kegiatan Terdekat',en:'Upcoming Events'},secEventsLink:{id:'Lihat semua →',en:'View all →'},
+  secRecap:{id:'Recap Kegiatan',en:'Activity Recap'},secDocs:{id:'Dokumen',en:'Documents'},secContact:{id:'Hubungi Kami',en:'Contact Us'},
+  cpLabel:{id:'Hubungi Contact Person',en:'Contact Person'},footerVisitLbl:{id:'kunjungan',en:'visits'},
+  loginTitle:{id:'Login Pengurus',en:'Admin Login'},lbName:{id:'Nama Pengurus',en:'Admin Name'},lbPw:{id:'Password',en:'Password'},
+  loginCancelBtn:{id:'Batal',en:'Cancel'},loginSubmitBtn:{id:'Masuk',en:'Sign In'},
+  editModalTitle:{id:'Ubah Kegiatan',en:'Edit Event'},lbEditDate:{id:'Tanggal',en:'Date'},lbEditTitle:{id:'Judul Event',en:'Event Title'},
+  lbEditTimeStart:{id:'Waktu Mulai',en:'Start Time'},lbEditTimeEnd:{id:'Waktu Selesai',en:'End Time'},
+  lbEditCat:{id:'Kategori',en:'Category'},lbEditExtra:{id:'Tema Acara',en:'Event Theme'},lbEditNote:{id:'Catatan (Opsional)',en:'Notes (Optional)'},
+  lbEditFeatured:{id:'⭐ Tampilkan di Beranda',en:'⭐ Show on Homepage'},lbEditCaption:{id:'Caption (untuk modal poster)',en:'Caption (shown in poster modal)'},
+  editCancelBtn:{id:'Batal',en:'Cancel'},editSubmitBtn:{id:'Simpan',en:'Save'},
+  docsModalTitle:{id:'Kelola Dokumen',en:'Manage Documents'},lbDocTitle:{id:'Judul Dokumen',en:'Document Title'},
+  lbDocLink:{id:'Link (Google Drive / URL)',en:'Link (Google Drive / URL)'},lbDocCat:{id:'Kategori',en:'Category'},
+  addDocBtn:{id:'+ Tambah',en:'+ Add'},docCloseBtn:{id:'Tutup',en:'Close'},
+  announceModalTitle:{id:'Kelola Pengumuman',en:'Manage Announcements'},
+  annCancelBtn:{id:'Batal',en:'Cancel'},annSaveBtn:{id:'Simpan',en:'Save'},
+  adminBarTxt:{id:'',en:''},feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){
@@ -184,13 +132,8 @@ function applyLang(){
   Object.keys(T).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tx(id);});
   const ltm=document.getElementById('langTrackMobile');if(ltm)ltm.classList.toggle('on',_lang==='en');
   const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
-  // sync bottom nav sheet lang toggle
   const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
-  // update admin bar teks saat bahasa ganti, kalau admin sedang login
   if(isAdmin&&_adminName){const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+_adminName+'.';}
-  // update status banner saat modal terbuka
-  const annH=document.getElementById('annActiveHidden');
-  if(annH)_updateAnnStatusUI(annH.value==='1');
   renderEvents();renderRecap();renderDocs();
 }
 function toggleLang(){_lang=_lang==='id'?'en':'id';localStorage.setItem('naposo_lang',_lang);applyLang();}
@@ -201,7 +144,6 @@ function applyDark(){
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
   const dtm=document.getElementById('darkTrackMobile');if(dtm)dtm.classList.toggle('on',darkMode);
   const dbt=document.getElementById('darkToggleBtn');if(dbt)dbt.textContent=darkMode?'☀️':'🌙';
-  // sync bottom nav sheet toggle
   const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
 }
 function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
@@ -211,7 +153,7 @@ function toggleDarkMobile(){darkMode=!darkMode;localStorage.setItem('naposo_dark
 function toggleHamburger(){document.getElementById('hdrMenuPanel').classList.toggle('open');}
 function closeHamburger(){document.getElementById('hdrMenuPanel').classList.remove('open');}
 
-/* ── Item 3: Custom confirm modal ── */
+/* ── Custom confirm modal ── */
 let _confirmCallback=null;
 function showConfirmModal(msg,onConfirm,okLabel){
   const msgEl=document.getElementById('confirmModalMsg');
@@ -228,7 +170,6 @@ function showConfirmModal(msg,onConfirm,okLabel){
 function closeConfirmModal(){closeModal('confirmModal');_confirmCallback=null;}
 
 /* ══ MODALS ══ */
-/* ── Item A11Y: Focus Trap ── */
 const FOCUSABLE_SEL='button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])';
 let _trapEl=null,_trapHandler=null;
 function _attachFocusTrap(el){
@@ -251,14 +192,11 @@ function _detachFocusTrap(){
 }
 function openModal(id){
   const el=document.getElementById(id);if(!el)return;
-  el.classList.add('on');
-  document.body.style.overflow='hidden';
-  _attachFocusTrap(el);
+  el.classList.add('on');document.body.style.overflow='hidden';_attachFocusTrap(el);
 }
 function closeModal(id){
   const el=document.getElementById(id);if(!el)return;
-  el.classList.remove('on');
-  _detachFocusTrap();
+  el.classList.remove('on');_detachFocusTrap();
   if(!document.querySelector('.overlay.on'))document.body.style.overflow='';
 }
 
@@ -289,271 +227,263 @@ async function doLogin(){
   const btn=document.getElementById('loginSubmitBtn');
   btn.disabled=true;btn.textContent='...';
   try{
-    const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},
-      body:JSON.stringify({username:name,password:pw})
-    });
+    const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},body:JSON.stringify({username:name,password:pw})});
     const data=await res.json();
     if(!data.success){err.style.display='block';btn.disabled=false;btn.textContent=tx('loginSubmitBtn');return;}
     localStorage.setItem('naposo_token',data.token||'1');
     localStorage.setItem('naposo_admin_name',name);
-    isAdmin=true;
-    closeModal('loginModal');
-    _applyAdminUI(name);
+    isAdmin=true;closeModal('loginModal');_applyAdminUI(name);
     renderEvents();renderDocs();renderDocAdmList();
     showToast('Selamat datang, '+name+'! 👋','ok');
   }catch(e){err.style.display='block';}
   btn.disabled=false;btn.textContent=tx('loginSubmitBtn');
 }
 function doLogout(){
-  isAdmin=false;
-  localStorage.removeItem('naposo_token');
-  localStorage.removeItem('naposo_admin_name');
+  isAdmin=false;localStorage.removeItem('naposo_token');localStorage.removeItem('naposo_admin_name');
   document.getElementById('adminDd').classList.remove('open');
-  _resetAuthUI();
-  renderEvents();renderDocs();
-  showToast('Logout berhasil.');
+  _resetAuthUI();renderEvents();renderDocs();showToast('Logout berhasil.');
 }
-function togglePw(inputId){
-  const inp=document.getElementById(inputId);if(!inp)return;
-  inp.type=inp.type==='text'?'password':'text';
-}
-
+function togglePw(inputId){const inp=document.getElementById(inputId);if(!inp)return;inp.type=inp.type==='text'?'password':'text';}
 function _applyAdminUI(name){
-  _adminName=name;
-  document.body.classList.add('is-admin');
-  const loginBtn=document.getElementById('loginBtn');
-  if(loginBtn){loginBtn.textContent=`✓ ${name}`;loginBtn.disabled=false;}
-  const loginBtnMob=document.getElementById('loginBtnMobile');
-  if(loginBtnMob)loginBtnMob.style.display='none';
+  _adminName=name;document.body.classList.add('is-admin');
+  const loginBtn=document.getElementById('loginBtn');if(loginBtn){loginBtn.textContent=`✓ ${name}`;loginBtn.disabled=false;}
+  const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='none';
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='flex';
   const ant=document.getElementById('adminMobileNameTxt');if(ant)ant.textContent=name;
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
   const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
-  // sync bottom nav sheet
   _syncBnAdminUI(name);
 }
 function _resetAuthUI(){
-  _adminName='';
-  document.body.classList.remove('is-admin');
+  _adminName='';document.body.classList.remove('is-admin');
   const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;loginBtn.disabled=false;}
   const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='';
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='none';
   const bar=document.getElementById('adminBar');if(bar)bar.classList.remove('on');
-  // sync bottom nav sheet
-  _syncBnAdminUI(null);
-  applyLang(); /* re-apply agar teks ikut bahasa aktif */
+  _syncBnAdminUI(null);applyLang();
 }
 
-/* ══ ADMIN DROPDOWN — click outside ══ */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    const po=document.getElementById('posterOverlay');
-    if(po&&po.classList.contains('on')){closePosterModalDirect();return;}
-  }
+  if(e.key==='Escape'){const po=document.getElementById('posterOverlay');if(po&&po.classList.contains('on')){closePosterModalDirect();return;}}
 });
 document.addEventListener('click',e=>{
-  const anchor=document.getElementById('adminDdAnchor');
-  const dd=document.getElementById('adminDd');
+  const anchor=document.getElementById('adminDdAnchor');const dd=document.getElementById('adminDd');
   if(dd&&anchor&&!anchor.contains(e.target))dd.classList.remove('open');
   const panel=document.getElementById('hdrMenuPanel'),btn=document.getElementById('hamburgerBtn');
   if(panel&&btn&&!panel.contains(e.target)&&!btn.contains(e.target))panel.classList.remove('open');
-
 });
 
-/* ══ ANNOUNCE BANNER ══ */
-async function loadAnnounce(){
+/* ══════════════════════════════
+   BANNER DINAMIS (tabel announcements)
+   ══════════════════════════════ */
+async function loadBanners(){
   try{
-    const rows=await dbGet('home_announcement','select=*&id=eq.config');
-    if(!rows||!rows.length)return;
-    const a=rows[0];
-    ANNOUNCE=a;
-    if(!a.active)return;
-    if(a.expiry&&new Date(a.expiry)<new Date())return;
-    // Per-device dismiss: use updated_at as version key
-    const dismissKey='banner_dismissed_'+( a.updated_at||'');
-    if(localStorage.getItem(dismissKey))return;
-    _showBanner(a);
+    const rows=await dbGet('announcements','select=*&active=eq.true&order=updated_at.desc');
+    BANNERS=rows||[];
+    _renderBanners();
   }catch(e){}
 }
-function _showBanner(a){
-  const el=document.getElementById('announceBanner');if(!el)return;
-  document.getElementById('announceTitleDisp').textContent=a.title||'';
-  document.getElementById('announceSubDisp').textContent=a.sub||'';
-  const cta=document.getElementById('announceCtaBtn');
-  if(cta){cta.href=a.link||'#';cta.textContent=a.cta||'Daftar Sekarang →';}
-  el.classList.add('on');
-}
-async function saveAnnounce(){
-  const a={
-    title:document.getElementById('annTitle').value.trim(),
-    sub:document.getElementById('annSub').value.trim(),
-    link:document.getElementById('annLink').value.trim(),
-    cta:document.getElementById('annCta').value.trim()||'Daftar Sekarang →',
-    expiry:document.getElementById('annExpiry').value||'',
-    active:document.getElementById('annActiveHidden').value==='1',
-    updated_at:new Date().toISOString(),
-  };
-  try{
-    await dbUpd('home_announcement','id=eq.config',a);
-    ANNOUNCE=a;
-    const el=document.getElementById('announceBanner');
-    if(a.active){
-      _showBanner(a);
-    }else{
-      el.classList.remove('on');
-    }
-    closeModal('announceModal');
-    showToast('Pengumuman disimpan ✓','ok');
-  }catch(e){showToast('Gagal simpan: '+e.message,'err');}
-}
-async function deleteAnnounce(){
-  const msg=_lang==='en'
-    ?'Delete this banner? This cannot be undone.'
-    :'Hapus banner pengumuman ini? Tindakan ini tidak bisa dibatalkan.';
-  showConfirmModal(msg,async()=>{
-    const empty={title:'',sub:'',link:'',cta:'',expiry:'',active:false,updated_at:new Date().toISOString()};
-    try{
-      await dbUpd('home_announcement','id=eq.config',empty);
-      ANNOUNCE=empty;
-      document.getElementById('announceBanner').classList.remove('on');
-      closeModal('announceModal');
-      showToast(_lang==='en'?'Banner deleted.':'Banner dihapus.','ok');
-    }catch(e){showToast('Gagal hapus: '+e.message,'err');}
+
+function _renderBanners(){
+  const container=document.getElementById('bannerContainer');if(!container)return;
+  container.innerHTML='';
+  BANNERS.forEach(b=>{
+    const dismissKey='banner_dismissed_'+b.id+'_'+(b.updated_at||'');
+    if(localStorage.getItem(dismissKey))return;
+    const bar=document.createElement('div');
+    bar.className='announce-bar on';
+    bar.style.background=b.color||'#1e5ac8';
+    bar.dataset.bid=b.id;
+    bar.innerHTML=`
+      <span class="announce-icon">📋</span>
+      <div class="announce-content">
+        <div class="announce-title">${escapeHTML(b.text||'')}</div>
+      </div>
+      ${b.link?`<a class="announce-cta" href="${escapeHTML(b.link)}" target="_blank" rel="noopener">${escapeHTML(b.link_label||'Selengkapnya →')}</a>`:''}
+      <button class="announce-close" onclick="dismissBanner('${b.id}','${b.updated_at||''}')" aria-label="Tutup">✕</button>`;
+    container.appendChild(bar);
   });
 }
-function closeBanner(){
-  document.getElementById('announceBanner').classList.remove('on');
-  // Dismiss keyed to this version — different version = banner shows again
-  const key='banner_dismissed_'+(ANNOUNCE.updated_at||'');
+
+function dismissBanner(id,updatedAt){
+  const key='banner_dismissed_'+id+'_'+updatedAt;
   localStorage.setItem(key,'1');
+  const bar=document.querySelector(`.announce-bar[data-bid="${id}"]`);
+  if(bar)bar.remove();
 }
+
+/* ══ ADMIN — KELOLA BANNER (panel di kalender.html) ══
+   Di index.html, admin membuka modal yang lebih sederhana:
+   list banner aktif + tombol tambah/edit/hapus */
+let _editBannerId=null;
+
 function openAnnounceModal(){
-  const a=ANNOUNCE||{};
-  document.getElementById('annTitle').value=a.title||'';
-  document.getElementById('annSub').value=a.sub||'';
-  document.getElementById('annLink').value=a.link||'';
-  document.getElementById('annCta').value=a.cta||'';
-  document.getElementById('annExpiry').value=a.expiry||'';
-  // set hidden active state
-  const isActive=!!a.active;
-  document.getElementById('annActiveHidden').value=isActive?'1':'0';
-  _updateAnnStatusUI(isActive);
-  // update preview
-  _updateAnnPreview();
-  // disable hapus jika belum ada data
-  const delBtn=document.getElementById('annDeleteBtn');
-  if(delBtn)delBtn.disabled=!a.title;
-  closeHamburger();
   document.getElementById('adminDd').classList.remove('open');
+  closeHamburger();
+  _editBannerId=null;
+  _resetBannerForm();
+  _loadBannerList();
   openModal('announceModal');
 }
-function _updateAnnStatusUI(isActive){
-  const dot=document.getElementById('annStatusDot');
-  const lbl=document.getElementById('annStatusLbl');
-  const btn=document.getElementById('annToggleBtn');
-  if(dot)dot.className='ann-status-dot'+(isActive?' active':'');
-  if(lbl)lbl.textContent=_lang==='en'?(isActive?'Banner active':'Banner inactive'):(isActive?'Banner aktif':'Banner nonaktif');
-  if(btn)btn.textContent=_lang==='en'?(isActive?'Deactivate':'Activate'):(isActive?'Nonaktifkan':'Aktifkan');
-}
-function toggleAnnActive(){
-  const h=document.getElementById('annActiveHidden');
-  const nowActive=h.value==='1';
-  h.value=nowActive?'0':'1';
-  _updateAnnStatusUI(!nowActive);
-  _updateAnnPreview();
-}
-function _updateAnnPreview(){
-  const title=document.getElementById('annTitle').value.trim();
-  const sub=document.getElementById('annSub').value.trim();
-  const cta=document.getElementById('annCta').value.trim()||(_lang==='en'?'Register Now →':'Daftar Sekarang →');
-  const isActive=document.getElementById('annActiveHidden').value==='1';
-  const wrap=document.getElementById('annPreviewWrap');
-  if(!wrap)return;
-  if(!title&&!isActive){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  document.getElementById('annPreviewTitle').textContent=title||(_lang==='en'?'(no title)':'(judul kosong)');
-  document.getElementById('annPreviewSub').textContent=sub;
-  document.getElementById('annPreviewCta').textContent=cta;
-}
-// Live preview on input
-['annTitle','annSub','annCta'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el)el.addEventListener('input',_updateAnnPreview);
-});
 
-/* ══ CONTACT ══ */
-/* social links are now direct <a> tags — no toggle needed */
+async function _loadBannerList(){
+  const list=document.getElementById('bannerAdmList');if(!list)return;
+  list.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Memuat…</div>';
+  try{
+    const rows=await dbGet('announcements','select=*&order=updated_at.desc');
+    if(!rows||!rows.length){list.innerHTML='<div style="font-size:.78rem;color:var(--text3);padding:8px 0">Belum ada banner.</div>';return;}
+    list.innerHTML=rows.map(b=>`
+      <div class="banner-adm-item" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+        <div style="width:12px;height:12px;border-radius:50%;background:${b.color||'#1e5ac8'};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(b.text||'')}</div>
+          <div style="font-size:.7rem;color:var(--text3)">${b.active?'✅ Aktif':'⏸ Nonaktif'}</div>
+        </div>
+        <button class="btn btn-sm" onclick="editBanner('${b.id}')" style="padding:3px 8px;font-size:.7rem">✎</button>
+        <button class="btn btn-sm" onclick="deleteBanner('${b.id}')" style="padding:3px 8px;font-size:.7rem;background:rgba(220,38,38,.1);color:var(--red);border-color:rgba(220,38,38,.3)">✕</button>
+      </div>`).join('');
+  }catch(e){list.innerHTML='<div style="font-size:.78rem;color:var(--red)">Gagal memuat.</div>';}
+}
+
+function _resetBannerForm(){
+  _editBannerId=null;
+  document.getElementById('annText').value='';
+  document.getElementById('annColor').value='#1e5ac8';
+  document.getElementById('annLink').value='';
+  document.getElementById('annLinkLabel').value='';
+  document.getElementById('annActiveCheck').checked=true;
+  const title=document.getElementById('bannerFormTitle');if(title)title.textContent='Tambah Banner';
+  const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent='Tambah';
+}
+
+async function editBanner(id){
+  try{
+    const rows=await dbGet('announcements',`select=*&id=eq.${id}`);
+    if(!rows||!rows.length)return;
+    const b=rows[0];
+    _editBannerId=id;
+    document.getElementById('annText').value=b.text||'';
+    document.getElementById('annColor').value=b.color||'#1e5ac8';
+    document.getElementById('annLink').value=b.link||'';
+    document.getElementById('annLinkLabel').value=b.link_label||'';
+    document.getElementById('annActiveCheck').checked=!!b.active;
+    const title=document.getElementById('bannerFormTitle');if(title)title.textContent='Edit Banner';
+    const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent='Simpan';
+  }catch(e){showToast('Gagal load banner.','err');}
+}
+
+async function saveAnnounce(){
+  const text=document.getElementById('annText').value.trim();
+  if(!text){showToast('Teks banner wajib diisi.','err');return;}
+  const payload={
+    text,
+    color:document.getElementById('annColor').value||'#1e5ac8',
+    link:document.getElementById('annLink').value.trim()||null,
+    link_label:document.getElementById('annLinkLabel').value.trim()||null,
+    active:document.getElementById('annActiveCheck').checked,
+    updated_at:new Date().toISOString(),
+  };
+  const btn=document.getElementById('annSaveBtn');btn.disabled=true;
+  try{
+    if(_editBannerId){
+      await dbWrite('announcements','UPDATE',payload,{id:_editBannerId});
+      showToast('Banner diperbarui ✓','ok');
+    }else{
+      await dbWrite('announcements','INSERT',payload,null);
+      showToast('Banner ditambahkan ✓','ok');
+    }
+    _resetBannerForm();
+    await _loadBannerList();
+    await loadBanners(); // refresh beranda
+  }catch(e){showToast('Gagal: '+e.message,'err');}
+  btn.disabled=false;btn.textContent=_editBannerId?'Simpan':'Tambah';
+}
+
+async function deleteBanner(id){
+  showConfirmModal('Hapus banner ini?',async()=>{
+    try{
+      await dbWrite('announcements','DELETE',null,{id});
+      showToast('Banner dihapus.','ok');
+      await _loadBannerList();
+      await loadBanners();
+    }catch(e){showToast('Gagal: '+e.message,'err');}
+  });
+}
+
+// Legacy compat — closeBanner tidak dipakai lagi tapi aman jika masih dipanggil dari HTML lama
+function closeBanner(){
+  const el=document.getElementById('announceBanner');if(el)el.classList.remove('on');
+}
 
 /* ══ EVENTS ══ */
+/* ══ SEARCH BERANDA ══ */
+let _searchQuery='';
+function onHomepageSearch(val){
+  _searchQuery=(val||'').trim().toLowerCase();
+  renderEvents();
+}
+
 function getDisplayEvents(){
   const today=new Date();today.setHours(0,0,0,0);
-  const todayStr=today.toISOString().slice(0,10);
-
+  // Gunakan tanggal lokal (bukan UTC) agar tidak terpengaruh timezone
+  const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   function isPast(ev){return ev.date<todayStr;}
   function sortAsc(a,b){return a.date.localeCompare(b.date)||((a.time||'').localeCompare(b.time||''));}
-  function sortDesc(a,b){return b.date.localeCompare(a.date)||((b.time||'').localeCompare(a.time||''));}
 
-  // Pinned selalu masuk (dijamin ada di 6 slot), auto mengisi sisa
-  const pinnedUpcoming=EVENTS.filter(e=>e.featured&&!isPast(e)).sort(sortAsc);
-  const pinnedPast    =EVENTS.filter(e=>e.featured&&isPast(e)).sort(sortAsc);
-  const autoUpcoming  =EVENTS.filter(e=>!e.featured&&!isPast(e)).sort(sortAsc);
-  const autoPast      =EVENTS.filter(e=>!e.featured&&isPast(e)).sort(sortAsc);
+  // Ada query search → cari dari SEMUA event, tanpa batasan 6
+  if(_searchQuery){
+    const all=EVENTS.filter(e=>isAdmin||e.status!=='draft');
+    return all.filter(e=>
+      e.title.toLowerCase().includes(_searchQuery)||
+      (e.note||'').toLowerCase().includes(_searchQuery)||
+      catLabel(e.category).toLowerCase().includes(_searchQuery)
+    ).sort((a,b)=>{
+      const aPast=isPast(a),bPast=isPast(b);
+      if(aPast!==bPast)return aPast?1:-1;
+      return a.date.localeCompare(b.date);
+    });
+  }
 
-  // Pinned dijamin masuk semua; auto hanya mengisi sisa slot sampai 6
-  const allPinned=[...pinnedUpcoming,...pinnedPast];
-  const sisa=Math.max(0,6-allPinned.length);
-  const autoFill=[...autoUpcoming,...autoPast].slice(0,sisa);
-
-  // Gabung pinned + auto, lalu sort: upcoming dulu (asc), past belakang (asc dari terdekat ke terjauh)
-  // Dalam tanggal/status yang sama, pinned duluan dari auto
-  const combined=[...allPinned,...autoFill];
+  // Tanpa query → hanya upcoming yang tampil, past tidak pernah muncul (pin atau tidak)
+  const eligible=EVENTS.filter(e=>isAdmin||e.status!=='draft');
+  const pinnedUpcoming=eligible.filter(e=>e.featured&&!isPast(e)).sort(sortAsc);
+  const autoUpcoming  =eligible.filter(e=>!e.featured&&!isPast(e)).sort(sortAsc);
+  const sisa=Math.max(0,6-pinnedUpcoming.length);
+  const combined=[...pinnedUpcoming,...autoUpcoming.slice(0,sisa)];
   combined.sort((a,b)=>{
-    const aPast=isPast(a),bPast=isPast(b);
-    if(aPast!==bPast) return aPast?1:-1;                         // upcoming selalu duluan
     const dateCmp=a.date.localeCompare(b.date);
-    if(dateCmp!==0) return dateCmp;                              // sort date asc (berlaku untuk upcoming & past)
-    if(a.featured!==b.featured) return a.featured?-1:1;         // pinned duluan dalam tanggal sama
+    if(dateCmp!==0)return dateCmp;
+    if(a.featured!==b.featured)return a.featured?-1:1;
     return (a.time||'').localeCompare(b.time||'');
   });
   return combined.slice(0,6);
 }
+
 function renderSkeletonEvents(){
   const grid=document.getElementById('eventsGrid');if(!grid)return;
-  grid.innerHTML=Array(6).fill(0).map(()=>`
-    <div class="sk-card">
-      <div class="sk-img"></div>
-      <div class="sk-body">
-        <div class="sk-line sk-line-sm"></div>
-        <div class="sk-line sk-line-lg"></div>
-        <div class="sk-line sk-line-md"></div>
-        <div class="sk-line sk-line-xs"></div>
-      </div>
-    </div>`).join('');
+  grid.innerHTML=Array(6).fill(0).map(()=>`<div class="sk-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line sk-line-sm"></div><div class="sk-line sk-line-lg"></div><div class="sk-line sk-line-md"></div><div class="sk-line sk-line-xs"></div></div></div>`).join('');
 }
+
 function renderEvents(){
   const grid=document.getElementById('eventsGrid');if(!grid)return;
   const evs=getDisplayEvents();
   const MS=_lang==='en'?MS_EN:MS_ID;
   if(!evs.length){
-    grid.innerHTML=`<div class="ev-empty-state">
-      <div class="ev-empty-state-icon">📅</div>
-      <div class="ev-empty-state-title">${_lang==='en'?'No upcoming events':'Belum ada kegiatan'}</div>
-      <div class="ev-empty-state-sub">${_lang==='en'?'Check back soon for the latest schedule.':'Jadwal kegiatan akan muncul di sini.'}</div>
-    </div>`;
-    return;
+    const emptyMsg=_searchQuery
+      ?`<div class="ev-empty-state"><div class="ev-empty-state-icon">🔍</div><div class="ev-empty-state-title">${_lang==='en'?'No results for':'Tidak ada hasil untuk'} "${escapeHTML(_searchQuery)}"</div><div class="ev-empty-state-sub">${_lang==='en'?'Try another keyword.':'Coba kata kunci lain.'}</div></div>`
+      :`<div class="ev-empty-state"><div class="ev-empty-state-icon">📅</div><div class="ev-empty-state-title">${_lang==='en'?'No upcoming events':'Belum ada kegiatan'}</div><div class="ev-empty-state-sub">${_lang==='en'?'Check back soon.':'Jadwal kegiatan akan muncul di sini.'}</div></div>`;
+    grid.innerHTML=emptyMsg;return;
   }
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=localDateStr();
   const nowHHMM=new Date().toTimeString().slice(0,5);
   grid.innerHTML=evs.map((ev,idx)=>{
     const d=new Date(ev.date+'T00:00:00');
     const col=catColor(ev.category);
-    const isPast=ev.date<todayStr;
-    const sameDay=ev.date===todayStr;
-    const endTime=ev.time_end||(ev.time?ev.time.split(/[\u2013-]/).pop().trim():'');
+    const isPast=ev.date<todayStr;const sameDay=ev.date===todayStr;
+    const endTime=ev.time_end||(ev.time?ev.time.split(/[–-]/).pop().trim():'');
     const isFinished=isPast||(sameDay&&!!endTime&&endTime<=nowHHMM);
+    const isDraft=ev.status==='draft';
     const note=ev.note||'';
     let timeStr='';
     if(ev.time_start&&ev.time_end)timeStr=`${ev.time_start}\u2013${ev.time_end}`;
@@ -564,60 +494,49 @@ function renderEvents(){
       if(ev.extra.tema_acara)extraParts.push('\ud83d\udcd6 '+ev.extra.tema_acara);
       if(ev.extra.variant&&ev.category==='olahraga')extraParts.push('\u26bd '+ev.extra.variant);
     }
-    const dayNum=d.getDate();
-    const monStr=MS[d.getMonth()];
-    const yrStr=d.getFullYear();
+    const dayNum=d.getDate();const monStr=MS[d.getMonth()];const yrStr=d.getFullYear();
     const catThumb=getCatThumb(ev);
-    const posterSrc=catThumb;
-    const hasImg=!!catThumb;
+    const posterSrc=catThumb;const hasImg=!!catThumb;
     const fallbackSrc=catThumb||'';
-    const onerrorAttr=fallbackSrc
-      ?`onerror="if(this.src!=='${fallbackSrc}'){this.src='${fallbackSrc}';}else{this.style.display='none';}this.onerror=null;"`
-      :`onerror="this.style.display='none';this.onerror=null;"`;
+    const onerrorAttr=fallbackSrc?`onerror="if(this.src!=='${fallbackSrc}'){this.src='${fallbackSrc}';}else{this.style.display='none';}this.onerror=null;"`:`onerror="this.style.display='none';this.onerror=null;"`;
     const imgWrap=hasImg
-      ?`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')">
-          <img src="${posterSrc}" loading="lazy" alt="${escapeHTML(ev.title)}" class="ev-card-poster" ${onerrorAttr}>
-          <div class="ev-card-img-overlay">\ud83d\udd0d Lihat Poster</div>
-        </div>`
-      :`<div class="ev-card-img-wrap ev-card-img-placeholder" onclick="openPosterModal('${ev.id}')"
-          style="background:linear-gradient(135deg,${col}18,${col}38);">
-          <div class="ev-card-poster-ph-icon" style="font-size:2.2rem">${catIcon(ev.category)}</div>
-          <div class="ev-card-poster-ph-label" style="font-size:10px;font-weight:700;color:${col};margin-top:4px;letter-spacing:.05em">${catLabel(ev.category)}</div>
-        </div>`;
+      ?`<div class="ev-card-img-wrap" onclick="openPosterModal('${ev.id}')"><img src="${posterSrc}" loading="lazy" alt="${escapeHTML(ev.title)}" class="ev-card-poster" ${onerrorAttr}><div class="ev-card-img-overlay">\ud83d\udd0d Lihat Poster</div></div>`
+      :`<div class="ev-card-img-wrap ev-card-img-placeholder" onclick="openPosterModal('${ev.id}')" style="background:linear-gradient(135deg,${col}18,${col}38);"><div class="ev-card-poster-ph-icon" style="font-size:2.2rem">${catIcon(ev.category)}</div><div class="ev-card-poster-ph-label" style="font-size:10px;font-weight:700;color:${col};margin-top:4px;letter-spacing:.05em">${catLabel(ev.category)}</div></div>`;
     let countdownHtml='';
     if(!isFinished){
-      const todayDate=new Date(todayStr+'T00:00:00');
-      const evDate=new Date(ev.date+'T00:00:00');
+      const todayDate=new Date(todayStr+'T00:00:00');const evDate=new Date(ev.date+'T00:00:00');
       const diffDays=Math.round((evDate-todayDate)/(1000*60*60*24));
       if(diffDays===0)countdownHtml=`<span class="ev-countdown ev-countdown-today">\ud83d\udd14 Hari ini!</span>`;
       else if(diffDays===1)countdownHtml=`<span class="ev-countdown">\ud83d\udcc5 Besok!</span>`;
       else if(diffDays>1)countdownHtml=`<span class="ev-countdown">\u23f3 ${diffDays} hari lagi</span>`;
     }
     const delay=idx*55;
-    return `<div class="ev-card card-animate${isFinished?' ev-card-past':''}" style="animation-delay:${delay}ms">
-      ${imgWrap}
+    const isBday=isBirthdayEv(ev);
+    const isToday=ev.date===todayStr;
+    const bdayNama=isBday&&ev.extra&&ev.extra.nama?ev.extra.nama:'';
+    const finalImgWrap=imgWrap; // thumbnail selalu dari getCatThumb
+
+    return `<div class="ev-card card-animate${isFinished?' ev-card-past':''}${isDraft?' ev-card-draft':''}${isBday?' ev-card-bday':''}${isBday&&isToday?' ev-card-bday-today':''}" style="animation-delay:${delay}ms">
+      ${isDraft?'<div class="ev-draft-badge">Draft</div>':''}
+      ${isBday&&isToday?'<div class="ev-bday-shimmer"></div>':''}
+      ${finalImgWrap}
       <div class="ev-card-accent" style="background:${col}"></div>
       <div class="ev-card-body">
         <div class="ev-card-top">
           <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
-          <div class="ev-card-date">
-            <span class="day">${dayNum}</span>
-            <span class="sep">\u00b7</span>
-            <span class="mon">${monStr}</span>
-            <span class="sep">\u00b7</span>
-            <span class="yr">${yrStr}</span>
-          </div>
-          ${countdownHtml}
+          <div class="ev-card-date"><span class="day">${dayNum}</span><span class="sep">\u00b7</span><span class="mon">${monStr}</span><span class="sep">\u00b7</span><span class="yr">${yrStr}</span></div>
+          ${isBday&&isToday?`<span class="ev-countdown ev-countdown-bday">🎉 Hari ini!</span>`:countdownHtml}
           </div>
           <div class="ev-card-admin">
             <button class="ev-card-edit-btn" onclick="openEditEvent('${ev.id}');event.stopPropagation()">✎ Ubah</button>
             <button class="ev-card-unfeature-btn${ev.featured?' is-pinned':''}" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'\u2605':'\u2606'}</button>
           </div>
         </div>
+        ${isBday&&bdayNama?`<div class="ev-card-bday-name">🎂 ${escapeHTML(bdayNama)}</div>`:''}
         <div class="ev-card-title">${escapeHTML(ev.title)}</div>
         <div class="ev-card-meta">
           <span class="ev-cat-badge" style="background:${col};cursor:pointer" onclick="window.location.href='kalender.html?cat='+encodeURIComponent('${ev.category}')" title="Filter di Kalender">${catLabel(ev.category)}</span>
-          ${timeStr?`<span class="ev-card-time">\u23f0 ${timeStr}</span>`:''}
+          ${timeStr?`<span class="ev-card-time">\u23f0 ${timeStr}`:''}
           ${isFinished?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:var(--red);border:1px solid rgba(220,38,38,.2)">${_lang==='en'?'\u2713 Finished':'\u2713 Sudah Selesai'}</span>`:''}
         </div>
         ${extraParts.length?`<div style="font-size:11px;color:var(--text3)">${extraParts.join(' \u00b7 ')}</div>`:''}
@@ -627,6 +546,25 @@ function renderEvents(){
   }).join('');
 }
 
+/* ══ GOOGLE CALENDAR LINK ══ */
+function buildGCalLink(ev){
+  const title=encodeURIComponent(ev.title||'');
+  const dateStr=ev.date.replace(/-/g,'');
+  let dates='';
+  if(ev.time_start&&ev.time_end){
+    const ts=ev.time_start.replace(':','')+'00';
+    const te=ev.time_end.replace(':','')+'00';
+    dates=`${dateStr}T${ts}/${dateStr}T${te}`;
+  }else{
+    // all-day: DTEND = day+1
+    const d=new Date(ev.date+'T00:00:00');d.setDate(d.getDate()+1);
+    const next=d.toISOString().slice(0,10).replace(/-/g,'');
+    dates=`${dateStr}/${next}`;
+  }
+  const details=encodeURIComponent(ev.note||'');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}`;
+}
+
 /* ══ POSTER MODAL ══ */
 function openPosterModal(evId){
   const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
@@ -634,38 +572,24 @@ function openPosterModal(evId){
   const d=new Date(ev.date+'T00:00:00');
   const col=catColor(ev.category);
   const catThumb=getCatThumb(ev);
-  const posterSrc=catThumb;
+  // Birthday: pakai poster_url dari extra kalau ada, fallback ke catThumb
+  const posterSrc=isBirthdayEv(ev)&&ev.extra&&ev.extra.poster_url
+    ?driveToThumbnail(ev.extra.poster_url)
+    :catThumb;
   const img=document.getElementById('pmImg');
   if(img){
-    if(posterSrc){
-      img.src=posterSrc;
-      img.style.display='block';
-      img.onerror=()=>{if(catThumb&&img.src!==catThumb){img.src=catThumb;}else{img.style.display='none';}img.onerror=null;};
-    }else{img.src='';img.style.display='none';}
+    if(posterSrc){img.src=posterSrc;img.style.display='block';img.onerror=()=>{if(catThumb&&img.src!==catThumb){img.src=catThumb;}else{img.style.display='none';}img.onerror=null;};}
+    else{img.src='';img.style.display='none';}
   }
   const pmImgWrap=document.getElementById('pmImgWrap');
-  if(pmImgWrap){
-    if(posterSrc){
-      pmImgWrap.style.background='#000';
-      pmImgWrap.style.display='flex';
-    } else {
-      pmImgWrap.style.background=`linear-gradient(135deg,${col}22,${col}44)`;
-      pmImgWrap.style.display='flex';
-    }
-  }  const title=document.getElementById('pmTitle');
-  if(title)title.textContent=ev.title;
+  if(pmImgWrap){if(posterSrc){pmImgWrap.style.background='#000';pmImgWrap.style.display='flex';}else{pmImgWrap.style.background=`linear-gradient(135deg,${col}22,${col}44)`;pmImgWrap.style.display='flex';}}
+  const title=document.getElementById('pmTitle');if(title)title.textContent=ev.title;
   const dateEl=document.getElementById('pmDate');
-  if(dateEl){
-    let timeStr='';
-    if(ev.time_start&&ev.time_end)timeStr=` · ${ev.time_start}–${ev.time_end}`;
-    else if(ev.time)timeStr=` · ${ev.time}`;
-    dateEl.innerHTML=`📅 ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}${timeStr}`;
-  }
+  if(dateEl){let timeStr='';if(ev.time_start&&ev.time_end)timeStr=` · ${ev.time_start}–${ev.time_end}`;else if(ev.time)timeStr=` · ${ev.time}`;dateEl.innerHTML=`📅 ${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}${timeStr}`;}
   const meta=document.getElementById('pmMeta');
   if(meta){
-    const _ts=new Date().toISOString().slice(0,10);
-    const _hm=new Date().toTimeString().slice(0,5);
-    const _et=ev.time_end||(ev.time?ev.time.split(/[-\u2013]/).pop().trim():'');
+    const _ts=localDateStr();const _hm=new Date().toTimeString().slice(0,5);
+    const _et=ev.time_end||(ev.time?ev.time.split(/[-–]/).pop().trim():'');
     const _fin=(ev.date<_ts)||(ev.date===_ts&&!!_et&&_et<=_hm);
     let _cb='';
     if(_fin){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.12);color:var(--red);border:1px solid rgba(220,38,38,.2)">\u2713 Sudah Selesai</span>';}
@@ -677,12 +601,7 @@ function openPosterModal(evId){
     meta.innerHTML='<span class="ev-cat-badge" style="background:'+col+';font-size:11px;padding:3px 10px">'+catLabel(ev.category)+'</span>'+_cb;
   }
   const capEl=document.getElementById('pmCaption');
-  if(capEl){
-    const cap=ev.caption||'';
-    if(cap){capEl.textContent=cap;capEl.style.display='block';}
-    else capEl.style.display='none';
-  }
-  // extra fields (judul_lagu, tema_acara, dll)
+  if(capEl){const cap=ev.caption||'';if(cap){capEl.textContent=cap;capEl.style.display='block';}else capEl.style.display='none';}
   const extraEl=document.getElementById('pmExtra');
   if(extraEl){
     const parts=[];
@@ -695,54 +614,53 @@ function openPosterModal(evId){
     if(parts.length){extraEl.innerHTML=parts.join('<br>');extraEl.style.display='flex';}
     else extraEl.style.display='none';
   }
-  // note
   const noteEl=document.getElementById('pmNote');
-  if(noteEl){
-    const n=ev.note||'';
-    if(n){noteEl.textContent=n;noteEl.style.display='block';}
-    else noteEl.style.display='none';
-  }
+  if(noteEl){const n=ev.note||'';if(n){noteEl.textContent=n;noteEl.style.display='block';}else noteEl.style.display='none';}
   const actEl=document.getElementById('pmActions');
   if(actEl){
     let btns='';
-    // Item 2: render ev.link jika ada
     if(ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${escapeHTML(ev.link)}" target="_blank" rel="noopener">🔗 ${_lang==='en'?'Open Link':'Buka Link'}</a>`;
     const urlMatch=(ev.note||'').match(/(https?:\/\/[^\s]+)/);
     if(urlMatch&&!ev.link)btns+=`<a class="btn btn-primary btn-sm" href="${urlMatch[1]}" target="_blank" rel="noopener">🔗 Buka Link</a>`;
-    // [Sesi 40 Item 1] Deep link ke kalender
+    // Google Calendar
+    btns+=`<a class="btn btn-ghost btn-sm" href="${escapeHTML(buildGCalLink(ev))}" target="_blank" rel="noopener">📆 ${_lang==='en'?'Add to Calendar':'Tambah ke Kalender'}</a>`;
     btns+=`<a class="btn btn-ghost btn-sm" href="kalender.html?event=${encodeURIComponent(ev.id)}">📅 ${_lang==='en'?'View in Calendar':'Lihat di Kalender'}</a>`;
     if(isAdmin)btns+=`<button class="btn btn-ghost btn-sm" onclick="closePosterModalDirect();openEditEvent('${ev.id}')">✎ Ubah</button>`;
     actEl.innerHTML=btns;
   }
+  // Galeri foto
+  _loadPosterGallery(ev.id);
   document.getElementById('posterOverlay').classList.add('on');
   document.body.style.overflow='hidden';
 }
-function closePosterModal(e){
-  if(e&&e.target!==document.getElementById('posterOverlay'))return;
-  closePosterModalDirect();
+
+async function _loadPosterGallery(evId){
+  const wrap=document.getElementById('pmGallery');if(!wrap)return;
+  wrap.innerHTML='';wrap.style.display='none';
+  try{
+    const rows=await dbGet('event_gallery',`select=*&event_id=eq.${evId}&order=order.asc,created_at.asc`);
+    if(!rows||!rows.length)return;
+    wrap.style.display='block';
+    wrap.innerHTML=`<div class="pm-gallery-title">📸 Galeri</div><div class="pm-gallery-grid">${rows.map(r=>{const thumb=driveToThumbnail(r.drive_url);return `<div class="pm-gallery-item"><a href="${escapeHTML(r.drive_url)}" target="_blank" rel="noopener"><img src="${escapeHTML(thumb)}" alt="${escapeHTML(r.caption||'')}" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a>${r.caption?`<div class="pm-gallery-cap">${escapeHTML(r.caption)}</div>`:''}</div>`;}).join('')}</div>`;
+  }catch(e){}
 }
-function closePosterModalDirect(){
-  document.getElementById('posterOverlay').classList.remove('on');
-  document.body.style.overflow='';
-}
+
+function closePosterModal(e){if(e&&e.target!==document.getElementById('posterOverlay'))return;closePosterModalDirect();}
+function closePosterModalDirect(){document.getElementById('posterOverlay').classList.remove('on');document.body.style.overflow='';}
 
 async function toggleFeatured(id,currentlyFeatured){
   try{
     await dbWrite('events','UPDATE',{featured:!currentlyFeatured},{id});
     const ev=EVENTS.find(e=>e.id===id);if(ev)ev.featured=!currentlyFeatured;
     localStorage.removeItem('naposo_featured_change');localStorage.setItem('naposo_featured_change',JSON.stringify({id,featured:!currentlyFeatured,ts:Date.now()}));
-    renderEvents();
-    showToast(currentlyFeatured?'Dihapus dari beranda.':'Ditambahkan ke beranda. ⭐','ok');
+    renderEvents();showToast(currentlyFeatured?'Dihapus dari beranda.':'Ditambahkan ke beranda. ⭐','ok');
   }catch(e){showToast('Gagal: '+e.message,'err');}
 }
 
 /* ══ UBAH KEGIATAN ══ */
 function buildCatDropdown(){
   const sel=document.getElementById('editCat');if(!sel)return;
-  sel.innerHTML='';
-  Object.keys(CATS).forEach(k=>{
-    const o=document.createElement('option');o.value=k;o.textContent=catLabel(k);sel.appendChild(o);
-  });
+  sel.innerHTML='';Object.keys(CATS).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=catLabel(k);sel.appendChild(o);});
 }
 function openEditEvent(id){
   const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
@@ -750,7 +668,6 @@ function openEditEvent(id){
   document.getElementById('editEventId').value=id;
   document.getElementById('editTitle').value=ev.title||'';
   document.getElementById('editDate').value=ev.date||'';
-  // time
   if(ev.time_start){document.getElementById('editTimeStart').value=ev.time_start;}
   else if(ev.time){const parts=ev.time.split(/[–\-]/);document.getElementById('editTimeStart').value=(parts[0]||'').trim();}
   else document.getElementById('editTimeStart').value='';
@@ -763,6 +680,8 @@ function openEditEvent(id){
   const lnkFld=document.getElementById('editLink');if(lnkFld)lnkFld.value=ev.link||'';
   document.getElementById('editFeatured').checked=!!ev.featured;
   const capFld=document.getElementById('editCaption');if(capFld)capFld.value=ev.caption||'';
+  // Draft toggle
+  const draftEl=document.getElementById('editDraft');if(draftEl)draftEl.checked=ev.status==='draft';
   document.getElementById('adminDd').classList.remove('open');
   openModal('editEventModal');
 }
@@ -777,21 +696,18 @@ async function saveEditEvent(){
   const note=document.getElementById('editNote').value.trim();
   const link=document.getElementById('editLink')?.value.trim()||'';
   const featured=document.getElementById('editFeatured').checked;
+  const status=document.getElementById('editDraft')?.checked?'draft':'published';
   if(!title||!date){showToast('Judul dan tanggal wajib diisi.','err');return;}
-  const btn=document.getElementById('editSubmitBtn');
-  btn.disabled=true;btn.textContent='...';
-  let timeStr='';
-  if(timeStart&&timeEnd)timeStr=`${timeStart}–${timeEnd}`;
-  else if(timeStart)timeStr=timeStart;
+  const btn=document.getElementById('editSubmitBtn');btn.disabled=true;btn.textContent='...';
+  let timeStr='';if(timeStart&&timeEnd)timeStr=`${timeStart}–${timeEnd}`;else if(timeStart)timeStr=timeStart;
   const extra=extraVal?{tema_acara:extraVal}:null;
   try{
     const caption=document.getElementById('editCaption')?.value.trim()||'';
-    await dbWrite('events','UPDATE',{title,date,time:timeStr,time_start:timeStart||null,time_end:timeEnd||null,category,extra,note,link,featured,caption},{id});
+    const prev={...EVENTS.find(e=>e.id===id)};
+    await dbWrite('events','UPDATE',{title,date,time:timeStr,time_start:timeStart||null,time_end:timeEnd||null,category,extra,note,link,featured,caption,status},{id});
     const ev=EVENTS.find(e=>e.id===id);
-    if(ev){Object.assign(ev,{title,date,time:timeStr,time_start:timeStart,time_end:timeEnd,category,extra,note,link,featured,caption});}
-    closeModal('editEventModal');
-    renderEvents();
-    showToast('Tersimpan ✓','ok');
+    if(ev){Object.assign(ev,{title,date,time:timeStr,time_start:timeStart,time_end:timeEnd,category,extra,note,link,featured,caption,status});}
+    closeModal('editEventModal');renderEvents();showToast('Tersimpan ✓','ok');
   }catch(e){showToast('Gagal: '+e.message,'err');}
   btn.disabled=false;btn.textContent=tx('editSubmitBtn');
 }
@@ -803,80 +719,37 @@ const RECAP=[
 ];
 function renderRecap(){
   const el=document.getElementById('recapCarousel');if(!el)return;
-  el.innerHTML=RECAP.map(r=>`
-    <div class="recap-card" onclick="window.location='kalender.html'">
-      <div class="recap-overlay" style="background:${r.bgColor}"></div>
-      <div class="recap-gradient"></div>
-      <div class="recap-content">
-        <span class="recap-tag">• ${catLabel(r.category).toUpperCase()}</span>
-        <div class="recap-title">${escapeHTML(r.title)}</div>
-        <div class="recap-meta">${r.meta}</div>
-      </div>
-    </div>`).join('');
-  renderRecapDots();
-  el.addEventListener('scroll',()=>updateRecapProgress(),{passive:true});
-  setTimeout(updateRecapProgress,50);
+  el.innerHTML=RECAP.map(r=>`<div class="recap-card" onclick="window.location='kalender.html'"><div class="recap-overlay" style="background:${r.bgColor}"></div><div class="recap-gradient"></div><div class="recap-content"><span class="recap-tag">• ${catLabel(r.category).toUpperCase()}</span><div class="recap-title">${escapeHTML(r.title)}</div><div class="recap-meta">${r.meta}</div></div></div>`).join('');
+  renderRecapDots();el.addEventListener('scroll',()=>updateRecapProgress(),{passive:true});setTimeout(updateRecapProgress,50);
 }
-function renderRecapDots(){
-  updateRecapProgress();
-}
-function updateRecapDots(){
-  updateRecapProgress();
-}
+function renderRecapDots(){updateRecapProgress();}
+function updateRecapDots(){updateRecapProgress();}
 function updateRecapProgress(){
   const el=document.getElementById('recapCarousel');if(!el)return;
   const bar=document.getElementById('recapProgressBar');if(!bar)return;
   const card=el.querySelector('.recap-card');if(!card)return;
   const total=RECAP.length;if(!total)return;
-  const cardW=card.offsetWidth+14;
-  const idx=Math.min(Math.round(el.scrollLeft/cardW),total-1);
-  const pct=100/total;
-  bar.style.width=pct+'%';
-  bar.style.marginLeft=(idx*pct)+'%';
-  const prev=document.getElementById('recapPrev');
-  const next=document.getElementById('recapNext');
-  if(prev) prev.style.opacity=idx===0?'0.35':'1';
-  if(next) next.style.opacity=idx>=total-1?'0.35':'1';
+  const cardW=card.offsetWidth+14;const idx=Math.min(Math.round(el.scrollLeft/cardW),total-1);
+  const pct=100/total;bar.style.width=pct+'%';bar.style.marginLeft=(idx*pct)+'%';
+  const prev=document.getElementById('recapPrev');const next=document.getElementById('recapNext');
+  if(prev)prev.style.opacity=idx===0?'0.35':'1';if(next)next.style.opacity=idx>=total-1?'0.35':'1';
 }
-function recapScrollTo(idx){
-  const el=document.getElementById('recapCarousel');if(!el)return;
-  const card=el.querySelector('.recap-card');if(!card)return;
-  el.scrollTo({left:idx*(card.offsetWidth+14),behavior:'smooth'});
-}
-function recapScroll(dir){
-  const el=document.getElementById('recapCarousel');if(!el)return;
-  const card=el.querySelector('.recap-card');if(!card)return;
-  el.scrollBy({left:dir*(card.offsetWidth+14),behavior:'smooth'});
-}
+function recapScrollTo(idx){const el=document.getElementById('recapCarousel');if(!el)return;const card=el.querySelector('.recap-card');if(!card)return;el.scrollTo({left:idx*(card.offsetWidth+14),behavior:'smooth'});}
+function recapScroll(dir){const el=document.getElementById('recapCarousel');if(!el)return;const card=el.querySelector('.recap-card');if(!card)return;el.scrollBy({left:dir*(card.offsetWidth+14),behavior:'smooth'});}
 
 /* ══ DOCS ══ */
-function toEmbedUrl(url){
-  const m=url.match(/\/file\/d\/([^/?\s]+)/);
-  if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;
-  return url;
-}
+function toEmbedUrl(url){const m=url.match(/\/file\/d\/([^/?\s]+)/);if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;return url;}
 function renderDocs(){
   const grid=document.getElementById('docGrid');if(!grid)return;grid.innerHTML='';
   const visible=DOCS.filter(d=>d.category==='publik'||(isAdmin&&d.category==='pengurus'));
   if(!visible.length){grid.innerHTML=`<p class="doc-empty">${_lang==='en'?'No documents yet.':'Belum ada dokumen.'}</p>`;return;}
   visible.forEach(doc=>{
     const card=document.createElement('div');card.className='doc-card';
-    card.innerHTML=`
-      <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-      <div class="doc-info">
-        <div class="doc-title">${escapeHTML(doc.title)}</div>
-        <div class="doc-meta">${doc.category==='pengurus'?'🔒 Pengurus':'📂 Publik'}</div>
-      </div>
-      <svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
-    card.onclick=()=>openDocViewer(doc);
-    grid.appendChild(card);
+    card.innerHTML=`<div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="doc-info"><div class="doc-title">${escapeHTML(doc.title)}</div><div class="doc-meta">${doc.category==='pengurus'?'🔒 Pengurus':'📂 Publik'}</div></div><svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
+    card.onclick=()=>openDocViewer(doc);grid.appendChild(card);
   });
 }
-function openDocViewer(doc){
-  document.getElementById('docModalTitle').textContent=doc.title;
-  document.getElementById('docFrame').src=toEmbedUrl(doc.link);
-  openModal('docOverlay');
-}
+function openDocViewer(doc){document.getElementById('docModalTitle').textContent=doc.title;document.getElementById('docFrame').src=toEmbedUrl(doc.link);openModal('docOverlay');}
 function closeDoc(){closeModal('docOverlay');document.getElementById('docFrame').src='';}
 function renderDocAdmList(){
   const list=document.getElementById('docAdmList');if(!list)return;list.innerHTML='';
@@ -887,38 +760,18 @@ function renderDocAdmList(){
     list.appendChild(item);
   });
 }
-function openDocsModal(){
-  document.getElementById('adminDd').classList.remove('open');
-  renderDocAdmList();
-  openModal('docsModal');
-}
+function openDocsModal(){document.getElementById('adminDd').classList.remove('open');renderDocAdmList();openModal('docsModal');}
 async function addDoc(){
-  const title=document.getElementById('docTitle').value.trim();
-  const link=document.getElementById('docLink').value.trim();
-  const category=document.getElementById('docCat').value;
+  const title=document.getElementById('docTitle').value.trim();const link=document.getElementById('docLink').value.trim();const category=document.getElementById('docCat').value;
   if(!title||!link){showToast('Nama dan link harus diisi!','err');return;}
-  try{
-    const ins=await dbIns('home_docs',{id:'doc_'+Date.now(),title,link,category});
-    DOCS.push(Array.isArray(ins)?ins[0]:ins);
-    renderDocs();renderDocAdmList();
-    document.getElementById('docTitle').value='';
-    document.getElementById('docLink').value='';
-    showToast('Dokumen ditambahkan ✓','ok');
-  }catch(e){showToast('Gagal: '+e.message,'err');}
+  try{const ins=await dbIns('home_docs',{id:'doc_'+Date.now(),title,link,category});DOCS.push(Array.isArray(ins)?ins[0]:ins);renderDocs();renderDocAdmList();document.getElementById('docTitle').value='';document.getElementById('docLink').value='';showToast('Dokumen ditambahkan ✓','ok');}
+  catch(e){showToast('Gagal: '+e.message,'err');}
 }
 async function deleteDoc(id){
-  const doc=DOCS.find(d=>d.id===id);
-  const name=doc?doc.title:'dokumen ini';
-  const msg=_lang==='en'
-    ?`Delete "${name}"? This cannot be undone.`
-    :`Hapus dokumen "${name}"? Tindakan ini tidak bisa dibatalkan.`;
-  showConfirmModal(msg,async()=>{
-    try{
-      await dbDel('home_docs',`id=eq.${id}`);
-      DOCS=DOCS.filter(d=>d.id!==id);
-      renderDocs();renderDocAdmList();
-      showToast('Dokumen dihapus.');
-    }catch(e){showToast('Gagal: '+e.message,'err');}
+  const doc=DOCS.find(d=>d.id===id);const name=doc?doc.title:'dokumen ini';
+  showConfirmModal(_lang==='en'?`Delete "${name}"? This cannot be undone.`:`Hapus dokumen "${name}"? Tindakan ini tidak bisa dibatalkan.`,async()=>{
+    try{await dbDel('home_docs',`id=eq.${id}`);DOCS=DOCS.filter(d=>d.id!==id);renderDocs();renderDocAdmList();showToast('Dokumen dihapus.');}
+    catch(e){showToast('Gagal: '+e.message,'err');}
   });
 }
 
@@ -926,126 +779,68 @@ async function deleteDoc(id){
 async function trackVisit(){
   try{
     let sid=sessionStorage.getItem('naposo_sid');
-    if(!sid){
-      sid='s_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-      sessionStorage.setItem('naposo_sid',sid);
-      await dbIns('visits',{session_id:sid});
-    }
-    const rows=await dbGet('visits','select=id');
-    const el=document.getElementById('footerVisits');if(el)el.textContent=rows.length;
+    if(!sid){sid='s_'+Date.now()+'_'+Math.random().toString(36).slice(2);sessionStorage.setItem('naposo_sid',sid);await dbIns('visits',{session_id:sid});}
+    const rows=await dbGet('visits','select=id');const el=document.getElementById('footerVisits');if(el)el.textContent=rows.length;
   }catch(e){}
 }
 
-/* ══ SCROLL REVEAL (IntersectionObserver) ══ */
+/* ══ SCROLL REVEAL ══ */
 function initScrollReveal(){
-  const obs=new IntersectionObserver((entries)=>{
-    entries.forEach(en=>{
-      if(en.isIntersecting){en.target.classList.add('visible');obs.unobserve(en.target);}
-    });
-  },{threshold:0.05});/* rootMargin positif agar elemen langsung di viewport langsung terdeteksi */
-
-  function observeCards(){
-    /* rAF: tunggu browser selesai paint baru pasang observer,
-       agar elemen yang sudah di viewport langsung dapat isIntersecting:true */
-    requestAnimationFrame(()=>{
-      document.querySelectorAll('.ev-card:not(.visible)').forEach(el=>obs.observe(el));
-      document.querySelectorAll('.reveal:not(.visible)').forEach(el=>obs.observe(el));
-    });
-  }
-  observeCards();
-  window._observeCards=observeCards;
+  const obs=new IntersectionObserver((entries)=>{entries.forEach(en=>{if(en.isIntersecting){en.target.classList.add('visible');obs.unobserve(en.target);}});},{threshold:0.05});
+  function observeCards(){requestAnimationFrame(()=>{document.querySelectorAll('.ev-card:not(.visible)').forEach(el=>obs.observe(el));document.querySelectorAll('.reveal:not(.visible)').forEach(el=>obs.observe(el));});}
+  observeCards();window._observeCards=observeCards;
 }
 
 /* ══ PARALLAX HERO ══ */
 function initParallax(){
-  const wm=document.querySelector('.hero-watermark');
-  const hero=document.querySelector('.hero');
-  if(!wm||!hero)return;
+  const wm=document.querySelector('.hero-watermark');const hero=document.querySelector('.hero');if(!wm||!hero)return;
   let ticking=false;
-  window.addEventListener('scroll',()=>{
-    if(ticking)return;
-    ticking=true;
-    requestAnimationFrame(()=>{
-      const heroBottom=hero.getBoundingClientRect().bottom;
-      if(heroBottom>0){
-        wm.style.transform=`translateY(${window.scrollY*0.28}px)`;
-      }
-      ticking=false;
-    });
-  },{passive:true});
+  window.addEventListener('scroll',()=>{if(ticking)return;ticking=true;requestAnimationFrame(()=>{const heroBottom=hero.getBoundingClientRect().bottom;if(heroBottom>0)wm.style.transform=`translateY(${window.scrollY*0.28}px)`;ticking=false;});},{passive:true});
 }
 
 /* ══ TOAST ══ */
 let _tt;
-function showToast(msg,type=''){
-  const el=document.getElementById('toast');if(!el)return;
-  el.textContent=msg;
-  el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3000);
-}
+function showToast(msg,type=''){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3000);}
 
 /* ══ INIT ══ */
 async function init(){
-  applyDark();applyLang();
-  buildLoginDropdown();
+  applyDark();applyLang();buildLoginDropdown();
   const fy=document.getElementById('fyear');if(fy)fy.textContent=new Date().getFullYear();
-  // overlays close on bg click
   ['loginModal','editEventModal','docsModal','announceModal','docOverlay'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.addEventListener('click',e=>{if(e.target===el){if(id==='docOverlay')closeDoc();else closeModal(id);}});
   });
-  // restore session
-  const savedToken=localStorage.getItem('naposo_token');
-  const savedName=localStorage.getItem('naposo_admin_name');
+  const savedToken=localStorage.getItem('naposo_token');const savedName=localStorage.getItem('naposo_admin_name');
   if(savedToken&&savedName){isAdmin=true;_applyAdminUI(savedName);}
-  await loadAnnounce();
+  await loadBanners();
   trackVisit();
   await loadData();
-  initPullToRefresh();
-  initScrollTop();
-  initDirtyState();
+  initPullToRefresh();initScrollTop();initDirtyState();
 }
 
-/* ── Item 9: Scroll to Top ── */
 function initScrollTop(){
   const btn=document.getElementById('scrollTopBtn');if(!btn)return;
-  window.addEventListener('scroll',()=>{
-    btn.classList.toggle('visible',window.scrollY>300);
-  },{passive:true});
+  window.addEventListener('scroll',()=>{btn.classList.toggle('visible',window.scrollY>300);},{passive:true});
 }
 
-/* ── Item 6: Dirty State — peringatan sebelum tutup form ── */
 function initDirtyState(){
   let _dirty=false;
-  const formInputs=['editTitle','editDate','editTimeStart','editTimeEnd','editCat','editExtra','editNote','editLink','editCaption','editFeatured'];
+  const formInputs=['editTitle','editDate','editTimeStart','editTimeEnd','editCat','editExtra','editNote','editLink','editCaption','editFeatured','editDraft'];
   function markDirty(){_dirty=true;}
-  formInputs.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener(el.type==='checkbox'?'change':'input',markDirty);
-  });
-  // Override closeModal untuk editEventModal
+  formInputs.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener(el.type==='checkbox'?'change':'input',markDirty);});
   const _origClose=window.closeModal;
   window.closeModal=function(id){
-    if(id==='editEventModal'&&_dirty){
-      const msg=_lang==='en'?'There are unsaved changes. Close without saving?':'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?';
-      showConfirmModal(msg,()=>{_dirty=false;_origClose(id);},'OK');
-      return;
-    }
+    if(id==='editEventModal'&&_dirty){const msg=_lang==='en'?'There are unsaved changes. Close without saving?':'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?';showConfirmModal(msg,()=>{_dirty=false;_origClose(id);},'OK');return;}
     _origClose(id);
   };
-  // Reset dirty setelah simpan berhasil
   const _origSave=window.saveEditEvent;
-  window.saveEditEvent=async function(){
-    await _origSave();
-    _dirty=false;
-  };
+  window.saveEditEvent=async function(){await _origSave();_dirty=false;};
 }
 
-/* ══ [Sesi 40 Item 3] WIDGET RENUNGAN TERBARU ══ */
-function driveToThumbnailIdx(url){if(!url)return '';const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w400`:url;}
+/* ══ WIDGET RENUNGAN TERBARU ══ */
+function driveToThumbnailIdx(url){if(!url)return '';const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);return m?`https://lh3.googleusercontent.com/d/${m[1]}`:url;}
 function renderRevWidget(post){
-  const sec=document.getElementById('revWidgetSection');
-  if(!sec)return;
+  const sec=document.getElementById('revWidgetSection');if(!sec)return;
   if(!post){sec.style.display='none';return;}
   sec.style.display='';
   const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1057,10 +852,7 @@ function renderRevWidget(post){
     <div class="rev-widget-card" onclick="window.location.href='reversement.html?id='+encodeURIComponent('${post.id}')" style="cursor:pointer">
       ${imgSrc?`<div class="rev-widget-img-wrap"><img src="${escapeHTML(imgSrc)}" alt="${escapeHTML(post.title)}" class="rev-widget-img" onerror="this.parentElement.style.display='none'"></div>`:''}
       <div class="rev-widget-body">
-        <div class="rev-widget-meta">
-          <span class="rev-day-badge ${post.day_type||''}" style="font-size:10px;padding:2px 8px">${dayLbl}</span>
-          <span style="font-size:11px;color:var(--text3)">${dateLbl}</span>
-        </div>
+        <div class="rev-widget-meta"><span class="rev-day-badge ${post.day_type||''}" style="font-size:10px;padding:2px 8px">${dayLbl}</span><span style="font-size:11px;color:var(--text3)">${dateLbl}</span></div>
         <div class="rev-widget-title">${escapeHTML(post.title)}</div>
         ${post.verse_ref?`<div class="rev-widget-verse">📖 ${escapeHTML(post.verse_ref)}</div>`:''}
         <a class="rev-widget-cta" href="reversement.html?id=${encodeURIComponent(post.id)}">Baca selengkapnya →</a>
@@ -1070,133 +862,162 @@ function renderRevWidget(post){
 
 /* ══ LOAD DATA ══ */
 async function loadData(){
-  renderSkeletonEvents(); // Item 8: skeleton loader
+  renderSkeletonEvents();
   try{
-    try{
-      const cats=await dbGet('categories','select=*&order=sort_order.asc');
-      if(cats&&cats.length){const co={},ni={};cats.forEach(c=>{co[c.id]=c.color;ni[c.id]=c.label_id||c.label||c.id;});Object.assign(CATS,co);Object.assign(CNAMES,ni);}
-    }catch(e){}
-    EVENTS=await dbGet('events','select=*&order=date.asc');
-    window.EVENTS=EVENTS;
+    try{const cats=await dbGet('categories','select=*&order=sort_order.asc');if(cats&&cats.length){const co={},ni={};cats.forEach(c=>{co[c.id]=c.color;ni[c.id]=c.label_id||c.label||c.id;});Object.assign(CATS,co);Object.assign(CNAMES,ni);}}catch(e){}
+    EVENTS=await dbGet('events','select=*&order=date.asc');window.EVENTS=EVENTS;
     try{DOCS=await dbGet('home_docs','select=*&order=created_at.asc');}catch(e){DOCS=[];}
-    // [Sesi 40 Item 3] Fetch 1 post reversement terbaru untuk widget homepage
-    try{
-      const revPosts=await dbGet('reversement_posts','select=id,title,verse_ref,poster_url,date,day_type&published=eq.true&order=date.desc&limit=1');
-      renderRevWidget(revPosts&&revPosts.length?revPosts[0]:null);
-    }catch(e){renderRevWidget(null);}
+    try{const revPosts=await dbGet('reversement_posts','select=id,title,verse_ref,poster_url,date,day_type&published=eq.true&order=date.desc&limit=1');renderRevWidget(revPosts&&revPosts.length?revPosts[0]:null);}catch(e){renderRevWidget(null);}
     renderEvents();renderRecap();renderDocs();
     if(isAdmin)renderDocAdmList();
-    initScrollReveal();
-    initParallax();
-    if(window._observeCards)window._observeCards();
-  }catch(e){
-    const g=document.getElementById('eventsGrid');
-    if(g)g.innerHTML=`<div class="ev-empty">Gagal memuat data.</div>`;
-  }
+    initScrollReveal();initParallax();if(window._observeCards)window._observeCards();
+    checkBirthdays(); // ← cek ulang tahun hari ini
+  }catch(e){const g=document.getElementById('eventsGrid');if(g)g.innerHTML=`<div class="ev-empty">Gagal memuat data.</div>`;}
 }
 
 /* ══ PULL TO REFRESH ══ */
 function initPullToRefresh(){
-  let startY=0,pulling=false,triggered=false;
-  const THRESHOLD=60;
-
-  const spinner=document.createElement('div');
-  spinner.className='ptr-spinner';
+  let startY=0,pulling=false,triggered=false;const THRESHOLD=60;
+  const spinner=document.createElement('div');spinner.className='ptr-spinner';
   spinner.innerHTML=`<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10" stroke-linecap="round"/></svg><span id="ptrLabel">${_lang==='en'?'Refreshing…':'Memuat ulang…'}</span>`;
   document.body.appendChild(spinner);
-
-  function showSpinner(){spinner.classList.add('ptr-visible');}
-  function hideSpinner(){spinner.classList.remove('ptr-visible');}
-
-  document.addEventListener('touchstart',e=>{
-    if(window.scrollY!==0)return;
-    startY=e.touches[0].clientY;
-    pulling=true;triggered=false;
-  },{passive:true});
-
-  document.addEventListener('touchmove',e=>{
-    if(!pulling)return;
-    const dy=e.touches[0].clientY-startY;
-    if(dy>=THRESHOLD&&!triggered){triggered=true;showSpinner();}
-  },{passive:true});
-
-  document.addEventListener('touchend',async()=>{
-    if(!pulling)return;
-    pulling=false;
-    if(!triggered)return;
-    const lbl=document.getElementById('ptrLabel');
-    if(lbl)lbl.textContent=_lang==='en'?'Refreshing…':'Memuat ulang…';
-    await loadData();
-    hideSpinner();
-  },{passive:true});
+  function showSpinner(){spinner.classList.add('ptr-visible');}function hideSpinner(){spinner.classList.remove('ptr-visible');}
+  document.addEventListener('touchstart',e=>{if(window.scrollY!==0)return;startY=e.touches[0].clientY;pulling=true;triggered=false;},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!pulling)return;const dy=e.touches[0].clientY-startY;if(dy>=THRESHOLD&&!triggered){triggered=true;showSpinner();}},{passive:true});
+  document.addEventListener('touchend',async()=>{if(!pulling)return;pulling=false;if(!triggered)return;await loadData();hideSpinner();},{passive:true});
 }
 
-/* ══════════════════════════════
-   SESI 35 — BOTTOM NAV
-   ══════════════════════════════ */
+/* ══ BOTTOM NAV ══ */
 function openBnSheet(){
-  document.getElementById('bnSheet').classList.add('open');
-  document.getElementById('bnSheetOverlay').classList.add('open');
-  // Sync state saat sheet dibuka
+  document.getElementById('bnSheet').classList.add('open');document.getElementById('bnSheetOverlay').classList.add('open');
   const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
   const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
-  // Sembunyikan scroll-to-top agar tidak muncul di atas sheet
   const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='0';
 }
 function closeBnSheet(){
-  document.getElementById('bnSheet').classList.remove('open');
-  document.getElementById('bnSheetOverlay').classList.remove('open');
-  // Kembalikan scroll-to-top jika memang harusnya visible
+  document.getElementById('bnSheet').classList.remove('open');document.getElementById('bnSheetOverlay').classList.remove('open');
   const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='';
 }
 function _syncBnAdminUI(name){
-  const adminSec=document.getElementById('bnAdminSection');
-  const guestSec=document.getElementById('bnGuestSection');
-  const bnName=document.getElementById('bnAdminName');
-  const bnNameTop=document.getElementById('bnAdminNameTop');
-  const bnTopRow=document.getElementById('bnAdminTopName');
-  const bnTab=document.getElementById('bnLoginTab');
-  const bnIcon=document.getElementById('bnLoginIcon');
-  const bnLabel=document.getElementById('bnLoginLabel');
+  const adminSec=document.getElementById('bnAdminSection');const guestSec=document.getElementById('bnGuestSection');
+  const bnName=document.getElementById('bnAdminName');const bnNameTop=document.getElementById('bnAdminNameTop');
+  const bnTopRow=document.getElementById('bnAdminTopName');const bnTab=document.getElementById('bnLoginTab');
+  const bnIcon=document.getElementById('bnLoginIcon');const bnLabel=document.getElementById('bnLoginLabel');
   if(name){
-    if(adminSec)adminSec.style.display='flex';
-    if(guestSec)guestSec.style.display='none';
-    if(bnName)bnName.textContent=name;
-    if(bnNameTop)bnNameTop.textContent=name;
-    if(bnTopRow)bnTopRow.style.display='block';
-    if(bnIcon)bnIcon.textContent='✓';
+    if(adminSec)adminSec.style.display='flex';if(guestSec)guestSec.style.display='none';
+    if(bnName)bnName.textContent=name;if(bnNameTop)bnNameTop.textContent=name;
+    if(bnTopRow)bnTopRow.style.display='block';if(bnIcon)bnIcon.textContent='✓';
     if(bnLabel)bnLabel.textContent=name.split(' ')[0];
-  } else {
-    if(adminSec)adminSec.style.display='none';
-    if(guestSec)guestSec.style.display='block';
-    if(bnTopRow)bnTopRow.style.display='none';
-    if(bnIcon)bnIcon.textContent='🔐';
+  }else{
+    if(adminSec)adminSec.style.display='none';if(guestSec)guestSec.style.display='block';
+    if(bnTopRow)bnTopRow.style.display='none';if(bnIcon)bnIcon.textContent='🔐';
     if(bnLabel)bnLabel.textContent=tx('loginBtnTxt')||'Login';
   }
 }
-// Tutup sheet saat Escape
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    const sh=document.getElementById('bnSheet');
-    if(sh&&sh.classList.contains('open')){closeBnSheet();return;}
-  }
-});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const sh=document.getElementById('bnSheet');if(sh&&sh.classList.contains('open')){closeBnSheet();return;}}});
+
+/* ── Confetti ── */
+function fireConfetti(){
+  if(typeof confetti==='undefined')return;
+  const colors=['#c9a227','#0a1f44','#fff','#f59e0b','#ec4899','#6366f1'];
+  confetti({particleCount:120,spread:80,origin:{y:0.55},colors});
+  setTimeout(()=>confetti({particleCount:60,spread:120,origin:{y:0.4},colors,angle:60}),300);
+  setTimeout(()=>confetti({particleCount:60,spread:120,origin:{y:0.4},colors,angle:120}),500);
+}
+
+/* ── Modal surprise ── */
+const BDAY_MESSAGES=[
+  'Selamat ulang tahun. Kiranya Tuhan senantiasa memberkati setiap langkah hidupmu dengan damai, sukacita, dan kasih-Nya.',
+  'Bertambah usia, bertambah hikmat, iman, dan berkat dari Tuhan.',
+  'Kiranya di usia yang baru ini, Tuhan memberikan kesehatan, kekuatan, dan pengharapan yang baru.',
+  'Selamat ulang tahun. Tetap menjadi terang dan berkat bagi banyak orang.',
+  'Hari ini adalah anugerah dari Tuhan. Bersyukurlah dan bersukacitalah dalam kasih-Nya.',
+  'Selamat ulang tahun. Tetap setia dalam iman dan terus berjalan bersama Tuhan.',
+  'Selamat ulang tahun. Semoga kasih karunia Tuhan selalu menyertai hidupmu hari ini dan selamanya.',
+  'Kiranya setiap doa dan harapanmu dijawab indah pada waktu Tuhan yang terbaik.',
+  'Selamat ulang tahun. Tuhan Yesus senantiasa menyertai perjalanan hidupmu dengan damai dan kasih-Nya.',
+  'Di usia yang baru ini, kiranya imanmu semakin dikuatkan dan langkahmu selalu dipimpin oleh Tuhan.',
+];
+const BDAY_VERSES=[
+  {ref:'Mazmur 20:4',   text:'Kiranya diberikan-Nya kepadamu apa yang kaukehendaki dan dijadikan-Nya berhasil apa yang kaurancangkan.'},
+  {ref:'Mazmur 118:24', text:'Inilah hari yang dijadikan TUHAN, marilah kita bersorak-sorak dan bersukacita karenanya!'},
+  {ref:'Ratapan 3:22-23',text:'Tak berkesudahan kasih setia TUHAN, tak habis-habisnya rahmat-Nya, selalu baru tiap pagi; besar kesetiaan-Mu!'},
+  {ref:'Amsal 3:16',    text:'Umur panjang ada di tangan kanannya, di tangan kirinya kekayaan dan kehormatan.'},
+  {ref:'1 Korintus 1:5',text:'Sebab di dalam Dia kamu telah menjadi kaya dalam segala hal: dalam segala macam perkataan dan segala macam pengetahuan.'},
+];
+function _bdayHash(str,mod){
+  let h=0;for(let i=0;i<str.length;i++)h=(Math.imul(31,h)+str.charCodeAt(i))|0;
+  return Math.abs(h)%mod;
+}
+
+function checkBirthdays(){
+  const today=localDateStr();
+  // Bersihkan key hari lain yang mungkin tersimpan
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith('bday_shown_')&&k!=='bday_shown_'+today)localStorage.removeItem(k);
+  });
+  const dismissKey='bday_shown_'+today;
+  if(localStorage.getItem(dismissKey))return;
+  const bdayEvs=getBirthdaysToday();
+  if(!bdayEvs.length)return;
+  setTimeout(()=>openBirthdayModal(bdayEvs,dismissKey),800);
+}
+
+function openBirthdayModal(evs,dismissKey){
+  const modal=document.getElementById('birthdayModal');
+  const content=document.getElementById('birthdayModalContent');
+  if(!modal||!content)return;
+
+  // Subtitle & pesan: pakai nama orang pertama sebagai seed
+  const seedName=((evs[0].extra&&evs[0].extra.nama)||evs[0].title||'').toLowerCase().trim();
+  const msg=BDAY_MESSAGES[_bdayHash(seedName,BDAY_MESSAGES.length)];
+  const verse=BDAY_VERSES[_bdayHash(seedName+'v',BDAY_VERSES.length)];
+  const subEl=document.getElementById('bdayModalSub');
+  if(subEl)subEl.textContent=msg;
+
+  // Render foto
+  content.innerHTML=evs.map(ev=>{const nama=(ev.extra&&ev.extra.nama)||ev.title;
+    const fotoUrl=ev.extra&&ev.extra.foto_url?driveToThumbnail(ev.extra.foto_url):'';
+    return `<div class="bday-person">
+      ${fotoUrl
+        ?`<div class="bday-foto-free"><img src="${escapeHTML(fotoUrl)}" alt="${escapeHTML(nama)}" class="bday-foto-img" onerror="this.parentElement.style.display='none'"/></div>`
+        :`<div class="bday-foto-placeholder">🎂</div>`
+      }
+      <div class="bday-name">${escapeHTML(nama)}</div>
+    </div>`;
+  }).join('')+
+  `<div style="margin-top:4px;padding:12px 16px;border-radius:12px;background:var(--bg2,rgba(255,255,255,.07));text-align:center">
+    <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;color:var(--gold,#c9a227);margin-bottom:6px">${escapeHTML(verse.ref)}</div>
+    <div style="font-size:.82rem;font-style:italic;color:var(--text,#e2e8f0);line-height:1.55">"${escapeHTML(verse.text)}"</div>
+  </div>`;
+
+  modal.classList.add('on');
+  document.body.style.overflow='hidden';
+  localStorage.setItem(dismissKey,'1');
+  // Poll sampai confetti library siap (CDN bisa butuh waktu)
+  let tries=0;
+  const tryConfetti=()=>{
+    if(typeof confetti!=='undefined'){fireConfetti();}
+    else if(tries++<20){setTimeout(tryConfetti,200);}
+  };
+  setTimeout(tryConfetti,300);
+}
+
+function closeBirthdayModal(){
+  const modal=document.getElementById('birthdayModal');
+  if(modal){modal.classList.remove('on');document.body.style.overflow='';}
+}
 
 init();
 
 /* ══ PWA SERVICE WORKER ══ */
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
-  });
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});
+  navigator.serviceWorker.addEventListener('message',e=>{if(e.data?.type==='SW_UPDATED'&&!sessionStorage.getItem('sw_reloaded')){sessionStorage.setItem('sw_reloaded','1');location.reload();}});
 }
 
 /* ══ CROSS-TAB FEATURED SYNC ══ */
 window.addEventListener('storage',e=>{
   if(e.key!=='naposo_featured_change'||!e.newValue)return;
-  try{
-    const{id,featured}=JSON.parse(e.newValue);
-    const ev=EVENTS.find(e=>e.id===id);
-    if(ev){ev.featured=featured;renderEvents();}
-  }catch(_){}
+  try{const{id,featured}=JSON.parse(e.newValue);const ev=EVENTS.find(e=>e.id===id);if(ev){ev.featured=featured;renderEvents();}}catch(_){}
 });

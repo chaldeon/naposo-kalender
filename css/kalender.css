@@ -76,7 +76,7 @@ header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue-mid) 60%,var(
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* ══ TOOLBAR ══ */
-.toolbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;transition:background .25s,top .2s}
+.toolbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;transition:background .25s,top .2s;overflow:visible}
 body.admin-mode .toolbar{top:36px}
 .toolbar-inner{max-width:1400px;margin:0 auto;padding:0 16px}
 
@@ -130,7 +130,7 @@ body.admin-mode .toolbar{top:36px}
 .cat-filter-btn{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);font-family:var(--font-b);font-size:.73rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
 .cat-filter-btn:hover{border-color:var(--blue);color:var(--blue)}
 .cat-filter-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.cat-filter-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.14);min-width:180px;z-index:250;display:none;overflow:hidden}
+.cat-filter-dropdown{position:fixed;top:0;left:0;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.14);min-width:180px;z-index:1500;display:none;overflow:hidden}
 .cat-filter-dropdown.open{display:block}
 .cat-filter-opt{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:.8rem;color:var(--text2);cursor:pointer;transition:background .12s}
 .cat-filter-opt:hover{background:var(--surface2)}
@@ -286,7 +286,7 @@ body.admin-mode .event-pill:hover .ev-copy{display:flex;align-items:center}
 .det-cat{display:inline-block;margin-top:9px;font-size:.67rem;padding:3px 9px;border-radius:20px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 
 /* ══ TOAST ══ */
-.toast{position:fixed;bottom:20px;right:16px;background:var(--navy);color:#fff;padding:10px 15px;border-radius:8px;font-size:.81rem;box-shadow:0 4px 20px rgba(0,0,0,.25);transform:translateY(80px);opacity:0;transition:all .25s;z-index:900;max-width:290px;border-left:4px solid var(--gold)}
+.toast{position:fixed;bottom:72px;right:16px;background:var(--navy);color:#fff;padding:10px 15px;border-radius:8px;font-size:.81rem;box-shadow:0 4px 20px rgba(0,0,0,.25);transform:translateY(80px);opacity:0;transition:all .25s;z-index:900;max-width:290px;border-left:4px solid var(--gold)}
 .toast.on{transform:translateY(0);opacity:1}
 .toast.err{border-left-color:var(--red)}
 .toast.ok{border-left-color:var(--green)}
@@ -342,7 +342,7 @@ footer strong{color:rgba(255,255,255,.75)}
     -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
     position:sticky;top:0;z-index:300;
-    background:var(--surface);
+    background:var(--surface);overflow:visible;
   }
   body.admin-mode .mob-toolbar{top:36px}
   .mob-toolbar::-webkit-scrollbar{display:none}
@@ -611,7 +611,7 @@ html[data-theme] *{
 
 
 /* ══ SEARCH DROPDOWN ══ */
-.search-dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:min(320px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.14);z-index:400;overflow:hidden;}
+.search-dropdown{position:fixed;top:0;left:0;min-width:min(320px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.14);z-index:1500;overflow:hidden;}
 .sd-month-sep{font-size:.65rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:7px 14px 3px;background:var(--surface2);}
 .sd-item{display:flex;align-items:flex-start;gap:9px;padding:9px 14px;cursor:pointer;transition:background .12s;}
 .sd-item:hover{background:var(--surface2);}
@@ -833,3 +833,13 @@ html[data-theme] *{
   font-weight:600;
 }
 .bn-sheet-sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
+
+/* ══ SESI 43: Draft pill di kalender ══ */
+.ev-pill-draft{opacity:.65;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(245,158,11,.08) 4px,rgba(245,158,11,.08) 8px) !important;border:1px dashed rgba(245,158,11,.5) !important}
+
+/* ══ SESI 43: Detail modal tabs ══ */
+.det-tabs{margin-bottom:10px}
+.det-tab-btn{transition:color .2s,border-bottom-color .2s}
+
+/* ══ SESI 43: Gallery grid in detail ══ */
+.det-gallery-grid img{background:var(--bg2);transition:opacity .2s}

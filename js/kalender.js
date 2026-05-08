@@ -2,17 +2,18 @@
 const SUPA_URL='https://wejbubxrlqyazlodhbua.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
 function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(o.headers||{})},...o});}
+async function sbGet(p){const r=await sb(p);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbGet(t,q=''){const r=await sb(`${t}?${q}`);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.ok)throw new Error(await r.text());}
 
 let adminToken=null;
-async function dbWrite(table,method,data,match){
+async function dbWrite(table,method,data,match,log){
   const r=await fetch(`${SUPA_URL}/functions/v1/db-write`,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`,'x-admin-token':adminToken||''},
-    body:JSON.stringify({table,method,data,match})
+    body:JSON.stringify({table,method,data,match,log})
   });
   const json=await r.json();
   if(!r.ok)throw new Error(json.error||'Write failed');
@@ -31,6 +32,13 @@ function escapeHTML(str){
   
 /* ══ CATEGORIES ══ */
 const BUILT_IN=['koor','ibadah','rapat','latihan','reversement','doa','other'];
+const BDAY_CATS=['perayaan-ulang-tahun','ultah','ulang-tahun','perayaan ulang tahun'];
+function isBirthdayEv(ev){
+  const c=(ev.category||'').toLowerCase().trim();
+  if(BDAY_CATS.includes(c))return true;
+  const lbl=(catLabel(ev.category)||'').toLowerCase();
+  return lbl.includes('ulang tahun')||lbl.includes('birthday')||lbl.includes('ultah');
+}
 // Kategori bawaan — warna & label ini SELALU dipakai, tidak bisa di-override dari Supabase
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2',other:'#94a3b8'};
 const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
@@ -47,6 +55,12 @@ const CAT_EXTRA={
   'Olahraga':           [{key:'variant',          label:'Cabang Olahraga',    type:'select', options:['badminton','basket','futsal','renang']},
                          {key:'tempat',           label:'Tempat / Lapangan',  type:'text'},
                          {key:'uang_patungan',    label:'Uang Patungan',      type:'money'}],
+  'Perayaan Ulang Tahun': [{key:'nama',       label:'Nama (yang berulang tahun)',       type:'text'},
+                           {key:'poster_url', label:'Poster Acara (Google Drive link)', type:'url', adminOnly:true},
+                           {key:'foto_url',   label:'Foto Pribadi (Google Drive link)', type:'url', adminOnly:true}],
+  'Ulang Tahun Anggota':  [{key:'nama',       label:'Nama (yang berulang tahun)',       type:'text'},
+                           {key:'poster_url', label:'Poster Acara (Google Drive link)', type:'url', adminOnly:true},
+                           {key:'foto_url',   label:'Foto Pribadi (Google Drive link)', type:'url', adminOnly:true}],
 };
 // Kembalikan array field untuk kategori tsb (berdasarkan label ID)
 function getExtraFields(catId){
@@ -234,6 +248,9 @@ let EVENTS=[],lang=localStorage.getItem('naposo_lang')||'id',darkMode=localStora
 let isAdmin=false,editingId=null,filterCats=new Set(),currentView='grid'; // filterCats kosong = semua kategori tampil
 let undoStack=[];
 let redoStack=[];
+
+/* ══ HELPER: local date string (timezone-safe, avoid toISOString UTC bug) ══ */
+function localDateStr(d){const t=d||new Date();return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`; }
 let copiedEvent=null;
 function pushUndo(action){undoStack.push(action);redoStack=[];syncUndoBtn();syncRedoBtn();}
 function resetUndo(){undoStack=[];redoStack=[];syncUndoBtn();syncRedoBtn();}
@@ -427,6 +444,11 @@ async function init(){
   document.getElementById('footerYear').textContent=new Date().getFullYear();
   document.getElementById('footerVisits').textContent=visits.total||'–';
   applyLangUI();buildLoginDropdown();buildCatFilterDropdown();buildLegend();buildTabs();
+  // Tutup fixed dropdowns saat scroll agar posisi tidak stale
+  window.addEventListener('scroll',()=>{
+    document.getElementById('catFilterDropdown').classList.remove('open');
+    closeSearchDropdown();
+  },{passive:true,capture:true});
   document.addEventListener('click',e=>{
     if(!document.getElementById('catFilterWrap').contains(e.target)) document.getElementById('catFilterDropdown').classList.remove('open');
     if(!document.getElementById('infoBtn').parentElement.contains(e.target)) document.getElementById('statsPopup').classList.remove('open');
@@ -720,7 +742,7 @@ function buildMobCatList(){
 
 /* ══ STATS ══ */
 function renderStats(){
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=localDateStr();
   const yearStr=`${currentYear}-`;
   const monStr=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
@@ -754,7 +776,17 @@ function buildCatFilterDropdown(){
   else if(filterCats.size===1){btn.classList.add('active');document.getElementById('catFilterLabel').textContent=catLabel([...filterCats][0]);}
   else{btn.classList.add('active');document.getElementById('catFilterLabel').textContent=`${filterCats.size} kategori`;}
 }
-function toggleCatFilterDropdown(){document.getElementById('catFilterDropdown').classList.toggle('open');}
+function toggleCatFilterDropdown(){
+  const dd=document.getElementById('catFilterDropdown');
+  const btn=document.getElementById('catFilterBtn');
+  const willOpen=!dd.classList.contains('open');
+  dd.classList.toggle('open');
+  if(willOpen&&btn){
+    const r=btn.getBoundingClientRect();
+    dd.style.top=(r.bottom+4)+'px';
+    dd.style.left=r.left+'px';
+  }
+}
 // setCatFilter('all') = reset semua; setCatFilter(cat) = toggle satu kategori
 function setCatFilter(cat){
   if(cat==='all'){filterCats.clear();}
@@ -884,6 +916,10 @@ function onSearchInput(val){
 function showSearchDropdown(q){
   const isMob=window.innerWidth<=680;
   const dd=document.getElementById(isMob?'mobSearchDropdown':'searchDropdown');if(!dd)return;
+  if(!isMob){
+    const anchor=document.getElementById('searchInput');
+    if(anchor){const r=anchor.getBoundingClientRect();dd.style.top=(r.bottom+6)+'px';dd.style.left=r.left+'px';}
+  }
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   const dayNames=lang==='en'
     ?['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -1073,6 +1109,8 @@ function renderAgenda(q){
     :(isMobile?['MIN','SEN','SEL','RAB','KAM','JUM','SAB']:['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']);
   const monthStr=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
   let evs=EVENTS.filter(e=>e.date.startsWith(monthStr));
+  // Draft filter: publik tidak melihat draft
+  if(!isAdmin) evs=evs.filter(e=>e.status!=='draft');
   if(filterCats.size>0) evs=evs.filter(e=>filterCats.has(e.category));
   if(q) evs=evs.filter(e=>e.title.toLowerCase().includes(q)||(e.note||'').toLowerCase().includes(q));
   if(!evs.length){
@@ -1092,7 +1130,7 @@ function renderAgenda(q){
     return;
   }
   evs.sort((a,b)=>a.date.localeCompare(b.date));
-  const todayStr=new Date().toISOString().slice(0,10);
+  const todayStr=localDateStr();
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
 
   // Kelompokkan event per tanggal
@@ -1129,7 +1167,7 @@ function renderAgenda(q){
       const col=catColor(ev.category);
       const lbl=catLabel(ev.category);
       const fields=getExtraFields(ev.category);
-      const extraHtml=fields.length&&ev.extra?fields.map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="ag-extra">📌 ${f.label}: <span>${disp}</span></div>`;}).join(''):'';
+      const extraHtml=fields.length&&ev.extra?fields.filter(f=>!f.adminOnly||isAdmin).map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline;word-break:break-all" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="ag-extra">📌 ${f.label}: <span>${disp}</span></div>`;}).join(''):'';
       html+=`<div class="ag-event-row card-animate${idx>0?' ag-event-row--border':''}" style="animation-delay:${idx*45}ms" data-agid="${ev.id}" onclick="openDetail(EVENTS.find(e=>e.id==='${ev.id}'))">
         <div class="ag-event-main">
           <div class="ag-cat-dot" style="background:${col}"></div>
@@ -1180,7 +1218,10 @@ function buildMonth(year,month){
     }
     const num=document.createElement('div');num.className='cal-num';num.textContent=d;cell.appendChild(num);
     if(isAdmin){const ab=document.createElement('button');ab.className='cal-add';ab.textContent='+';ab.onclick=e=>{e.stopPropagation();openAddModal(ds);};cell.appendChild(ab);}
-    const dayEvs=EVENTS.filter(ev=>ev.date===ds);
+    const dayEvs=EVENTS.filter(ev=>ev.date===ds&&(isAdmin||ev.status!=='draft'));
+    if(isAdmin){
+      // Admin melihat draft dengan style berbeda — ditangani di makePill
+    }
     const maxV=window.innerWidth<=680?(dayEvs.length>3?2:dayEvs.length):MAX_VISIBLE; 
     dayEvs.forEach((ev,idx)=>{
       const pill=makePill(ev);
@@ -1205,10 +1246,11 @@ function buildMonth(year,month){
 function makePill(ev){
   const pill=document.createElement('div');
   const catClass=BUILT_IN.includes(ev.category)?`ev-${ev.category}`:'ev-other';
-  pill.className=`event-pill ${catClass}`;pill.dataset.evid=ev.id;
+  pill.className=`event-pill ${catClass}${ev.status==='draft'?' ev-pill-draft':''}`;pill.dataset.evid=ev.id;
   const col=catColor(ev.category);
   const dot=document.createElement('div');dot.className='ev-dot';dot.style.background=col;
-  const lbl=document.createElement('span');lbl.className='ev-label';lbl.textContent=ev.title;
+  const lbl=document.createElement('span');lbl.className='ev-label';
+  lbl.textContent=(ev.status==='draft'?'[Draft] ':'')+ev.title;
   pill.appendChild(dot);pill.appendChild(lbl);
   if(ev.time){const t=document.createElement('span');t.className='ev-time-inline';t.textContent=ev.time.split('–')[0];pill.appendChild(t);}
   if(hasLink(ev.note)){
@@ -1359,6 +1401,7 @@ function openAddModal(ds){
   document.getElementById('evStart').value='';document.getElementById('evEnd').value='';
   document.getElementById('evNote').value='';
   const fc=document.getElementById('evFeatured');if(fc)fc.checked=false;
+  const dc=document.getElementById('evDraft');if(dc)dc.checked=false;
   const gv=document.getElementById('evGabungan');if(gv)gv.checked=false;
   buildCatSelect();updateExtraField();openModal('eventModal');
 }
@@ -1385,9 +1428,22 @@ function openEditModal(ev){
       });
     }
     const fc=document.getElementById('evFeatured');if(fc)fc.checked=!!ev.featured;
+    const dc=document.getElementById('evDraft');if(dc)dc.checked=ev.status==='draft';
     const gv2=document.getElementById('evGabungan');if(gv2)gv2.checked=!!(ev.extra&&ev.extra.gabungan);
   },30);
   openModal('eventModal');
+}
+
+/* ── Google Calendar link builder ── */
+function buildGCalLink(ev){
+  const title=encodeURIComponent(ev.title||'');
+  const dateStr=(ev.date||'').replace(/-/g,'');
+  const ts=ev.time_start||(ev.time?(ev.time.split(/[–\-]/)[0]||'').trim():'');
+  const te=ev.time_end||(ev.time?(ev.time.split(/[–\-]/)[1]||'').trim():'');
+  let dates='';
+  if(ts&&te){dates=`${dateStr}T${ts.replace(':','')}00/${dateStr}T${te.replace(':','')}00`;}
+  else{const d=new Date(ev.date+'T00:00:00');d.setDate(d.getDate()+1);const next=d.toISOString().slice(0,10).replace(/-/g,'');dates=`${dateStr}/${next}`;}
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${encodeURIComponent(ev.note||'')}`;
 }
 
 function openDetail(ev){
@@ -1395,34 +1451,108 @@ function openDetail(ev){
   const d=new Date(ev.date+'T00:00:00');
   const lbl=d.toLocaleDateString(lang==='en'?'en-US':'id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const col=catColor(ev.category);
+  const isDraft=ev.status==='draft';
   document.getElementById('detailTitle').textContent=tx('detailTitle');
-  document.getElementById('detailBody').innerHTML=`<div class="det-card">
+
+  // Tab buttons (admin sees Riwayat tab)
+  const tabsHtml=isAdmin?`<div class="det-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin:-2px -4px 12px">
+    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">ℹ️ Info</button>
+    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📸 Galeri</button>
+    <button class="det-tab-btn" id="detTabLog" onclick="_detSwitchTab('log')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📋 Riwayat</button>
+  </div>`:`<div class="det-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin:-2px -4px 12px">
+    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">ℹ️ Info</button>
+    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📸 Galeri</button>
+  </div>`;
+
+  const infoHtml=`
+    ${isDraft?'<div style="display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 9px;border-radius:20px;background:rgba(245,158,11,.15);color:#b45309;border:1px solid rgba(245,158,11,.35);margin-bottom:8px">📝 DRAFT</div>':''}
     <div class="det-date">${lbl}</div>
     <div class="det-title">${escapeHTML(ev.title)}</div>
     ${ev.time?`<div class="det-time">⏰ ${escapeHTML(ev.time)}</div>`:''}
     ${ev.link?`<div class="det-link"><a href="${escapeHTML(ev.link)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${escapeHTML(ev.link)}</a></div>`:''}
-    ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';return fields.map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
-    ${ev.note?`<div class="det-note">${linkify(escapeHTML(ev.note).replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
-    ${ev.category==='reversement'?`<div id="detRevLink" style="margin-top:10px;min-height:18px"></div>`:''}
+    ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';const isBday=isBirthdayEv(ev);return fields.filter(f=>!f.adminOnly||isAdmin).map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';if(isBday&&f.key==='nama')return `<div class="det-row" style="margin-bottom:6px;font-size:.9rem;font-weight:700;color:var(--gold)">🎂 Selamat ulang tahun, ${escapeHTML(val)}!</div>`;const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
+    ${ev.note?`<div class="det-note">${linkify(escapeHTML(ev.note).replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
+    <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
+    <div style="margin-top:10px"><a href="${escapeHTML(buildGCalLink(ev))}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;color:var(--blue);text-decoration:none;padding:4px 10px;border:1px solid rgba(59,130,246,.3);border-radius:20px">📆 Tambah ke Google Kalender</a></div>
+    ${ev.category==='reversement'?`<div id="detRevLink" style="margin-top:10px;min-height:18px"></div>`:''}`;
+
+  document.getElementById('detailBody').innerHTML=`<div class="det-card" style="padding:4px">
+    ${tabsHtml}
+    <div id="detPanelInfo">${infoHtml}</div>
+    <div id="detPanelGallery" style="display:none"><div id="detGalleryInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">Memuat galeri…</div></div>
+    ${isAdmin?`<div id="detPanelLog" style="display:none"><div id="detLogInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">Memuat riwayat…</div></div>`:''}
   </div>`;
+
   document.getElementById('detailFoot').innerHTML=`
-    ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${window._detEv&&window._detEv.featured?'var(--gold)':'none'};border:1px solid ${window._detEv&&window._detEv.featured?'var(--gold)':'var(--border2)'};color:${window._detEv&&window._detEv.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${window._detEv&&window._detEv.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
+    ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${ev.featured?'var(--gold)':'none'};border:1px solid ${ev.featured?'var(--gold)':'var(--border2)'};color:${ev.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${ev.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
     ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
     ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
+
   openModal('detailModal');
-  // [Sesi 40 Item 4 Opsi A] Auto-match post reversement by date
+
+  // Reversement auto-link
   if(ev.category==='reversement'){
-    (async()=>{
-      try{
-        const res=await sb(`reversement_posts?select=id&published=eq.true&date=eq.${ev.date}&limit=1`);
-        const rows=res.ok?await res.json():[];
-        const el=document.getElementById('detRevLink');
-        if(el&&rows&&rows.length){
-          el.innerHTML=`<a href="reversement.html?id=${encodeURIComponent(rows[0].id)}" style="color:var(--blue);font-size:.82rem;font-weight:600;text-decoration:none">✝️ Buka Renungan →</a>`;
-        }
-      }catch(e){}
-    })();
+    (async()=>{try{const res=await sb(`reversement_posts?select=id&published=eq.true&date=eq.${ev.date}&limit=1`);const rows=res.ok?await res.json():[];const el=document.getElementById('detRevLink');if(el&&rows&&rows.length)el.innerHTML=`<a href="reversement.html?id=${encodeURIComponent(rows[0].id)}" style="color:var(--blue);font-size:.82rem;font-weight:600;text-decoration:none">✝️ Buka Renungan →</a>`;}catch(e){}})();
   }
+  // Load galeri immediately for gallery tab
+  _loadDetGallery(ev.id);
+}
+
+function _detSwitchTab(tab){
+  ['info','gallery','log'].forEach(t=>{
+    const panel=document.getElementById('detPanel'+t.charAt(0).toUpperCase()+t.slice(1));
+    const btn=document.getElementById('detTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(panel)panel.style.display=t===tab?'':'none';
+    if(btn){btn.style.borderBottomColor=t===tab?'var(--blue)':'transparent';btn.style.color=t===tab?'var(--blue)':'var(--text3)';}
+  });
+  if(tab==='log'&&window._detEv)_loadDetLog(window._detEv.id);
+}
+
+async function _loadDetGallery(evId){
+  const el=document.getElementById('detGalleryInner');if(!el)return;
+  try{
+    const rows=await sbGet(`event_gallery?select=*&event_id=eq.${evId}&order=order.asc,created_at.asc`);
+    const addFormHtml=isAdmin?`<div style="margin-top:12px"><div style="font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:6px">TAMBAH FOTO</div><div style="display:flex;flex-direction:column;gap:6px"><input type="text" id="galleryUrl" placeholder="Google Drive link foto…" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)"/><input type="text" id="galleryCaption" placeholder="Keterangan (opsional)" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)"/><button class="btn btn-sm btn-success" onclick="addGalleryItem('${evId}')">+ Tambah Foto</button></div></div>`:'';
+    if(!rows||!rows.length){el.innerHTML=`<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:.78rem">Belum ada foto.</div>${addFormHtml}`;return;}
+    el.innerHTML=`<div class="det-gallery-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px">${rows.map(r=>{const thumb=driveToThumbnail(r.drive_url);return `<div style="position:relative"><a href="${escapeHTML(r.drive_url)}" target="_blank" rel="noopener"><img src="${escapeHTML(thumb)}" style="width:100%;border-radius:8px;aspect-ratio:4/3;object-fit:cover;background:var(--bg2)" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a>${r.caption?`<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:center">${escapeHTML(r.caption)}</div>`:''} ${isAdmin?`<button onclick="deleteGalleryItem('${r.id}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:20px;text-align:center;padding:0">✕</button>`:''}`; }).join('')}</div>
+    ${addFormHtml}`;
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:.78rem">Gagal memuat galeri.</div>';}
+}
+
+async function addGalleryItem(evId){
+  const url=document.getElementById('galleryUrl')?.value.trim();
+  if(!url){showToast('URL foto wajib diisi.','err');return;}
+  const caption=document.getElementById('galleryCaption')?.value.trim()||'';
+  try{
+    await dbWrite('event_gallery','INSERT',{event_id:evId,drive_url:url,caption,order:99},null,null);
+    showToast('Foto ditambahkan ✓','ok');
+    _loadDetGallery(evId);
+  }catch(e){showToast('Gagal: '+e.message,'err');}
+}
+
+async function deleteGalleryItem(id){
+  showConfirmModal('Hapus foto ini?',async()=>{
+    try{await dbWrite('event_gallery','DELETE',null,{id},null);showToast('Foto dihapus.');if(window._detEv)_loadDetGallery(window._detEv.id);}
+    catch(e){showToast('Gagal: '+e.message,'err');}
+  });
+}
+
+async function _loadDetLog(evId){
+  const el=document.getElementById('detLogInner');if(!el)return;
+  el.innerHTML='<div style="color:var(--text3);font-size:.78rem">Memuat…</div>';
+  try{
+    const rows=await sbGet(`event_logs?select=*&event_id=eq.${evId}&order=created_at.desc&limit=30`);
+    if(!rows||!rows.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Belum ada riwayat perubahan.</div>';return;}
+    el.innerHTML=rows.map(r=>{
+      const ts=new Date(r.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const actionLabel={create:'➕ Dibuat',update:'✏️ Diubah',delete:'🗑 Dihapus'}[r.action]||r.action;
+      let diffHtml='';
+      if(r.diff&&typeof r.diff==='object'){
+        diffHtml='<div style="margin-top:4px;font-size:.7rem;color:var(--text3)">'+Object.entries(r.diff).map(([k,v])=>`<div><span style="color:var(--text2);font-weight:600">${k}</span>: <span style="color:var(--red);text-decoration:line-through">${v.from??'—'}</span> → <span style="color:var(--green)">${v.to??'—'}</span></div>`).join('')+'</div>';
+      }
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.75rem;font-weight:700">${actionLabel}</span><span style="font-size:.7rem;color:var(--text3)">${r.admin_name||'—'} · ${ts}</span></div>${diffHtml}</div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:.78rem">Gagal memuat riwayat.</div>';}
 }
 
 /* ══ CRUD ══ */
@@ -1432,7 +1562,7 @@ function driveToThumbnail(url){
   if(!url)return '';
   // format: https://drive.google.com/file/d/FILE_ID/view
   const m=url.match(/\/file\/d\/([^/?\s]+)/);
-  if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  if(m)return `https://lh3.googleusercontent.com/d/${m[1]}`;
   // already a direct/thumbnail URL
   return url;
 }
@@ -1463,16 +1593,22 @@ async function saveEvent(){
     const gabEl=document.getElementById('evGabungan');
     if(gabEl&&gabEl.closest('#gabunganWrap')?.style.display!=='none'&&gabEl.checked) extra.gabungan=true;
     const featured=!!(document.getElementById('evFeatured')?.checked);
+    const status=document.getElementById('evDraft')?.checked?'draft':'published';
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
-      await dbWrite('events','UPDATE',{date,title,time,category:cat,note,link,extra,featured},{id:editingId});
-      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],date,title,time,category:cat,note,link,extra,featured};
+      const newData={date,title,time,category:cat,note,link,extra,featured,status};
+      const diff={};
+      ['date','title','time','category','note','status','featured'].forEach(k=>{if(String(prev[k]??'')!==String(newData[k]??''))diff[k]={from:prev[k],to:newData[k]};});
+      const log={event_id:editingId,admin_name:_adminName||'—',action:'update',diff:Object.keys(diff).length?diff:null};
+      await dbWrite('events','UPDATE',newData,{id:editingId},log);
+      const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],...newData};
       pushUndo({type:'edit',prev});
     }else{
       const id='ev_'+Date.now();
-      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured});
-      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured});
-      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured}});
+      const log={event_id:id,admin_name:_adminName||'—',action:'create',diff:null};
+      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured,status},null,log);
+      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured,status});
+      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured,status}});
     }
     closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
@@ -1489,7 +1625,8 @@ async function confirmDel(id,e){
     setSyncBadge('load',tx('saving'));
     try{
       const deleted={...EVENTS.find(ev=>ev.id===id)};
-      await dbWrite('events','DELETE',null,{id});
+      const log={event_id:id,admin_name:_adminName||'—',action:'delete',diff:null};
+      await dbWrite('events','DELETE',null,{id},log);
       EVENTS=EVENTS.filter(ev=>ev.id!==id);
       pushUndo({type:'delete',ev:deleted});
       renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));
@@ -1889,7 +2026,8 @@ function showPreview(e, ev){
   const noteRaw = ev.note ? ev.note.substring(0,100)+(ev.note.length>100?'…':'') : '';
   const noteFmt = linkify(escapeHTML(noteRaw).replace(/\r\n|\r|\n/g,'<br>'));
   const fields=getExtraFields(ev.category);
-  const extraHtml=fields.length&&ev.extra?fields.map(f=>{const val=ev.extra[f.key]||'';return val?`<div style="margin-top:3px;font-size:11px;color:rgba(255,255,255,.75)">📌 ${f.label}: ${val}</div>`:''}).join(''):'';
+  const isBday=isBirthdayEv(ev);
+  const extraHtml=fields.length&&ev.extra?fields.filter(f=>!f.adminOnly||isAdmin).map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';if(isBday&&f.key==='nama')return `<div style="margin-top:3px;font-size:11px;color:rgba(255,255,255,.85);font-weight:700">🎂 Selamat ulang tahun, ${escapeHTML(val)}!</div>`;const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:rgba(255,255,255,.85);text-decoration:underline">Buka ↗</a>`:val;return `<div style="margin-top:3px;font-size:11px;color:rgba(255,255,255,.75)">📌 ${f.label}: ${disp}</div>`;}).join(''):'';
   previewBox.innerHTML = `
     <strong>${escapeHTML(ev.title)}</strong><br>
     📅 ${dateStr}<br>
@@ -2017,6 +2155,12 @@ document.addEventListener('keydown',e=>{
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data?.type==='SW_UPDATED'&&!sessionStorage.getItem('sw_reloaded')){
+      sessionStorage.setItem('sw_reloaded','1');
+      location.reload();
+    }
   });
 }
 

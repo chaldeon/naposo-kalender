@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Statistik · Naposo HKBP Ujung Menteng</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/kalender.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+.stat-page{max-width:860px;margin:0 auto;padding:24px 16px 80px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 16px;display:flex;flex-direction:column;gap:4px}
+.stat-kpi-val{font-size:2rem;font-weight:800;color:var(--text);font-family:var(--font-b)}
+.stat-kpi-lbl{font-size:.75rem;font-weight:600;color:var(--text3);letter-spacing:.07em}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.stat-card-title{font-size:.8rem;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:14px}
+.stat-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.stat-table th{text-align:left;font-size:.7rem;color:var(--text3);font-weight:700;letter-spacing:.07em;padding:4px 8px 8px;border-bottom:1px solid var(--border)}
+.stat-table td{padding:7px 8px;border-bottom:1px solid var(--border2);color:var(--text)}
+.stat-table tr:last-child td{border-bottom:none}
+.stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.stat-bar-lbl{font-size:.75rem;color:var(--text2);width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-bar-track{flex:1;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.stat-bar-val{font-size:.72rem;color:var(--text3);width:28px;text-align:right;flex-shrink:0}
+.stat-access-denied{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;color:var(--text2)}
+.stat-access-denied .icon{font-size:3rem}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+<div class="hdr">
+  <a class="hdr-brand" href="index.html" style="text-decoration:none">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
+      <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
+      <rect x="17" y="7" width="6" height="26" rx="1.5" fill="#c9a227"/>
+      <rect x="9" y="15" width="22" height="6" rx="1.5" fill="#c9a227"/>
+    </svg>
+    <div class="hdr-title"><h1>Naposo HKBP Ujung Menteng</h1></div>
+  </a>
+  <div class="hdr-right-desktop">
+    <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
+    <a class="navbar-pill pill-home" href="index.html">🏠 Home</a>
+    <a class="navbar-pill pill-home" href="kalender.html">📅 Kalender</a>
+    <a class="navbar-pill pill-home active-pill" href="statistik.html">📊 Statistik</a>
+    <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 Login</button>
+  </div>
+</div>
+</header>
+
+<!-- ══ ADMIN BAR ══ -->
+<div class="admin-bar" id="adminBar">
+  <span class="admin-bar-txt" id="adminBarTxt"></span>
+</div>
+
+<main class="stat-page" id="statMain">
+  <!-- Akses ditolak sebelum login -->
+  <div class="stat-access-denied" id="accessDenied">
+    <div class="icon">🔒</div>
+    <div style="font-weight:700;font-size:1.1rem">Halaman Khusus Pengurus</div>
+    <div style="font-size:.85rem;color:var(--text3)">Silakan login terlebih dahulu untuk melihat statistik.</div>
+    <button class="btn btn-primary" onclick="handleLoginBtn()" style="margin-top:8px">🔐 Login</button>
+  </div>
+
+  <!-- Dashboard statistik -->
+  <div id="statDashboard" style="display:none">
+    <div style="margin-bottom:20px">
+      <h2 style="font-size:1.3rem;font-weight:800;color:var(--text);margin:0 0 4px">📊 Statistik Pelayanan</h2>
+      <div style="font-size:.8rem;color:var(--text3)">Data event, kunjungan, dan kategori kegiatan Naposo HKBP Ujung Menteng.</div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="stat-grid" id="kpiGrid">
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiTotal">–</div><div class="stat-kpi-lbl">TOTAL EVENT</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiMonth">–</div><div class="stat-kpi-lbl">BULAN INI</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiDraft">–</div><div class="stat-kpi-lbl">DRAFT</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisits">–</div><div class="stat-kpi-lbl">TOTAL KUNJUNGAN</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisitsWeek">–</div><div class="stat-kpi-lbl">KUNJUNGAN 7 HARI</div></div>
+    </div>
+
+    <!-- Chart: Kunjungan per hari (30 hari terakhir) -->
+    <div class="stat-card">
+      <div class="stat-card-title">📈 KUNJUNGAN 30 HARI TERAKHIR</div>
+      <canvas id="visitChart" height="80"></canvas>
+    </div>
+
+    <!-- Chart: Event per bulan (tahun ini) -->
+    <div class="stat-card">
+      <div class="stat-card-title">📅 EVENT PER BULAN (TAHUN INI)</div>
+      <canvas id="monthChart" height="80"></canvas>
+    </div>
+
+    <!-- Distribusi kategori -->
+    <div class="stat-card">
+      <div class="stat-card-title">🏷️ DISTRIBUSI KATEGORI</div>
+      <div id="catBars"></div>
+    </div>
+
+    <!-- Tabel event terbaru -->
+    <div class="stat-card">
+      <div class="stat-card-title">🕐 EVENT TERBARU / AKAN DATANG</div>
+      <table class="stat-table" id="evTable">
+        <thead><tr><th>Tanggal</th><th>Judul</th><th>Kategori</th><th>Status</th></tr></thead>
+        <tbody id="evTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Login modal -->
+<div class="overlay" id="loginModal">
+<div class="modal" style="max-width:350px">
+  <div class="modal-hdr"><h2>Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
+  <div class="modal-body">
+    <div class="form-g"><label>Nama Pengurus</label><select id="loginName"><option value="">-- Pilih nama --</option></select></div>
+    <div class="form-g"><label>Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <button class="pw-eye" type="button" onclick="togglePw()">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="login-err" id="loginErr">Password salah.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('loginModal')">Batal</button>
+    <button class="btn btn-primary" onclick="doLogin()">Masuk</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://wejbubxrlqyazlodhbua.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
+const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
+let darkMode=localStorage.getItem('naposo_dark')==='1';
+let isAdmin=false,_adminName='';
+
+function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(o.headers||{})},...o});}
+async function sbGet(p){const r=await sb(p);if(!r.ok)throw new Error(await r.text());return r.json();}
+
+function applyDark(){
+  document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  const btn=document.getElementById('darkToggleBtn');if(btn)btn.textContent=darkMode?'☀️':'🌙';
+}
+function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+
+function openModal(id){const el=document.getElementById(id);if(el){el.classList.add('on');document.body.style.overflow='hidden';}}
+function closeModal(id){const el=document.getElementById(id);if(el){el.classList.remove('on');document.body.style.overflow='';}}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
+
+function handleLoginBtn(){
+  if(isAdmin)return;
+  buildLoginDropdown();
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginPw').value='';
+  openModal('loginModal');
+}
+function buildLoginDropdown(){
+  const sel=document.getElementById('loginName');sel.innerHTML='<option value="">-- Pilih nama --</option>';
+  [...USER_NAMES].sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
+}
+function togglePw(){const inp=document.getElementById('loginPw');inp.type=inp.type==='text'?'password':'text';}
+
+async function doLogin(){
+  const name=document.getElementById('loginName').value;
+  const pw=document.getElementById('loginPw').value;
+  const err=document.getElementById('loginErr');
+  if(!name||!pw){err.style.display='block';return;}
+  try{
+    const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},body:JSON.stringify({username:name,password:pw})});
+    const data=await res.json();
+    if(!data.success){err.style.display='block';return;}
+    localStorage.setItem('naposo_token',data.token||'1');
+    localStorage.setItem('naposo_admin_name',name);
+    isAdmin=true;_adminName=name;
+    closeModal('loginModal');
+    _applyAdminUI(name);
+    loadStats();
+  }catch(e){err.style.display='block';}
+}
+
+function _applyAdminUI(name){
+  _adminName=name;
+  const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
+  const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent='Halo, '+name+'.';
+  const btn=document.getElementById('loginBtn');if(btn)btn.textContent='✓ '+name;
+  document.getElementById('accessDenied').style.display='none';
+  document.getElementById('statDashboard').style.display='';
+}
+
+function showToast(msg,type=''){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;setTimeout(()=>el.classList.remove('on'),3000);}
+
+/* ══ STATS ══ */
+let _visitChart=null,_monthChart=null;
+
+async function loadStats(){
+  try{
+    const [events, visits]=await Promise.all([
+      sbGet('events?select=id,date,title,category,status&order=date.desc'),
+      sbGet('visits?select=id,session_id,created_at&order=created_at.desc'),
+    ]);
+    renderKPI(events, visits);
+    renderVisitChart(visits);
+    renderMonthChart(events);
+    renderCatBars(events);
+    renderEvTable(events);
+  }catch(e){showToast('Gagal memuat data: '+e.message,'err');}
+}
+
+function renderKPI(events, visits){
+  const now=new Date();
+  const monStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const weekAgo=new Date(Date.now()-7*86400000).toISOString();
+  document.getElementById('kpiTotal').textContent=events.length;
+  document.getElementById('kpiMonth').textContent=events.filter(e=>e.date.startsWith(monStr)).length;
+  document.getElementById('kpiDraft').textContent=events.filter(e=>e.status==='draft').length;
+  document.getElementById('kpiVisits').textContent=visits.length;
+  document.getElementById('kpiVisitsWeek').textContent=visits.filter(v=>v.created_at>=weekAgo).length;
+}
+
+function renderVisitChart(visits){
+  const today=new Date();today.setHours(0,0,0,0);
+  const labels=[],data=[];
+  for(let i=29;i>=0;i--){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    labels.push(ds.slice(5));// MM-DD
+    data.push(visits.filter(v=>v.created_at&&v.created_at.startsWith(ds)).length);
+  }
+  const ctx=document.getElementById('visitChart').getContext('2d');
+  const isDark=darkMode;
+  if(_visitChart)_visitChart.destroy();
+  _visitChart=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Kunjungan',data,backgroundColor:'rgba(59,130,246,.55)',borderColor:'rgba(59,130,246,.9)',borderWidth:1,borderRadius:3}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      x:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:9},maxRotation:60},grid:{display:false}},
+      y:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10},stepSize:1},grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)'}}
+    }}
+  });
+}
+
+function renderMonthChart(events){
+  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const year=new Date().getFullYear();
+  const data=MS.map((_,i)=>{
+    const mStr=`${year}-${String(i+1).padStart(2,'0')}`;
+    return events.filter(e=>e.date.startsWith(mStr)&&e.status!=='draft').length;
+  });
+  const ctx=document.getElementById('monthChart').getContext('2d');
+  const isDark=darkMode;
+  if(_monthChart)_monthChart.destroy();
+  _monthChart=new Chart(ctx,{
+    type:'bar',
+    data:{labels:MS,datasets:[{label:'Event',data,backgroundColor:'rgba(201,162,39,.6)',borderColor:'rgba(201,162,39,.9)',borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      x:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10}},grid:{display:false}},
+      y:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10},stepSize:1},grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)'}}
+    }}
+  });
+}
+
+function renderCatBars(events){
+  const counts={};
+  events.filter(e=>e.status!=='draft').forEach(e=>{counts[e.category]=(counts[e.category]||0)+1;});
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?.[1]||1;
+  const COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2','event-gabungan':'#ec89b0',bph:'#dc2626','perayaan-ulang-tahun':'#06b6d4',olahraga:'#08e7c2',other:'#94a3b8'};
+  const LABELS={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH','perayaan-ulang-tahun':'Ulang Tahun',olahraga:'Olahraga',other:'Lainnya'};
+  document.getElementById('catBars').innerHTML=sorted.map(([cat,count])=>`
+    <div class="stat-bar-row">
+      <div class="stat-bar-lbl">${LABELS[cat]||cat}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.round(count/max*100)}%;background:${COLORS[cat]||'#94a3b8'}"></div></div>
+      <div class="stat-bar-val">${count}</div>
+    </div>`).join('');
+}
+
+function renderEvTable(events){
+  const today=new Date().toISOString().slice(0,10);
+  const sorted=[...events].sort((a,b)=>b.date.localeCompare(a.date));
+  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const LABELS={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH','perayaan-ulang-tahun':'Ulang Tahun',olahraga:'Olahraga',other:'Lainnya'};
+  document.getElementById('evTableBody').innerHTML=sorted.slice(0,20).map(e=>{
+    const d=new Date(e.date+'T00:00:00');
+    const ds=`${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
+    const isPast=e.date<today;
+    const statusBadge=e.status==='draft'
+      ?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.15);color:#b45309;border:1px solid rgba(245,158,11,.3)">Draft</span>'
+      :isPast
+        ?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(100,100,100,.1);color:var(--text3)">Selesai</span>'
+        :'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3)">Mendatang</span>';
+    return `<tr><td>${ds}</td><td style="font-weight:600">${e.title}</td><td>${LABELS[e.category]||e.category}</td><td>${statusBadge}</td></tr>`;
+  }).join('');
+}
+
+/* ══ INIT ══ */
+applyDark();
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
+const savedToken=localStorage.getItem('naposo_token');const savedName=localStorage.getItem('naposo_admin_name');
+if(savedToken&&savedName){isAdmin=true;_adminName=savedName;_applyAdminUI(savedName);loadStats();}
+</script>
+</body>
+</html>

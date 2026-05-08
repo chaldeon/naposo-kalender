@@ -5,7 +5,7 @@ const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Gr
 
 function driveToThumbnail(url){
   if(!url)return '';
-  const m=url.match(/\/file\/d\/([^/?\\s]+)/);
+  const m=url.match(/\/file\/d\/([\w-]+)/);
   if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
   return url;
 }
@@ -837,5 +837,11 @@ function _syncBnAdminUI(name){
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data?.type==='SW_UPDATED'&&!sessionStorage.getItem('sw_reloaded')){
+      sessionStorage.setItem('sw_reloaded','1');
+      location.reload();
+    }
   });
 }

@@ -55,6 +55,7 @@
       <div class="admin-dd" id="adminDd">
         <button class="admin-dd-item" onclick="openDocsModal()">📂 <span id="ddDocs">Kelola Dokumen</span></button>
         <button class="admin-dd-item" onclick="openAnnounceModal()">📢 <span id="ddAnnounce">Pengumuman</span></button>
+        <a class="admin-dd-item" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
         <button class="admin-dd-item danger" onclick="doLogout()">→ <span id="ddLogout">Logout</span></button>
       </div>
     </div>
@@ -143,18 +144,8 @@
   <span class="admin-bar-txt" id="adminBarTxt"></span>
 </div>
 
-<!-- ══ ANNOUNCEMENT BANNER ══ -->
-<div class="announce-bar" id="announceBanner">
-  <span class="announce-icon">📋</span>
-  <div class="announce-content">
-    <div class="announce-title" id="announceTitleDisp">Pendaftaran Ulang Anggota</div>
-    <div class="announce-sub" id="announceSubDisp">Klik untuk mengisi formulir pendaftaran ulang</div>
-  </div>
-  <a class="announce-cta" id="announceCtaBtn" href="#" target="_blank" rel="noopener">
-    <span id="announceCtaTxt">Daftar Sekarang →</span>
-  </a>
-  <button class="announce-close" onclick="closeBanner()" id="announceCloseBtn" aria-label="Tutup">✕</button>
-</div>
+<!-- ══ ANNOUNCEMENT BANNERS (dinamis dari Supabase) ══ -->
+<div id="bannerContainer"></div>
 
 <!-- ══ HERO ══ -->
 <section class="hero">
@@ -191,6 +182,11 @@
     <div class="sec-hdr">
       <h2 class="sec-title" id="secEvents">Kegiatan Terdekat</h2>
       <a href="kalender.html" class="sec-link" id="secEventsLink">Lihat semua →</a>
+    </div>
+    <!-- Search beranda -->
+    <div class="homepage-search-wrap">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" class="homepage-search-icon"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+      <input type="text" id="homepageSearch" placeholder="Cari kegiatan…" oninput="onHomepageSearch(this.value)" autocomplete="off"/>
     </div>
     <div class="events-grid" id="eventsGrid"></div>
   </section>
@@ -351,6 +347,10 @@
         <input type="checkbox" id="editFeatured"/>
         <span id="lbEditFeatured">⭐ Tampilkan di Beranda</span>
       </label>
+      <label class="check-row" style="margin-top:4px">
+        <input type="checkbox" id="editDraft"/>
+        <span>📝 Simpan sebagai Draft (tidak tampil ke publik)</span>
+      </label>
       <input type="hidden" id="editEventId"/>
     </div>
     <div class="modal-foot">
@@ -384,47 +384,39 @@
   </div>
 </div>
 
-<!-- ══ PENGUMUMAN MODAL ══ -->
+<!-- ══ PENGUMUMAN / BANNER MODAL ══ -->
 <div class="overlay" id="announceModal">
-  <div class="modal" style="max-width:460px">
+  <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
       <h2 id="announceModalTitle">Kelola Pengumuman</h2>
       <button class="modal-x" onclick="closeModal('announceModal')">×</button>
     </div>
-    <div class="modal-body">
-      <div class="ann-form">
-        <div class="form-g"><label id="lbAnnTitle">Judul Pengumuman</label><input type="text" id="annTitle" placeholder="cth: Pendaftaran Ulang Anggota"/></div>
-        <div class="form-g"><label id="lbAnnSub">Keterangan Singkat</label><input type="text" id="annSub" placeholder="Klik untuk mengisi formulir..."/></div>
-        <div class="form-g"><label id="lbAnnLink">Link Formulir</label><input type="text" id="annLink" placeholder="https://forms.gle/..."/></div>
-        <div class="form-g"><label id="lbAnnCta">Teks Tombol</label><input type="text" id="annCta" placeholder="Daftar Sekarang →"/></div>
-        <div class="form-g"><label id="lbAnnExp">Berlaku Sampai (opsional)</label><input type="date" id="annExpiry"/></div>
-        <!-- Status banner — tombol eksplisit -->
-        <div class="ann-status-row" id="annStatusRow">
-          <span class="ann-status-dot" id="annStatusDot"></span>
-          <span class="ann-status-lbl" id="annStatusLbl">Banner nonaktif</span>
-          <button class="btn btn-sm ann-toggle-btn" id="annToggleBtn" onclick="toggleAnnActive()">Aktifkan</button>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
+      <!-- Daftar banner -->
+      <div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:6px">BANNER AKTIF</div>
+        <div id="bannerAdmList"></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border)"/>
+      <!-- Form tambah / edit -->
+      <div>
+        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:8px" id="bannerFormTitle">TAMBAH BANNER</div>
+        <div class="form-g"><label>Teks Banner</label><input type="text" id="annText" placeholder="cth: Pendaftaran ulang anggota dibuka!"/></div>
+        <div class="form-g" style="display:flex;gap:10px;align-items:center">
+          <label style="margin:0;white-space:nowrap">Warna</label>
+          <input type="color" id="annColor" value="#1e5ac8" style="width:36px;height:30px;border:none;border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"/>
         </div>
-        <input type="hidden" id="annActiveHidden" value="0"/>
-        <!-- Preview banner -->
-        <div class="ann-preview-wrap" id="annPreviewWrap" style="display:none">
-          <div class="ann-preview-label" id="lbAnnPreview">Preview Banner</div>
-          <div class="ann-preview" id="annPreview">
-            <span class="announce-icon">📋</span>
-            <div class="announce-content">
-              <div class="announce-title" id="annPreviewTitle"></div>
-              <div class="announce-sub" id="annPreviewSub"></div>
-            </div>
-            <a class="announce-cta" id="annPreviewCta" href="#" onclick="return false"></a>
-          </div>
-        </div>
+        <div class="form-g"><label>Link (opsional)</label><input type="url" id="annLink" placeholder="https://forms.gle/…"/></div>
+        <div class="form-g"><label>Label Tombol (opsional)</label><input type="text" id="annLinkLabel" placeholder="cth: Daftar Sekarang →"/></div>
+        <label class="check-row" style="margin-top:4px">
+          <input type="checkbox" id="annActiveCheck" checked/>
+          <span>Aktifkan banner</span>
+        </label>
       </div>
     </div>
-    <div class="modal-foot" style="justify-content:space-between">
-      <button class="btn btn-danger-ghost" id="annDeleteBtn" onclick="deleteAnnounce()">🗑 <span id="lbAnnDelete">Hapus Banner</span></button>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="closeModal('announceModal')" id="annCancelBtn">Batal</button>
-        <button class="btn btn-primary" onclick="saveAnnounce()" id="annSaveBtn">Simpan</button>
-      </div>
+    <div class="modal-foot" style="justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost" onclick="_resetBannerForm()" id="annCancelBtn">Reset</button>
+      <button class="btn btn-primary" onclick="saveAnnounce()" id="annSaveBtn">Tambah</button>
     </div>
   </div>
 </div>
@@ -456,6 +448,8 @@
       <div class="pm-extra" id="pmExtra" style="display:none"></div>
       <div class="pm-note" id="pmNote" style="display:none"></div>
       <div class="pm-caption" id="pmCaption" style="display:none"></div>
+      <!-- Galeri foto event -->
+      <div id="pmGallery" style="display:none"></div>
       <div class="pm-actions" id="pmActions"></div>
     </div>
   </div>
@@ -466,6 +460,22 @@
   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M2 0a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2.5a1 1 0 0 1 .8.4l1.9 2.533a1 1 0 0 0 1.6 0L10.7 12.4a1 1 0 0 1 .8-.4H14a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/></svg>
   <span class="fab-txt" id="feedbackFabTxt">Beri Saran</span>
 </a>
+
+<!-- ══ BIRTHDAY MODAL ══ -->
+<div class="overlay bday-overlay" id="birthdayModal" onclick="if(event.target===this)closeBirthdayModal()">
+  <div class="modal bday-modal" style="max-width:420px;text-align:center;overflow:hidden">
+    <button class="modal-x" onclick="closeBirthdayModal()" style="position:absolute;top:12px;right:12px">×</button>
+    <div class="bday-modal-header">
+      <div class="bday-emoji-row">🎉 🎂 🎊</div>
+      <div class="bday-modal-title">Selamat Ulang Tahun!</div>
+      <div class="bday-modal-sub" id="bdayModalSub">Kiriman kasih dari Naposo HKBP Ujung Menteng</div>
+    </div>
+    <div class="modal-body bday-modal-body" id="birthdayModalContent" style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 24px"></div>
+    <div class="modal-foot" style="justify-content:center;padding-bottom:20px">
+      <button class="btn btn-primary" onclick="closeBirthdayModal();fireConfetti()" style="background:linear-gradient(135deg,#c9a227,#e6b830);border:none;color:#0a1f44;font-weight:700;padding:10px 28px">🙏 Amin!</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ CONFIRM MODAL ══ -->
 <div class="overlay" id="confirmModal">
@@ -487,6 +497,7 @@
 <!-- ══ SCROLL TO TOP ══ -->
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll ke atas">↑</button>
 
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script src="js/index.js"></script>
 </body>
 </html>

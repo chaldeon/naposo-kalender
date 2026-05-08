@@ -878,3 +878,94 @@ footer strong{color:rgba(255,255,255,.75)}
 /* ══ [Sesi 40 Item 2] Badge kategori clickable ══ */
 .ev-cat-badge{transition:opacity .15s}
 .ev-cat-badge:hover{opacity:.82}
+
+/* ══ SESI 43: Search beranda ══ */
+.homepage-search-wrap{position:relative;display:flex;align-items:center;margin-bottom:14px;background:var(--surface);border:1.5px solid var(--border2);border-radius:24px;padding:0 14px;height:38px;gap:8px;transition:border-color .2s}
+.homepage-search-wrap:focus-within{border-color:var(--blue)}
+.homepage-search-icon{opacity:.4;flex-shrink:0;pointer-events:none}
+.homepage-search-wrap input{flex:1;border:none;background:transparent;color:var(--text);font-family:var(--font-b);font-size:.84rem;outline:none}
+.homepage-search-wrap input::placeholder{color:var(--text3)}
+
+/* ══ SESI 43: Banner dinamis multi-row ══ */
+#bannerContainer .announce-bar{display:flex;align-items:center;gap:10px;padding:9px 16px;min-height:44px;transition:background .2s}
+.announce-bar.on,.announce-bar{display:flex}
+
+/* ══ SESI 43: Draft badge di ev-card beranda ══ */
+.ev-card-draft{opacity:.75}
+.ev-draft-badge{position:absolute;top:8px;left:8px;font-size:9px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:20px;background:rgba(245,158,11,.85);color:#fff;z-index:2;backdrop-filter:blur(4px)}
+.ev-card{position:relative}
+
+/* ══ SESI 43: Galeri di poster modal ══ */
+#pmGallery{padding:12px 0 0}
+.pm-gallery-title{font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:8px}
+.pm-gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pm-gallery-item{border-radius:10px;overflow:hidden}
+.pm-gallery-item img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:8px;background:var(--bg2)}
+.pm-gallery-cap{font-size:10px;color:var(--text3);text-align:center;margin-top:3px}
+
+/* ══ BIRTHDAY CARD ══ */
+.ev-card-bday{
+  border:2px solid rgba(201,162,39,.45);
+  background:linear-gradient(160deg,var(--surface) 70%,rgba(201,162,39,.06));
+}
+.ev-card-bday-today{
+  border-color:rgba(201,162,39,.8);
+  box-shadow:0 0 0 3px rgba(201,162,39,.15),0 8px 32px rgba(201,162,39,.12);
+}
+.ev-card-bday-name{
+  font-size:.88rem;font-weight:800;color:#c9a227;
+  letter-spacing:.02em;margin-bottom:2px;
+}
+.ev-countdown-bday{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(201,162,39,.2),rgba(234,179,8,.25));
+  color:#b45309;border:1px solid rgba(201,162,39,.4);
+}
+
+/* Shimmer efek untuk card birthday hari ini */
+.ev-bday-shimmer{
+  position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;z-index:0;
+}
+.ev-bday-shimmer::after{
+  content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(201,162,39,.18),transparent);
+  animation:bdayShimmer 2.4s ease-in-out infinite;
+}
+@keyframes bdayShimmer{
+  0%{left:-100%}
+  60%,100%{left:140%}
+}
+
+/* ══ BIRTHDAY MODAL ══ */
+.bday-overlay .modal{position:relative;padding:0}
+.bday-modal-header{
+  background:linear-gradient(135deg,#0a1f44 0%,#1e3a6e 100%);
+  padding:28px 24px 20px;
+  border-radius:var(--radius) var(--radius) 0 0;
+}
+.bday-emoji-row{font-size:1.8rem;margin-bottom:10px;letter-spacing:4px}
+.bday-modal-title{
+  font-family:var(--font-b);font-size:1.5rem;font-weight:800;
+  color:#c9a227;margin-bottom:4px;
+}
+.bday-modal-sub{font-size:.78rem;color:rgba(255,255,255,.65)}
+
+.bday-person{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+/* Foto bebas — proporsional, tidak di-crop, portrait/landscape sama-sama aman */
+.bday-foto-free{
+  width:100%;display:flex;justify-content:center;
+  background:rgba(0,0,0,.06);border-radius:12px;overflow:hidden;
+}
+.bday-foto-img{
+  max-width:100%;max-height:300px;
+  width:auto;height:auto;
+  object-fit:contain;display:block;border-radius:10px;
+}
+.bday-foto-placeholder{
+  font-size:4rem;padding:24px;
+}
+.bday-name{
+  font-size:1.25rem;font-weight:800;color:var(--text);
+  font-family:var(--font-b);letter-spacing:.01em;
+}
