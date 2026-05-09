@@ -15,7 +15,7 @@ async function dbDel(t,m){const r=await sb(`${t}?${m}`,{method:'DELETE'});if(!r.
 
 function driveToThumbnail(url){
   if(!url)return '';
-  const m=url.match(/\/file\/d\/([^/?\s]+)/);
+  const m=url.match(/\/file\/d\/([\w-]+)/);
   if(m)return `https://lh3.googleusercontent.com/d/${m[1]}`;
   return url;
 }
@@ -58,6 +58,73 @@ const DEF_LABELS={
 let CATS={...DEF_COLORS},CNAMES={...DEF_LABELS};
 function catColor(c){return CATS[c]||'#94a3b8';}
 function catLabel(c){return CNAMES[c]||c;}
+
+// ── Extra fields per kategori (untuk form edit beranda) ──
+const CAT_EXTRA_IDX={
+  'Koor':               [{key:'judul_lagu',      label:'Judul Lagu',         type:'text'},
+                         {key:'link_guide',       label:'Link Guide',         type:'url'}],
+  'Ibadah':             [{key:'judul_tema',       label:'Judul Tema',         type:'text'}],
+  'Ibadah / Pelayanan': [{key:'judul_tema',       label:'Judul Tema',         type:'text'}],
+  'Latihan':            [{key:'judul_lagu',       label:'Judul Lagu',         type:'text'},
+                         {key:'link_guide',       label:'Link Guide',         type:'url'}],
+  'Reversement':        [{key:'tema_reversement', label:'Tema Reversement',   type:'text'}],
+  'Olahraga':           [{key:'variant',          label:'Cabang Olahraga',    type:'select', options:['badminton','basket','futsal','renang']},
+                         {key:'tempat',           label:'Tempat / Lapangan',  type:'text'},
+                         {key:'uang_patungan',    label:'Uang Patungan',      type:'money'}],
+  'Perayaan Ulang Tahun':[{key:'nama',       label:'Nama (yang berulang tahun)',       type:'text'},
+                           {key:'poster_url', label:'Poster Acara (Google Drive link)', type:'url'},
+                           {key:'foto_url',   label:'Foto Pribadi (Google Drive link)', type:'url'}],
+  'Ulang Tahun Anggota': [{key:'nama',       label:'Nama (yang berulang tahun)',       type:'text'},
+                           {key:'poster_url', label:'Poster Acara (Google Drive link)', type:'url'},
+                           {key:'foto_url',   label:'Foto Pribadi (Google Drive link)', type:'url'}],
+};
+function getEditExtraFields(catId){
+  const lbl=CNAMES[catId]||catId;
+  return CAT_EXTRA_IDX[lbl]||[];
+}
+function updateEditExtraField(){
+  const cat=document.getElementById('editCat')?.value;
+  const wrap=document.getElementById('editExtraWrap');
+  if(!wrap)return;
+  const fields=getEditExtraFields(cat);
+  if(!fields.length){wrap.style.display='none';wrap.innerHTML='';return;}
+  wrap.style.display='block';
+  wrap.innerHTML=fields.map(f=>{
+    if(f.type==='select'){
+      const opts=f.options.map(o=>`<option value="${o}">${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+      return `<div class="form-g extra-field-item" style="margin-bottom:6px">
+        <label class="extra-field-label">${f.label}</label>
+        <select class="extra-field-input" data-key="${f.key}" data-type="select" style="width:100%">
+          <option value="">— Pilih —</option>${opts}
+        </select>
+      </div>`;
+    }
+    return `<div class="form-g extra-field-item" style="margin-bottom:6px">
+      <label class="extra-field-label">${f.label}</label>
+      <input type="text" class="extra-field-input" data-key="${f.key}"
+        placeholder="${f.type==='url'?'https://…':f.type==='money'?'contoh: Rp 20.000':''}"
+        style="width:100%"/>
+    </div>`;
+  }).join('');
+}
+function getEditExtraValues(){
+  const fields=[...document.querySelectorAll('#editExtraWrap .extra-field-input')];
+  const extra={};
+  fields.forEach(el=>{
+    const key=el.dataset.key;
+    const val=el.value.trim();
+    if(key&&val)extra[key]=val;
+  });
+  return Object.keys(extra).length?extra:null;
+}
+function populateEditExtraValues(ev){
+  const fields=[...document.querySelectorAll('#editExtraWrap .extra-field-input')];
+  fields.forEach(el=>{
+    const key=el.dataset.key;
+    if(key&&ev.extra&&ev.extra[key]!=null)el.value=ev.extra[key];
+  });
+}
+
 
 const CAT_ICONS={
   koor:'🎵',ibadah:'🙏',rapat:'📋',latihan:'🎶',
@@ -661,6 +728,7 @@ async function toggleFeatured(id,currentlyFeatured){
 function buildCatDropdown(){
   const sel=document.getElementById('editCat');if(!sel)return;
   sel.innerHTML='';Object.keys(CATS).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=catLabel(k);sel.appendChild(o);});
+  sel.onchange=updateEditExtraField;
 }
 function openEditEvent(id){
   const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
@@ -675,7 +743,8 @@ function openEditEvent(id){
   else if(ev.time){const parts=ev.time.split(/[–\-]/);document.getElementById('editTimeEnd').value=(parts[1]||'').trim();}
   else document.getElementById('editTimeEnd').value='';
   document.getElementById('editCat').value=ev.category||'other';
-  document.getElementById('editExtra').value=(ev.extra&&ev.extra.tema_acara)||'';
+  updateEditExtraField();
+  populateEditExtraValues(ev);
   document.getElementById('editNote').value=ev.note||'';
   const lnkFld=document.getElementById('editLink');if(lnkFld)lnkFld.value=ev.link||'';
   document.getElementById('editFeatured').checked=!!ev.featured;
@@ -692,7 +761,7 @@ async function saveEditEvent(){
   const timeStart=document.getElementById('editTimeStart').value;
   const timeEnd=document.getElementById('editTimeEnd').value;
   const category=document.getElementById('editCat').value;
-  const extraVal=document.getElementById('editExtra').value.trim();
+  const extraVal=null; // replaced by dynamic extra fields
   const note=document.getElementById('editNote').value.trim();
   const link=document.getElementById('editLink')?.value.trim()||'';
   const featured=document.getElementById('editFeatured').checked;
@@ -700,7 +769,7 @@ async function saveEditEvent(){
   if(!title||!date){showToast('Judul dan tanggal wajib diisi.','err');return;}
   const btn=document.getElementById('editSubmitBtn');btn.disabled=true;btn.textContent='...';
   let timeStr='';if(timeStart&&timeEnd)timeStr=`${timeStart}–${timeEnd}`;else if(timeStart)timeStr=timeStart;
-  const extra=extraVal?{tema_acara:extraVal}:null;
+  const extra=getEditExtraValues();
   try{
     const caption=document.getElementById('editCaption')?.value.trim()||'';
     const prev={...EVENTS.find(e=>e.id===id)};
@@ -738,7 +807,7 @@ function recapScrollTo(idx){const el=document.getElementById('recapCarousel');if
 function recapScroll(dir){const el=document.getElementById('recapCarousel');if(!el)return;const card=el.querySelector('.recap-card');if(!card)return;el.scrollBy({left:dir*(card.offsetWidth+14),behavior:'smooth'});}
 
 /* ══ DOCS ══ */
-function toEmbedUrl(url){const m=url.match(/\/file\/d\/([^/?\s]+)/);if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;return url;}
+function toEmbedUrl(url){const m=url.match(/\/file\/d\/([\w-]+)/);if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;return url;}
 function renderDocs(){
   const grid=document.getElementById('docGrid');if(!grid)return;grid.innerHTML='';
   const visible=DOCS.filter(d=>d.category==='publik'||(isAdmin&&d.category==='pengurus'));

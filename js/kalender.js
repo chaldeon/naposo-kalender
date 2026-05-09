@@ -39,6 +39,87 @@ function isBirthdayEv(ev){
   const lbl=(catLabel(ev.category)||'').toLowerCase();
   return lbl.includes('ulang tahun')||lbl.includes('birthday')||lbl.includes('ultah');
 }
+
+/* ══ RECURRING EVENTS ══ */
+
+/**
+ * Hitung akhir kuartal dari sebuah tanggal.
+ * Kuartal: Jan-Mar | Apr-Jun | Jul-Sep | Okt-Des
+ */
+function recurQuarterEnd(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const m=d.getMonth(); // 0-based
+  // Bulan terakhir kuartal: 2, 5, 8, 11
+  const lastMonth=[2,5,8,11].find(x=>x>=m);
+  // Hari terakhir bulan tsb
+  const year=d.getFullYear();
+  const end=new Date(year,lastMonth+1,0); // day 0 = last day of lastMonth
+  return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+}
+
+/**
+ * Generate semua tanggal instance untuk satu pola recurring,
+ * mulai dari startDateStr (eksklusif), sampai akhir kuartal.
+ */
+function recurDates(startDateStr, pattern){
+  const quarterEnd=recurQuarterEnd(startDateStr);
+  const dates=[];
+  const d=new Date(startDateStr+'T00:00:00');
+  const stepDays=pattern==='weekly'?7:pattern==='biweekly'?14:0;
+  const isMonthly=pattern==='monthly';
+  const dayOfMonth=d.getDate();
+
+  let cur=new Date(d);
+  while(true){
+    // Advance ke instance berikutnya
+    if(isMonthly){
+      cur.setMonth(cur.getMonth()+1);
+      // Sesuaikan ke hari yang sama (handle bulan pendek)
+      const maxDay=new Date(cur.getFullYear(),cur.getMonth()+1,0).getDate();
+      cur.setDate(Math.min(dayOfMonth,maxDay));
+    }else{
+      cur.setDate(cur.getDate()+stepDays);
+    }
+    const ds=localDateStr(cur);
+    if(ds>quarterEnd)break;
+    dates.push(ds);
+  }
+  return dates;
+}
+
+/**
+ * Tampilkan info ringkas jumlah instance yang akan digenerate.
+ */
+function toggleRecurInfo(){
+  const pat=document.getElementById('evRecur')?.value;
+  const wrap=document.getElementById('recurInfoWrap');
+  if(!wrap)return;
+  if(!pat){wrap.style.display='none';return;}
+  const dateVal=document.getElementById('evDate')?.value;
+  if(!dateVal){wrap.style.display='none';return;}
+  const dates=recurDates(dateVal,pat);
+  const quarterEnd=recurQuarterEnd(dateVal);
+  const labels={'weekly':'mingguan','biweekly':'2 mingguan','monthly':'bulanan'};
+  wrap.style.display='block';
+  wrap.textContent=dates.length
+    ?`Akan dibuat ${dates.length} instance ${labels[pat]} hingga akhir kuartal (${quarterEnd}).`
+    :`Tidak ada instance dalam kuartal ini (akhir kuartal: ${quarterEnd}).`;
+}
+
+/**
+ * Ambil semua event upcoming dalam recur_group_id yang sama,
+ * tidak termasuk event itu sendiri.
+ */
+function getUpcomingRecurSiblings(groupId, excludeId){
+  const today=localDateStr();
+  return EVENTS.filter(e=>
+    e.recur_group_id===groupId &&
+    e.id!==excludeId &&
+    e.date>=today
+  );
+}
+
+
 // Kategori bawaan — warna & label ini SELALU dipakai, tidak bisa di-override dari Supabase
 const DEF_COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2',other:'#94a3b8'};
 const DEF_LBL_ID={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa',other:'Lainnya'};
@@ -338,80 +419,6 @@ document.addEventListener('keydown',e=>{
 });
 let currentMonth=TODAY.getMonth(); // selalu mulai dari bulan saat ini
 
-/* ══ SEED ══ */
-const SEED=[
-  {id:'e1',date:'2026-04-02',title:'VG RN Passion III',time:'19:30–21:00',category:'ibadah',note:''},
-  {id:'e2',date:'2026-04-03',title:'Koor RN Jumat Agung',time:'10:00–12:00',category:'koor',note:''},
-  {id:'e3',date:'2026-04-04',title:'Paskah RN',time:'18:00',category:'ibadah',note:''},
-  {id:'e4',date:'2026-04-05',title:'Koor RN Paskah',time:'17:00–18:30',category:'koor',note:''},
-  {id:'e5',date:'2026-04-08',title:'Rapat BKR',time:'18:30–19:30',category:'rapat',note:''},
-  {id:'e6',date:'2026-04-10',title:'Rapat Program Pelayanan Naposo 2026',time:'',category:'rapat',note:''},
-  {id:'e7',date:'2026-04-11',title:'Pembekalan Pengurus Naposo Ke-1',time:'13:00–16:00',category:'ibadah',note:''},
-  {id:'e8',date:'2026-04-12',title:'Latihan Koor Naposo-1 (19 Apr)',time:'11:30–13:00',category:'latihan',note:''},
-  {id:'e9',date:'2026-04-17',title:'Evaluasi Paskah',time:'19:30–21:30',category:'rapat',note:''},
-  {id:'e10',date:'2026-04-17',title:'Latihan Koor Naposo-2 (19 Apr)',time:'19:00–20:30',category:'latihan',note:''},
-  {id:'e11',date:'2026-04-18',title:'Sosialisasi Program Pelayanan 2026–2028',time:'',category:'ibadah',note:''},
-  {id:'e12',date:'2026-04-19',title:'Koor Naposo-1',time:'09:30–11:00',category:'koor',note:''},
-  {id:'e13',date:'2026-04-20',title:'Reversement',time:'10:00',category:'reversement',note:''},
-  {id:'e14',date:'2026-04-20',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'e15',date:'2026-04-21',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
-  {id:'e16',date:'2026-04-24',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'e17',date:'2026-04-24',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'e18',date:'2026-04-25',title:'Ibadah Naposo Pertama',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'e19',date:'2026-04-26',title:'Latihan Koor Naposo-1 (3 Mei)',time:'11:30–13:00',category:'latihan',note:''},
-  {id:'e20',date:'2026-04-27',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
-  {id:'e21',date:'2026-04-27',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m1',date:'2026-05-01',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m2',date:'2026-05-01',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m3',date:'2026-05-02',title:'Latihan Koor Naposo-2 (3 Mei)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'m4',date:'2026-05-03',title:'Koor Naposo (3 Mei)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'m5',date:'2026-05-04',title:'Reversement (Frans)',time:'10:00',category:'reversement',note:''},
-  {id:'m6',date:'2026-05-04',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m7',date:'2026-05-08',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m8',date:'2026-05-08',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m9',date:'2026-05-09',title:'Latihan Koor Naposo-1 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
-  {id:'m10',date:'2026-05-09',title:'Ibadah Naposo Kedua',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'m11',date:'2026-05-11',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'m12',date:'2026-05-11',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m13',date:'2026-05-15',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m14',date:'2026-05-15',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m15',date:'2026-05-16',title:'Kesehatian x Kerohanian: Ibadah & Kunjungan RS',time:'',category:'ibadah',note:''},
-  {id:'m16',date:'2026-05-16',title:'Latihan Koor Naposo-2 (17 Mei)',time:'19:00–20:30',category:'latihan',note:''},
-  {id:'m17',date:'2026-05-17',title:'Koor Naposo (17 Mei)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'m18',date:'2026-05-18',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'m19',date:'2026-05-18',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m20',date:'2026-05-19',title:'Pokok Doa Bulanan',time:'',category:'doa',note:''},
-  {id:'m21',date:'2026-05-22',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m22',date:'2026-05-22',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m23',date:'2026-05-23',title:'Latihan Koor RN-1 (31 Mei)',time:'19:00–20:30',category:'latihan',note:''},
-  {id:'m24',date:'2026-05-23',title:'Ibadah Naposo Ketiga',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'m25',date:'2026-05-25',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'m26',date:'2026-05-25',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m27',date:'2026-05-29',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'m28',date:'2026-05-29',title:'Pokok Doa Pribadi',time:'',category:'doa',note:''},
-  {id:'m29',date:'2026-05-29',title:'Evaluasi Pelayanan BPP',time:'',category:'rapat',note:''},
-  {id:'m30',date:'2026-05-30',title:'Latihan Koor Naposo-2 (31 Mei)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'m31',date:'2026-05-31',title:'Koor RN (31 Mei)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'j1',date:'2026-06-01',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j2',date:'2026-06-05',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j3',date:'2026-06-06',title:'Ibadah Naposo Ke-empat',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'j4',date:'2026-06-06',title:'Latihan Koor Naposo-1 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'j5',date:'2026-06-08',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j6',date:'2026-06-12',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j7',date:'2026-06-13',title:'Kesehatian Naposo',time:'',category:'ibadah',note:''},
-  {id:'j8',date:'2026-06-13',title:'Latihan Koor Naposo-2 (14 Jun)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'j9',date:'2026-06-14',title:'Koor Naposo (14 Jun)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'j10',date:'2026-06-15',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j11',date:'2026-06-19',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j12',date:'2026-06-20',title:'Latihan Koor RN-1 (28 Jun)',time:'19:00–20:30',category:'latihan',note:''},
-  {id:'j13',date:'2026-06-20',title:'Ibadah Naposo Kelima',time:'19:00–20:30',category:'ibadah',note:''},
-  {id:'j14',date:'2026-06-22',title:'Reversement (Frans)',time:'',category:'reversement',note:''},
-  {id:'j15',date:'2026-06-26',title:'Reversement (Lisken)',time:'10:00',category:'reversement',note:''},
-  {id:'j16',date:'2026-06-27',title:'Perayaan Ulang Tahun',time:'',category:'ibadah',note:''},
-  {id:'j17',date:'2026-06-27',title:'Latihan Koor RN-2 (28 Jun)',time:'20:00–21:30',category:'latihan',note:''},
-  {id:'j18',date:'2026-06-28',title:'Koor RN (28 Jun)',time:'09:30–11:00',category:'koor',note:''},
-  {id:'j19',date:'2026-06-29',title:'Reversement (Bersama)',time:'',category:'reversement',note:''},
-];
 
 /* ══ TRAFFIC ══ */
 async function trackVisit(){
@@ -1403,10 +1410,30 @@ function openAddModal(ds){
   const fc=document.getElementById('evFeatured');if(fc)fc.checked=false;
   const dc=document.getElementById('evDraft');if(dc)dc.checked=false;
   const gv=document.getElementById('evGabungan');if(gv)gv.checked=false;
+  const rc=document.getElementById('evRecur');if(rc)rc.value='';
+  const rw=document.getElementById('recurInfoWrap');if(rw){rw.style.display='none';rw.textContent='';}
+  // update info saat tanggal diubah
+  const evDateEl=document.getElementById('evDate');
+  if(evDateEl)evDateEl.onchange=toggleRecurInfo;
   buildCatSelect();updateExtraField();openModal('eventModal');
 }
 
 function openEditModal(ev){
+  // Jika event ini bagian dari seri recurring, tanya dulu scope edit-nya
+  if(ev.recur_group_id){
+    _pendingRecurEdit=ev;
+    const oneBtn=document.getElementById('recurEditOneBtn');
+    const allBtn=document.getElementById('recurEditAllBtn');
+    if(oneBtn)oneBtn.onclick=()=>{closeModal('recurEditModal');_doOpenEditModal(_pendingRecurEdit,'one');};
+    if(allBtn)allBtn.onclick=()=>{closeModal('recurEditModal');_doOpenEditModal(_pendingRecurEdit,'all');};
+    openModal('recurEditModal');
+    return;
+  }
+  _doOpenEditModal(ev,'one');
+}
+let _pendingRecurEdit=null,_recurEditScope='one';
+function _doOpenEditModal(ev,scope){
+  _recurEditScope=scope;
   editingId=ev.id;document.getElementById('evModalTitle').textContent=tx('evModalEdit');
   document.getElementById('evDate').value=ev.date;document.getElementById('evTitle').value=ev.title;
   const ts=(ev.time||'').split('–');
@@ -1414,6 +1441,9 @@ function openEditModal(ev){
   document.getElementById('evNote').value=ev.note||'';
   buildCatSelect();document.getElementById('evCat').value=ev.category||'other';
   updateExtraField();
+  // Hide recurring UI on edit — no re-generate
+  const _rc=document.getElementById('evRecur');if(_rc){_rc.value='';const _rg=_rc.closest('.form-g');if(_rg)_rg.style.display='none';}
+  const _rw=document.getElementById('recurInfoWrap');if(_rw)_rw.style.display='none';
   setTimeout(()=>{
     const fields=getExtraFields(ev.category);
     if(fields.length&&ev.extra){
@@ -1596,6 +1626,7 @@ async function saveEvent(){
     const status=document.getElementById('evDraft')?.checked?'draft':'published';
     if(editingId){
       const prev={...EVENTS.find(e=>e.id===editingId)};
+      // "edit all upcoming" — update date dikecualikan, featured dikecualikan
       const newData={date,title,time,category:cat,note,link,extra,featured,status};
       const diff={};
       ['date','title','time','category','note','status','featured'].forEach(k=>{if(String(prev[k]??'')!==String(newData[k]??''))diff[k]={from:prev[k],to:newData[k]};});
@@ -1603,36 +1634,105 @@ async function saveEvent(){
       await dbWrite('events','UPDATE',newData,{id:editingId},log);
       const i=EVENTS.findIndex(e=>e.id===editingId);if(i!==-1)EVENTS[i]={...EVENTS[i],...newData};
       pushUndo({type:'edit',prev});
+      // Jika scope 'all', update semua upcoming siblings (kecuali date & featured)
+      if(_recurEditScope==='all'&&prev.recur_group_id){
+        const siblings=getUpcomingRecurSiblings(prev.recur_group_id,editingId);
+        const sharedData={title,time,category:cat,note,link,extra,status};
+        for(const sib of siblings){
+          await dbWrite('events','UPDATE',sharedData,{id:sib.id},null);
+          const si=EVENTS.findIndex(e=>e.id===sib.id);
+          if(si!==-1)EVENTS[si]={...EVENTS[si],...sharedData};
+        }
+        if(siblings.length)showToast(`${tx('saved')} (${siblings.length+1} kegiatan diupdate)`,'ok');
+      }
+      _recurEditScope='one'; // reset
     }else{
+      const recurPat=document.getElementById('evRecur')?.value||'';
+      const groupId=recurPat?('rg_'+Date.now()):null;
       const id='ev_'+Date.now();
+      const baseEv={id,date,title,time,category:cat,note,link,extra,featured,status,
+        recur_group_id:groupId||null,recur_pattern:recurPat||null};
       const log={event_id:id,admin_name:_adminName||'—',action:'create',diff:null};
-      const[ins]=await dbWrite('events','INSERT',{id,date,title,time,category:cat,note,link,extra,featured,status},null,log);
-      EVENTS.push(ins||{id,date,title,time,category:cat,note,link,extra,featured,status});
-      pushUndo({type:'add',ev:ins||{id,date,title,time,category:cat,note,link,extra,featured,status}});
+      const[ins]=await dbWrite('events','INSERT',baseEv,null,log);
+      EVENTS.push(ins||baseEv);
+      pushUndo({type:'add',ev:ins||baseEv});
+      // Generate instances jika ada pola recurring
+      if(recurPat&&groupId){
+        const instanceDates=recurDates(date,recurPat);
+        for(let i=0;i<instanceDates.length;i++){
+          const iid='ev_'+(Date.now()+i+1);
+          const instEv={id:iid,date:instanceDates[i],title,time,category:cat,note,link,extra,
+            featured:false,status,recur_group_id:groupId,recur_pattern:recurPat};
+          try{
+            const[iins]=await dbWrite('events','INSERT',instEv,null,null);
+            EVENTS.push(iins||instEv);
+          }catch(err){console.warn('Recur insert fail',instanceDates[i],err);}
+        }
+        showToast(`${tx('saved')} (${instanceDates.length+1} kegiatan dibuat)`,'ok');
+      }
     }
-    closeModal('eventModal');renderCalendar();renderStats();showToast(tx('saved'),'ok');setSyncBadge('ok',tx('connected'));
+    // Re-show recurring UI for next add
+    const _rcg=document.getElementById('evRecur');if(_rcg&&_rcg.closest('.form-g'))_rcg.closest('.form-g').style.display='';
+    closeModal('eventModal');renderCalendar();renderStats();
+    if(!editingId||_recurEditScope==='one')showToast(tx('saved'),'ok');
+    setSyncBadge('ok',tx('connected'));
   }catch(e){showToast(`${tx('saveFail')}: ${e.message}`,'err');setSyncBadge('err','Error');}
   finally{btn.disabled=false;btn.textContent=tx('saveBtn');}
+}
+async function _doDeleteOne(id){
+  setSyncBadge('load',tx('saving'));
+  try{
+    const deleted={...EVENTS.find(ev=>ev.id===id)};
+    const log={event_id:id,admin_name:_adminName||'—',action:'delete',diff:null};
+    await dbWrite('events','DELETE',null,{id},log);
+    EVENTS=EVENTS.filter(ev=>ev.id!==id);
+    pushUndo({type:'delete',ev:deleted});
+    renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));
+  }catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
+}
+async function _doDeleteAllUpcoming(groupId, anchorId){
+  setSyncBadge('load',tx('saving'));
+  try{
+    const today=localDateStr();
+    const toDelete=EVENTS.filter(e=>e.recur_group_id===groupId&&e.date>=today);
+    for(const ev of toDelete){
+      const log={event_id:ev.id,admin_name:_adminName||'—',action:'delete',diff:null};
+      await dbWrite('events','DELETE',null,{id:ev.id},log);
+    }
+    const deletedIds=new Set(toDelete.map(e=>e.id));
+    EVENTS=EVENTS.filter(e=>!deletedIds.has(e.id));
+    renderCalendar();renderStats();
+    showToast(`${toDelete.length} kegiatan dihapus`);setSyncBadge('ok',tx('connected'));
+  }catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
 }
 async function confirmDel(id,e){
   e.stopPropagation();
   const ev=EVENTS.find(x=>x.id===id);
+  if(ev&&ev.recur_group_id){
+    // Event berulang — tanya scope dulu
+    const oneBtn=document.getElementById('recurDelOneBtn');
+    const allBtn=document.getElementById('recurDelAllBtn');
+    if(oneBtn)oneBtn.onclick=()=>{closeModal('recurDelModal');_doDeleteOne(id);};
+    if(allBtn)allBtn.onclick=()=>{
+      const siblings=getUpcomingRecurSiblings(ev.recur_group_id,null);
+      const count=siblings.filter(s=>s.date>=localDateStr()).length;
+      const today=localDateStr();
+      const total=EVENTS.filter(s=>s.recur_group_id===ev.recur_group_id&&s.date>=today).length;
+      const msg=lang==='en'
+        ?`Delete all ${total} upcoming instances of "${ev.title}"? This cannot be undone.`
+        :`Hapus semua ${total} kegiatan "${ev.title}" yang akan datang? Tidak bisa dibatalkan.`;
+      closeModal('recurDelModal');
+      showConfirmModal(msg,()=>_doDeleteAllUpcoming(ev.recur_group_id,id));
+    };
+    openModal('recurDelModal');
+    return;
+  }
+  // Event biasa — konfirmasi langsung
   const name=ev?ev.title:(lang==='en'?'this event':'kegiatan ini');
   const msg=lang==='en'
     ?`Delete "${name}"? This cannot be undone.`
     :`Hapus kegiatan "${name}"? Tindakan ini tidak bisa dibatalkan.`;
-  showConfirmModal(msg,async()=>{
-    setSyncBadge('load',tx('saving'));
-    try{
-      const deleted={...EVENTS.find(ev=>ev.id===id)};
-      const log={event_id:id,admin_name:_adminName||'—',action:'delete',diff:null};
-      await dbWrite('events','DELETE',null,{id},log);
-      EVENTS=EVENTS.filter(ev=>ev.id!==id);
-      pushUndo({type:'delete',ev:deleted});
-      renderCalendar();renderStats();showToast(tx('deleted'));setSyncBadge('ok',tx('connected'));
-    }
-    catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
-  });
+  showConfirmModal(msg,()=>_doDeleteOne(id));
 }
 
 /* ══ AUTH ══ */
@@ -1751,9 +1851,9 @@ function setSyncBadge(type,txt){
 /* ══ TOAST ══ */
 let _tt;
 function showToast(msg,type=''){
-  const el=document.getElementById('toast');el.textContent=msg;
-  el.className=`toast on${type==='err'?' err':type==='ok'?' ok':''}`;
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3200);
+  const el=document.getElementById('toast');if(!el)return;el.textContent=msg;
+  el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3000);
 }
 
 /* ══ EXPORT ══ */
@@ -2224,7 +2324,7 @@ function initDirtyState(){
   const _origClose=window.closeModal;
   window.closeModal=function(id){
     // confirmModal tidak boleh kena intercept — langsung ke _origClose
-    if(id==='confirmModal'){_origClose(id);return;}
+    if(id==='confirmModal'||id==='recurDelModal'||id==='recurEditModal'){_origClose(id);return;}
     if(id==='eventModal'&&_dirty){
       const msg=lang==='en'
         ?'There are unsaved changes. Close without saving?'

@@ -330,6 +330,16 @@
       <input type="checkbox" id="evDraft" style="width:15px;height:15px;accent-color:#f59e0b;cursor:pointer;flex-shrink:0"/>
       <label for="evDraft" style="font-size:.82rem;color:var(--text2);cursor:pointer;margin:0">📝 Simpan sebagai Draft (tidak tampil ke publik)</label>
     </div>
+    <div class="form-g" style="margin-top:4px">
+      <label style="font-size:.78rem;font-weight:600;color:var(--text2);letter-spacing:.04em">🔁 Pengulangan</label>
+      <select id="evRecur" style="width:100%" onchange="toggleRecurInfo()">
+        <option value="">Tidak berulang</option>
+        <option value="weekly">Setiap minggu</option>
+        <option value="biweekly">Setiap 2 minggu</option>
+        <option value="monthly">Setiap bulan</option>
+      </select>
+      <div id="recurInfoWrap" style="display:none;margin-top:5px;font-size:.76rem;color:var(--text3);line-height:1.5"></div>
+    </div>
   </div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeModal('eventModal')" id="cancelBtn">Batal</button>
@@ -496,5 +506,40 @@
 <script src="js/kalender.js" defer></script>
 
 <div id="event-preview" class="event-preview" style="display:none;"></div>
+
+<div class="overlay" id="recurEditModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <h2>Edit Kegiatan Berulang</h2>
+      <button class="modal-x" onclick="closeModal('recurEditModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.87rem;line-height:1.6;color:var(--text)">Kegiatan ini adalah bagian dari seri berulang. Mau edit yang mana?</p>
+    </div>
+    <div class="modal-foot" style="flex-direction:column;gap:8px;align-items:stretch">
+      <button class="btn btn-primary" id="recurEditOneBtn">Edit hanya kegiatan ini</button>
+      <button class="btn btn-ghost" id="recurEditAllBtn">Edit semua yang akan datang</button>
+      <button class="btn btn-ghost" onclick="closeModal('recurEditModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="recurDelModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <h2>Hapus Kegiatan Berulang</h2>
+      <button class="modal-x" onclick="closeModal('recurDelModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.87rem;line-height:1.6;color:var(--text)">Kegiatan ini adalah bagian dari seri berulang. Mau hapus yang mana?</p>
+    </div>
+    <div class="modal-foot" style="flex-direction:column;gap:8px;align-items:stretch">
+      <button class="btn btn-danger" id="recurDelOneBtn">Hapus hanya kegiatan ini</button>
+      <button class="btn btn-ghost" id="recurDelAllBtn" style="border:1px solid var(--red,#dc2626);color:var(--red,#dc2626)">Hapus semua yang akan datang</button>
+      <button class="btn btn-ghost" onclick="closeModal('recurDelModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
