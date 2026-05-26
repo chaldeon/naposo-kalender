@@ -138,16 +138,6 @@ const MS_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','
 let darkMode=localStorage.getItem('naposo_dark')==='1';
 let _lang=localStorage.getItem('naposo_lang')||'id';
 let isAdmin=false,EVENTS=[],DOCS=[],_adminName='';
-let _lastRevPost=null;
-function isSuperAdmin(){return true;}
-function _applyRoleBadge(){
-  const badge=document.getElementById('bnAdminBadge');
-  if(badge){badge.style.display='inline';}
-  const recapBtn=document.getElementById('bnRecapBtn');
-  if(recapBtn)recapBtn.style.display='';
-  const ddRecapBtn=document.getElementById('ddRecapBtn');
-  if(ddRecapBtn)ddRecapBtn.style.display='';
-}
 // ══ BANNERS — array dari tabel announcements ══
 let BANNERS=[];
 
@@ -157,20 +147,20 @@ const T={
   navRev:{id:'Reversement',en:'Reversement'},navRevMob:{id:'Reversement',en:'Reversement'},
   smIgLabel:{id:'Instagram',en:'Instagram'},smYtLabel:{id:'YouTube',en:'YouTube'},smTtLabel:{id:'TikTok',en:'TikTok'},
   loginBtnTxt:{id:'Login',en:'Login'},loginBtnMobileTxt:{id:'Login',en:'Login'},
-  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},ddAnnounce:{id:'Kelola Pengumuman',en:'Manage Announcements'},ddLogout:{id:'Logout',en:'Logout'},
+  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},ddAnnounce:{id:'Pengumuman',en:'Announcement'},ddLogout:{id:'Logout',en:'Logout'},
   darkModeLbl:{id:'Dark Mode',en:'Dark Mode'},langModeLbl:{id:'Bahasa',en:'Language'},
-  mobDocs:{id:'Kelola Dokumen',en:'Manage Documents'},mobAnnounce:{id:'Kelola Pengumuman',en:'Manage Announcements'},logoutBtnMobTxt:{id:'Logout',en:'Logout'},
+  mobDocs:{id:'Kelola Dokumen',en:'Manage Documents'},mobAnnounce:{id:'Pengumuman',en:'Announcement'},logoutBtnMobTxt:{id:'Logout',en:'Logout'},
   heroTitle:{id:'Naposo HKBP Ujung Menteng',en:'Naposo HKBP Ujung Menteng'},
-  heroSub:{id:'Shalom, Naps. Cek kegiatan Naposo dan renungan terbaru.',en:'Hello, Naps. Check out the latest Naposo activities and devotionals.'},
+  heroSub:{id:'Selamat datang Naps! Temukan jadwal kegiatan dan informasi terkini.',en:'Welcome! Find event schedules and the latest information here.'},
+  tagIbadah:{id:'Ibadah',en:'Worship'},tagKoor:{id:'Koor',en:'Choir'},tagPelayanan:{id:'Pelayanan',en:'Ministry'},tagKesehatian:{id:'Kesehatian',en:'Fellowship'},tagDoa:{id:'Doa',en:'Prayer'},
   secEvents:{id:'Kegiatan Terdekat',en:'Upcoming Events'},secEventsLink:{id:'Lihat semua →',en:'View all →'},
   secRecap:{id:'Recap Kegiatan',en:'Activity Recap'},secDocs:{id:'Dokumen',en:'Documents'},secContact:{id:'Hubungi Kami',en:'Contact Us'},
-  cpLabel:{id:'Hubungi Contact Person',en:'Contact Person'},footerVisitLbl:{id:'kunjungan bulan ini',en:'visits this month'},
+  cpLabel:{id:'Hubungi Contact Person',en:'Contact Person'},footerVisitLbl:{id:'kunjungan',en:'visits'},
   loginTitle:{id:'Login Pengurus',en:'Admin Login'},lbName:{id:'Nama Pengurus',en:'Admin Name'},lbPw:{id:'Password',en:'Password'},
   loginCancelBtn:{id:'Batal',en:'Cancel'},loginSubmitBtn:{id:'Masuk',en:'Sign In'},
   editModalTitle:{id:'Ubah Kegiatan',en:'Edit Event'},lbEditDate:{id:'Tanggal',en:'Date'},lbEditTitle:{id:'Judul Event',en:'Event Title'},
   lbEditTimeStart:{id:'Waktu Mulai',en:'Start Time'},lbEditTimeEnd:{id:'Waktu Selesai',en:'End Time'},
   lbEditCat:{id:'Kategori',en:'Category'},lbEditExtra:{id:'Tema Acara',en:'Event Theme'},lbEditNote:{id:'Catatan (Opsional)',en:'Notes (Optional)'},
-  lbEditLink:{id:'Link (Opsional)',en:'Link (Optional)'},lbEditThumbnail:{id:'🖼 Thumbnail Card',en:'🖼 Thumbnail Card'},
   lbEditFeatured:{id:'⭐ Tampilkan di Beranda',en:'⭐ Show on Homepage'},lbEditCaption:{id:'Caption (untuk modal poster)',en:'Caption (shown in poster modal)'},
   editCancelBtn:{id:'Batal',en:'Cancel'},editSubmitBtn:{id:'Simpan',en:'Save'},
   docsModalTitle:{id:'Kelola Dokumen',en:'Manage Documents'},lbDocTitle:{id:'Judul Dokumen',en:'Document Title'},
@@ -179,67 +169,6 @@ const T={
   announceModalTitle:{id:'Kelola Pengumuman',en:'Manage Announcements'},
   annCancelBtn:{id:'Batal',en:'Cancel'},annSaveBtn:{id:'Simpan',en:'Save'},
   adminBarTxt:{id:'',en:''},feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
-  // Recap modal tabs
-  recapTabPhoto:{id:'📷 Foto',en:'📷 Photos'},recapTabVideo:{id:'▶ Video',en:'▶ Videos'},
-  // Lightbox
-  rlbDriveLinkTxt:{id:'Buka di Drive ↗',en:'Open in Drive ↗'},
-  // Login modal
-  loginSelectDefault:{id:'-- Pilih nama --',en:'-- Select name --'},
-  loginErr:{id:'Password salah atau nama tidak dipilih.',en:'Wrong password or name not selected.'},
-  loginPwPlaceholder:{id:'Masukkan password',en:'Enter password'},
-  // Edit event modal
-  editDraftLabel:{id:'📝 Simpan sebagai Draft (tidak tampil ke publik)',en:'📝 Save as Draft (hidden from public)'},
-  editThumbnailHint:{id:'(16:9 landscape · opsional)',en:'(16:9 landscape · optional)'},
-  editTitlePlaceholder:{id:'Judul kegiatan',en:'Event title'},
-  editNotePlaceholder:{id:'Detail tambahan...',en:'Additional details...'},
-  editCaptionPlaceholder:{id:'Teks panjang yang muncul saat poster dibuka...',en:'Long text shown when poster is opened...'},
-  editLinkPlaceholder:{id:'https://...',en:'https://...'},
-  // Birthday modal
-  bdayModalTitle:{id:'Selamat Ulang Tahun!',en:'Happy Birthday!'},
-  bdayModalSub:{id:'Kiriman kasih dari Naposo HKBP Ujung Menteng',en:'With love from Naposo HKBP Ujung Menteng'},
-  bdayModalBtn:{id:'🙏 Amin!',en:'🙏 Amen!'},
-  // Confirm modal
-  confirmTitle:{id:'Konfirmasi',en:'Confirm'},
-  // Bottom nav sheet section labels
-  bnSheetActionsLbl:{id:'Aksi Cepat',en:'Quick Actions'},
-  bnSheetLogLbl:{id:'Log Aktivitas',en:'Activity Log'},
-  bnSheetAccountLbl:{id:'Akun',en:'Account'},
-  // Activity log states
-  actLogLoading:{id:'Memuat…',en:'Loading…'},
-  actLogEmpty:{id:'Belum ada aktivitas.',en:'No activity yet.'},
-  actLogError:{id:'Gagal memuat log.',en:'Failed to load log.'},
-  // Recap admin modal
-  recapAdmListTitle:{id:'Daftar Recap',en:'Recap List'},
-  recapAdmEmpty:{id:'Belum ada recap.',en:'No recap yet.'},
-  radmActiveLblOn:{id:'Aktif',en:'Active'},radmActiveLblOff:{id:'Nonaktif',en:'Inactive'},
-  radmSaveBtnAdd:{id:'💾 Simpan',en:'💾 Save'},radmSaveBtnEdit:{id:'💾 Update',en:'💾 Update'},
-  radmCancelEditBtn:{id:'Batal Edit',en:'Cancel Edit'},
-  // Docs admin modal
-  docAdmListTitle:{id:'DAFTAR DOKUMEN',en:'DOCUMENT LIST'},
-  docAdmEmpty:{id:'Belum ada dokumen.',en:'No documents yet.'},
-  docCatPublic:{id:'📂 Publik',en:'📂 Public'},docCatPrivate:{id:'🔒 Pengurus',en:'🔒 Members Only'},
-  // Banner admin modal
-  bannerFormTitleAdd:{id:'TAMBAH BANNER',en:'ADD BANNER'},
-  bannerFormTitleEdit:{id:'EDIT BANNER',en:'EDIT BANNER'},
-  bannerListTitle:{id:'DAFTAR BANNER',en:'BANNER LIST'},
-  bannerTextLabel:{id:'Teks Banner',en:'Banner Text'},
-  bannerColorLabel:{id:'Warna',en:'Color'},
-  bannerLinkUrlLabel:{id:'Link (opsional)',en:'Link (optional)'},
-  bannerBtnLblLabel:{id:'Label Tombol (opsional)',en:'Button Label (optional)'},
-  bannerActiveCheckLbl:{id:'Aktifkan banner',en:'Activate banner'},
-  bannerActiveStatus:{id:'✅ Aktif',en:'✅ Active'},bannerInactiveStatus:{id:'⏸ Nonaktif',en:'⏸ Inactive'},
-  bannerAdmLoading:{id:'Memuat…',en:'Loading…'},bannerAdmEmpty:{id:'Belum ada banner.',en:'No banners yet.'},
-  bannerAdmError:{id:'Gagal memuat.',en:'Failed to load.'},
-  bannerSaveBtnAdd:{id:'+ Tambah',en:'+ Add'},bannerSaveBtnEdit:{id:'Simpan Perubahan',en:'Save Changes'},
-  // Recap gallery states
-  galleryLoading:{id:'Memuat foto...',en:'Loading photos...'},
-  galleryNoPhoto:{id:'Belum ada foto.',en:'No photos yet.'},
-  galleryNoVideo:{id:'Belum ada video.',en:'No videos yet.'},
-  galleryNoFolder:{id:'Folder Drive belum dikonfigurasi untuk recap ini.',en:'Drive folder not configured for this recap.'},
-  // Rev widget section header (injected by JS)
-  revWidgetTitle:{id:'Renungan Terbaru',en:'Latest Devotional'},
-  revWidgetSeeAll:{id:'Lihat semua →',en:'See all →'},
-  searchPlaceholder:{id:'Cari kegiatan atau renungan…',en:'Search events or devotionals…'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){
@@ -249,27 +178,7 @@ function applyLang(){
   const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
   const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
   if(isAdmin&&_adminName){const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+_adminName+'.';}
-  // Placeholders
-  const hps=document.getElementById('homepageSearch');if(hps)hps.placeholder=tx('searchPlaceholder');
-  const lpw=document.getElementById('loginPw');if(lpw)lpw.placeholder=tx('loginPwPlaceholder');
-  const eti=document.getElementById('editTitle');if(eti)eti.placeholder=tx('editTitlePlaceholder');
-  const eno=document.getElementById('editNote');if(eno)eno.placeholder=tx('editNotePlaceholder');
-  const eca=document.getElementById('editCaption');if(eca)eca.placeholder=tx('editCaptionPlaceholder');
-  // Login select default option
-  buildLoginDropdown();
-  // loginErr static text
-  const lerr=document.getElementById('loginErr');if(lerr)lerr.textContent=tx('loginErr');
-  // confirmModalTitle default (dynamic when shown, but set default)
-  const cmt=document.getElementById('confirmModalTitle');if(cmt&&cmt.textContent==='Konfirmasi'||cmt&&cmt.textContent==='Confirm')cmt.textContent=tx('confirmTitle');
-  // rlbDriveLink text
-  const rld=document.getElementById('rlbDriveLink');if(rld)rld.textContent=tx('rlbDriveLinkTxt');
-  // Recap tabs
-  const rtp=document.getElementById('recapTabPhoto');if(rtp)rtp.textContent=tx('recapTabPhoto');
-  const rtv=document.getElementById('recapTabVideo');if(rtv)rtv.textContent=tx('recapTabVideo');
-  // Doc category select options
-  const dcp=document.getElementById('docCatPublic');if(dcp)dcp.textContent=tx('docCatPublic');
-  const dcr=document.getElementById('docCatPrivate');if(dcr)dcr.textContent=tx('docCatPrivate');
-  renderEvents();renderRecap();renderDocs();renderRevWidget(undefined);
+  renderEvents();renderRecap();renderDocs();
 }
 function toggleLang(){_lang=_lang==='id'?'en':'id';localStorage.setItem('naposo_lang',_lang);applyLang();}
 function toggleLangMobile(){toggleLang();}
@@ -338,7 +247,7 @@ function closeModal(id){
 /* ══ LOGIN ══ */
 function buildLoginDropdown(){
   const sel=document.getElementById('loginName');if(!sel)return;
-  sel.innerHTML=`<option value="">${tx('loginSelectDefault')}</option>`;
+  sel.innerHTML='<option value="">-- Pilih nama --</option>';
   [...USER_NAMES].sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
 }
 function handleLoginBtn(){
@@ -367,38 +276,30 @@ async function doLogin(){
     if(!data.success){err.style.display='block';btn.disabled=false;btn.textContent=tx('loginSubmitBtn');return;}
     localStorage.setItem('naposo_token',data.token||'1');
     localStorage.setItem('naposo_admin_name',name);
-    isAdmin=true;closeModal('loginModal');_applyAdminUI(name);_applyRoleBadge();loadAdminActivityLog();
+    isAdmin=true;closeModal('loginModal');_applyAdminUI(name);
     renderEvents();renderDocs();renderDocAdmList();
     showToast('Selamat datang, '+name+'! 👋','ok');
   }catch(e){err.style.display='block';}
   btn.disabled=false;btn.textContent=tx('loginSubmitBtn');
 }
-function confirmLogout(){
-  if(window.confirm('Keluar dari mode admin?')){doLogout();}
-}
 function doLogout(){
   isAdmin=false;localStorage.removeItem('naposo_token');localStorage.removeItem('naposo_admin_name');
-  const dd=document.getElementById('adminDd');if(dd)dd.classList.remove('open');
-  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='none';
-  _resetAuthUI();renderEvents();renderDocs();closeBnSheet();showToast('Logout berhasil.');
+  document.getElementById('adminDd').classList.remove('open');
+  _resetAuthUI();renderEvents();renderDocs();showToast('Logout berhasil.');
 }
 function togglePw(inputId){const inp=document.getElementById(inputId);if(!inp)return;inp.type=inp.type==='text'?'password':'text';}
 function _applyAdminUI(name){
   _adminName=name;document.body.classList.add('is-admin');
-  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='inline-block';
-  _applyRoleBadge();
   const loginBtn=document.getElementById('loginBtn');if(loginBtn){loginBtn.textContent=`✓ ${name}`;loginBtn.disabled=false;}
   const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='none';
   const amr=document.getElementById('adminMobileRow');if(amr)amr.style.display='flex';
   const ant=document.getElementById('adminMobileNameTxt');if(ant)ant.textContent=name;
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
   const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
-  const statPill=document.getElementById('navStatPill');if(statPill)statPill.style.display='';
   _syncBnAdminUI(name);
 }
 function _resetAuthUI(){
   _adminName='';document.body.classList.remove('is-admin');
-  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='none';
   const loginBtn=document.getElementById('loginBtn');
   if(loginBtn){loginBtn.innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;loginBtn.disabled=false;}
   const loginBtnMob=document.getElementById('loginBtnMobile');if(loginBtnMob)loginBtnMob.style.display='';
@@ -472,21 +373,21 @@ function openAnnounceModal(){
 
 async function _loadBannerList(){
   const list=document.getElementById('bannerAdmList');if(!list)return;
-  list.innerHTML=`<div style="font-size:.78rem;color:var(--text3)">${tx('bannerAdmLoading')}</div>`;
+  list.innerHTML='<div style="font-size:.78rem;color:var(--text3)">Memuat…</div>';
   try{
     const rows=await dbGet('announcements','select=*&order=updated_at.desc');
-    if(!rows||!rows.length){list.innerHTML=`<div style="font-size:.78rem;color:var(--text3);padding:8px 0">${tx('bannerAdmEmpty')}</div>`;return;}
+    if(!rows||!rows.length){list.innerHTML='<div style="font-size:.78rem;color:var(--text3);padding:8px 0">Belum ada banner.</div>';return;}
     list.innerHTML=rows.map(b=>`
       <div class="banner-adm-item" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
         <div style="width:12px;height:12px;border-radius:50%;background:${b.color||'#1e5ac8'};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div style="font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(b.text||'')}</div>
-          <div style="font-size:.7rem;color:var(--text3)">${b.active?tx('bannerActiveStatus'):tx('bannerInactiveStatus')}</div>
+          <div style="font-size:.7rem;color:var(--text3)">${b.active?'✅ Aktif':'⏸ Nonaktif'}</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="editBanner('${b.id}')">✎</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBanner('${b.id}')">×</button>
+        <button class="btn btn-sm" onclick="editBanner('${b.id}')" style="padding:3px 8px;font-size:.7rem">✎</button>
+        <button class="btn btn-sm" onclick="deleteBanner('${b.id}')" style="padding:3px 8px;font-size:.7rem;background:rgba(220,38,38,.1);color:var(--red);border-color:rgba(220,38,38,.3)">✕</button>
       </div>`).join('');
-  }catch(e){list.innerHTML=`<div style="font-size:.78rem;color:var(--red)">${tx('bannerAdmError')}</div>`;}
+  }catch(e){list.innerHTML='<div style="font-size:.78rem;color:var(--red)">Gagal memuat.</div>';}
 }
 
 function _resetBannerForm(){
@@ -496,9 +397,8 @@ function _resetBannerForm(){
   document.getElementById('annLink').value='';
   document.getElementById('annLinkLabel').value='';
   document.getElementById('annActiveCheck').checked=true;
-  const title=document.getElementById('bannerFormTitle');if(title)title.textContent=tx('bannerFormTitleAdd');
-  const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent=tx('bannerSaveBtnAdd');
-  const cancel=document.getElementById('annCancelBtn');if(cancel)cancel.style.display='none';
+  const title=document.getElementById('bannerFormTitle');if(title)title.textContent='Tambah Banner';
+  const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent='Tambah';
 }
 
 async function editBanner(id){
@@ -512,10 +412,8 @@ async function editBanner(id){
     document.getElementById('annLink').value=b.link||'';
     document.getElementById('annLinkLabel').value=b.link_label||'';
     document.getElementById('annActiveCheck').checked=!!b.active;
-    const title=document.getElementById('bannerFormTitle');if(title)title.textContent=tx('bannerFormTitleEdit');
-    const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent=tx('bannerSaveBtnEdit');
-    const cancel=document.getElementById('annCancelBtn');if(cancel)cancel.style.display='';
-    document.getElementById('annText').focus();
+    const title=document.getElementById('bannerFormTitle');if(title)title.textContent='Edit Banner';
+    const btn=document.getElementById('annSaveBtn');if(btn)btn.textContent='Simpan';
   }catch(e){showToast('Gagal load banner.','err');}
 }
 
@@ -543,7 +441,7 @@ async function saveAnnounce(){
     await _loadBannerList();
     await loadBanners(); // refresh beranda
   }catch(e){showToast('Gagal: '+e.message,'err');}
-  btn.disabled=false;btn.textContent=_editBannerId?tx('bannerSaveBtnEdit'):tx('bannerSaveBtnAdd');
+  btn.disabled=false;btn.textContent=_editBannerId?'Simpan':'Tambah';
 }
 
 async function deleteBanner(id){
@@ -567,7 +465,6 @@ function closeBanner(){
 let _searchQuery='';
 let _revPostsCache=null;
 let _searchDebounce=null;
-let _searchReqId=0; // counter untuk guard race condition
 
 function onHomepageSearch(val){
   const q=(val||'').trim();
@@ -617,9 +514,6 @@ async function _renderSearchDropdown(q){
   const wrap=document.getElementById('searchWrap');
   if(!dd||!wrap)return;
 
-  // Guard race condition — kalau query berubah saat fetch masih berjalan, abaikan response lama
-  const reqId=++_searchReqId;
-
   // Posisikan dropdown tepat di bawah search bar
   const rect=wrap.getBoundingClientRect();
   dd.style.top=(rect.bottom+6)+'px';
@@ -641,8 +535,6 @@ async function _renderSearchDropdown(q){
     try{_revPostsCache=await dbGet('reversement_posts','select=id,title,verse_ref,date,day_type&published=eq.true&order=date.desc');}
     catch(e){_revPostsCache=[];}
   }
-  // Cek setelah await — kalau sudah ada request lebih baru, batalkan
-  if(reqId!==_searchReqId)return;
   const revResults=(_revPostsCache||[]).filter(p=>
     (p.title||'').toLowerCase().includes(q)||
     (p.verse_ref||'').toLowerCase().includes(q)
@@ -717,7 +609,7 @@ function getDisplayEvents(){
   const pinnedUpcoming=eligible.filter(e=>e.featured&&!isPast(e)).sort(sortAsc);
   const autoUpcoming  =eligible.filter(e=>!e.featured&&!isPast(e)).sort(sortAsc);
   const isMobile=window.innerWidth<=560;
-  const LIMIT=6;
+  const LIMIT=isMobile?4:3;
   const sisa=Math.max(0,LIMIT*2-pinnedUpcoming.length);
   const combined=[...pinnedUpcoming,...autoUpcoming.slice(0,sisa)];
   combined.sort((a,b)=>{
@@ -777,9 +669,9 @@ function renderEvents(){
     if(!isFinished){
       const todayDate=new Date(todayStr+'T00:00:00');const evDate=new Date(ev.date+'T00:00:00');
       const diffDays=Math.round((evDate-todayDate)/(1000*60*60*24));
-      if(diffDays===0)countdownHtml=`<span class="ev-countdown ev-countdown-today">\ud83d\udd14 ${_lang==='en'?'Today!':'Hari ini!'}</span>`;
-      else if(diffDays===1)countdownHtml=`<span class="ev-countdown">\ud83d\udcc5 ${_lang==='en'?'Tomorrow!':'Besok!'}</span>`;
-      else if(diffDays>1)countdownHtml=`<span class="ev-countdown">\u23f3 ${diffDays} ${_lang==='en'?'days away':'hari lagi'}</span>`;
+      if(diffDays===0)countdownHtml=`<span class="ev-countdown ev-countdown-today">\ud83d\udd14 Hari ini!</span>`;
+      else if(diffDays===1)countdownHtml=`<span class="ev-countdown">\ud83d\udcc5 Besok!</span>`;
+      else if(diffDays>1)countdownHtml=`<span class="ev-countdown">\u23f3 ${diffDays} hari lagi</span>`;
     }
     const delay=idx*55;
     const isBday=isBirthdayEv(ev);
@@ -796,10 +688,10 @@ function renderEvents(){
         <div class="ev-card-top">
           <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
           <div class="ev-card-date"><span class="day">${dayNum}</span><span class="sep">\u00b7</span><span class="mon">${monStr}</span><span class="sep">\u00b7</span><span class="yr">${yrStr}</span></div>
-          ${isBday&&isToday?`<span class="ev-countdown ev-countdown-bday">🎉 ${_lang==='en'?'Today!':'Hari ini!'}</span>`:countdownHtml}
+          ${isBday&&isToday?`<span class="ev-countdown ev-countdown-bday">🎉 Hari ini!</span>`:countdownHtml}
           </div>
           <div class="ev-card-admin">
-            <button class="ev-card-edit-btn" onclick="openEditEvent('${ev.id}');event.stopPropagation()">✎ ${_lang==='en'?'Edit':'Ubah'}</button>
+            <button class="ev-card-edit-btn" onclick="openEditEvent('${ev.id}');event.stopPropagation()">✎ Ubah</button>
             <button class="ev-card-unfeature-btn${ev.featured?' is-pinned':''}" onclick="toggleFeatured('${ev.id}',${!!ev.featured});event.stopPropagation()">${ev.featured?'\u2605':'\u2606'}</button>
           </div>
         </div>
@@ -815,55 +707,6 @@ function renderEvents(){
       </div>
     </div>`;
   }).join('');
-  initScrollIndicator();
-}
-
-/* ══ SCROLL INDICATOR ══ */
-function initScrollIndicator(){
-  const grid=document.getElementById('eventsGrid');
-  const track=document.getElementById('evScrollTrack');
-  const thumb=document.getElementById('evScrollThumb');
-  const dotsWrap=document.getElementById('evDots');
-  const hint=document.getElementById('evSwipeHint');
-  if(!grid)return;
-  const isMob=window.innerWidth<=560;
-  const cards=grid.querySelectorAll('.ev-card,.sk-card');
-  const total=cards.length;
-  if(!total)return;
-  // ── progress bar (desktop/tablet) ──
-  if(track&&thumb&&!isMob){
-    track.classList.add('visible');
-    const updateTrack=()=>{
-      const max=grid.scrollWidth-grid.clientWidth;
-      if(max<=0){track.classList.remove('visible');return;}
-      const pct=grid.scrollLeft/max;
-      const thumbW=Math.max(20,Math.round((grid.clientWidth/grid.scrollWidth)*100));
-      thumb.style.width=thumbW+'%';
-      thumb.style.marginLeft=Math.round(pct*(100-thumbW))+'%';
-    };
-    grid.addEventListener('scroll',updateTrack,{passive:true});
-    updateTrack();
-  }
-  // ── dots (mobile) ──
-  if(dotsWrap&&isMob){
-    dotsWrap.innerHTML=Array.from({length:total},(_,i)=>'<div class="ev-dot'+(i===0?' active':'')+'"></div>').join('');
-    const dots=dotsWrap.querySelectorAll('.ev-dot');
-    const updateDots=()=>{
-      const cardW=cards[0].offsetWidth+16;
-      const idx=Math.min(total-1,Math.round(grid.scrollLeft/cardW));
-      dots.forEach((d,i)=>d.classList.toggle('active',i===idx));
-    };
-    grid.addEventListener('scroll',updateDots,{passive:true});
-  }
-  // ── swipe hint (mobile, one-time) ──
-  if(hint&&isMob){
-    const KEY='naposo_swipe_seen';
-    if(!localStorage.getItem(KEY)){
-      hint.classList.add('show');
-      localStorage.setItem(KEY,'1');
-      setTimeout(()=>hint.classList.remove('show'),3200);
-    }
-  }
 }
 
 /* ══ GOOGLE CALENDAR LINK ══ */
@@ -914,8 +757,8 @@ function openPosterModal(evId){
     let _cb='';
     if(_fin){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(220,38,38,.12);color:var(--red);border:1px solid rgba(220,38,38,.2)">\u2713 Sudah Selesai</span>';}
     else{const _dd=Math.round((new Date(ev.date+'T00:00:00')-new Date(_ts+'T00:00:00'))/86400000);
-      if(_dd===0){_cb=`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(234,179,8,.15);color:#ca8a04;border:1px solid rgba(234,179,8,.3)">\ud83d\udd14 ${_lang==='en'?'Today!':'Hari ini!'}</span>`;}
-      else if(_dd===1){_cb=`<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)">\ud83d\udcc5 ${_lang==='en'?'Tomorrow!':'Besok!'}</span>`;}
+      if(_dd===0){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(234,179,8,.15);color:#ca8a04;border:1px solid rgba(234,179,8,.3)">\ud83d\udd14 Hari ini!</span>';}
+      else if(_dd===1){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)">\ud83d\udcc5 Besok!</span>';}
       else if(_dd>1){_cb='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)">\u23f3 '+_dd+' hari lagi</span>';}
     }
     meta.innerHTML='<span class="ev-cat-badge" style="background:'+col+';font-size:11px;padding:3px 10px">'+catLabel(ev.category)+'</span>'+_cb;
@@ -945,7 +788,7 @@ function openPosterModal(evId){
     // Google Calendar
     btns+=`<a class="btn btn-ghost btn-sm" href="${escapeHTML(buildGCalLink(ev))}" target="_blank" rel="noopener">📆 ${_lang==='en'?'Add to Calendar':'Tambah ke Kalender'}</a>`;
     btns+=`<a class="btn btn-ghost btn-sm" href="kalender.html?event=${encodeURIComponent(ev.id)}">📅 ${_lang==='en'?'View in Calendar':'Lihat di Kalender'}</a>`;
-    if(isAdmin)btns+=`<button class="btn btn-ghost btn-sm" onclick="closePosterModalDirect();openEditEvent('${ev.id}')">✎ ${_lang==='en'?'Edit':'Ubah'}</button>`;
+    if(isAdmin)btns+=`<button class="btn btn-ghost btn-sm" onclick="closePosterModalDirect();openEditEvent('${ev.id}')">✎ Ubah</button>`;
     actEl.innerHTML=btns;
   }
   // Galeri foto
@@ -1040,284 +883,30 @@ async function saveEditEvent(){
   btn.disabled=false;btn.textContent=tx('editSubmitBtn');
 }
 
-let RECAP=[];
-async function renderRecap(){
+const RECAP=[
+  {category:'event-gabungan',title:'Bonataon RN',meta:'28 Feb 2026',bgColor:'#059669'},
+  {category:'event-gabungan',title:'Paskah RN',meta:'4 Apr 2026',bgColor:'#c9a227'},
+  {category:'ibadah',title:'Ibadah Naposo Pertama',meta:'28 Feb 2026',bgColor:'#2563be'},
+];
+function renderRecap(){
   const el=document.getElementById('recapCarousel');if(!el)return;
-  try{
-    const rows=await dbGet('recap_items','select=*&active=eq.true&order=sort_order.asc');
-    if(rows&&rows.length)RECAP=rows;
-  }catch(e){}
-  // fallback hardcode jika fetch gagal
-  if(!RECAP.length)RECAP=[
-    {id:'recap_natal2025',category:'ibadah',title:'Natal RN 2025',date:'2025-12-22',bg_color:'#7f1d1d',folder_id:'15-Q65ZNKw1yzO3nxx1aYNJ94eQh7v6QM'},
-    {id:'recap_bonataon2026',category:'event-gabungan',title:'Bonataon RN',date:'2026-02-28',bg_color:'#065f46',folder_id:''},
-    {id:'recap_paskah2026',category:'event-gabungan',title:'Paskah RN',date:'2026-04-04',bg_color:'#78350f',folder_id:''},
-  ];
-  el.innerHTML=RECAP.map(r=>{
-    const meta=r.date?new Date(r.date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'';
-    const coverStyle=r.cover_url?`background-image:url('${escapeHTML(r.cover_url)}');background-size:cover;background-position:center`:'';
-    // Item 3: count badge di card
-    let countBadge='';
-    if(r.photo_count!=null&&r.photo_count>0)countBadge=`<span class="recap-count-badge">📷 ${r.photo_count}</span>`;
-    else if(r.folder_id)countBadge=`<span class="recap-count-badge">📷</span>`;
-    return `<div class="recap-card" onclick="openRecapModal('${r.id}')" style="${coverStyle}"><div class="recap-overlay" style="background:${r.bg_color||'#1a2e5e'}"></div><div class="recap-gradient"></div><div class="recap-content"><span class="recap-tag">• ${catLabel(r.category).toUpperCase()}</span><div class="recap-title">${escapeHTML(r.title)}</div><div class="recap-meta-row"><span class="recap-meta">${meta}</span>${countBadge}</div></div></div>`;
-  }).join('');
-  renderRecapDots();
+  el.innerHTML=RECAP.map(r=>`<div class="recap-card" onclick="window.location='kalender.html'"><div class="recap-overlay" style="background:${r.bgColor}"></div><div class="recap-gradient"></div><div class="recap-content"><span class="recap-tag">• ${catLabel(r.category).toUpperCase()}</span><div class="recap-title">${escapeHTML(r.title)}</div><div class="recap-meta">${r.meta}</div></div></div>`).join('');
+  renderRecapDots();el.addEventListener('scroll',()=>updateRecapProgress(),{passive:true});setTimeout(updateRecapProgress,50);
 }
-function renderRecapDots(){initRecapScrollIndicator();}
-function updateRecapDots(){/* no-op */}
+function renderRecapDots(){updateRecapProgress();}
+function updateRecapDots(){updateRecapProgress();}
 function updateRecapProgress(){
   const el=document.getElementById('recapCarousel');if(!el)return;
-  const track=document.getElementById('recapScrollTrack');if(!track)return;
-  const thumb=document.getElementById('recapScrollThumb');if(!thumb)return;
-  const max=el.scrollWidth-el.clientWidth;
-  if(max<=0){track.classList.remove('visible');return;}
-  const pct=el.scrollLeft/max;
-  const thumbW=Math.max(20,Math.round((el.clientWidth/el.scrollWidth)*100));
-  thumb.style.width=thumbW+'%';
-  thumb.style.marginLeft=Math.round(pct*(100-thumbW))+'%';
-}
-function initRecapScrollIndicator(){
-  const el=document.getElementById('recapCarousel');if(!el)return;
-  const track=document.getElementById('recapScrollTrack');if(!track)return;
-  const thumb=document.getElementById('recapScrollThumb');if(!thumb)return;
-  const max=el.scrollWidth-el.clientWidth;
-  if(max<=0){track.classList.remove('visible');return;}
-  track.classList.add('visible');
-  updateRecapProgress();
-  el.addEventListener('scroll',updateRecapProgress,{passive:true});
+  const bar=document.getElementById('recapProgressBar');if(!bar)return;
+  const card=el.querySelector('.recap-card');if(!card)return;
+  const total=RECAP.length;if(!total)return;
+  const cardW=card.offsetWidth+14;const idx=Math.min(Math.round(el.scrollLeft/cardW),total-1);
+  const pct=100/total;bar.style.width=pct+'%';bar.style.marginLeft=(idx*pct)+'%';
+  const prev=document.getElementById('recapPrev');const next=document.getElementById('recapNext');
+  if(prev)prev.style.opacity=idx===0?'0.35':'1';if(next)next.style.opacity=idx>=total-1?'0.35':'1';
 }
 function recapScrollTo(idx){const el=document.getElementById('recapCarousel');if(!el)return;const card=el.querySelector('.recap-card');if(!card)return;el.scrollTo({left:idx*(card.offsetWidth+14),behavior:'smooth'});}
 function recapScroll(dir){const el=document.getElementById('recapCarousel');if(!el)return;const card=el.querySelector('.recap-card');if(!card)return;el.scrollBy({left:dir*(card.offsetWidth+14),behavior:'smooth'});}
-
-/* ══ RECAP MODAL ══ */
-let _recapModal={id:null,tab:'photo',files:[],loading:false};
-async function openRecapModal(recapId){
-  const r=RECAP.find(x=>x.id===recapId);if(!r)return;
-  _recapModal={id:recapId,tab:'photo',files:[],loading:true};
-  document.getElementById('recapModalTag').textContent=catLabel(r.category).toUpperCase();
-  document.getElementById('recapModalTitle').textContent=r.title;
-  const meta=r.date?new Date(r.date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'';
-  document.getElementById('recapModalDate').textContent=meta;
-  document.getElementById('recapModalHero').style.background=r.bg_color||'#1a2e5e';
-  if(r.cover_url){document.getElementById('recapModalHero').style.backgroundImage=`url('${escapeHTML(r.cover_url)}')`;document.getElementById('recapModalHero').style.backgroundSize='cover';document.getElementById('recapModalHero').style.backgroundPosition='center';}
-  else{document.getElementById('recapModalHero').style.backgroundImage='';}
-  _renderRecapModalTabs();
-  openModal('recapModal');
-  closeLightbox();
-  // Item 4 (Sesi 55): tampilkan count dari DB langsung, diupdate lagi setelah fetch Drive selesai
-  const badge=document.getElementById('recapModalCount');
-  if(badge)badge.textContent=r.photo_count?`${r.photo_count} foto`:'';
-  if(!r.folder_id){_recapModal.loading=false;_renderRecapGallery([]);return;}
-  try{
-    const res=await fetch(`${SUPA_URL}/functions/v1/drive-gallery`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPA_KEY}`},body:JSON.stringify({folder_id:r.folder_id})});
-    const data=await res.json();
-    _recapModal.files=data.files||[];
-  }catch(e){_recapModal.files=[];}
-  _recapModal.loading=false;
-  _renderRecapGallery(_recapModal.files);
-}
-function closeRecapModal(){closeLightbox();closeModal('recapModal');}
-function switchRecapTab(tab){_recapModal.tab=tab;_renderRecapModalTabs();_renderRecapGallery(_recapModal.files);}
-function _renderRecapModalTabs(){
-  document.querySelectorAll('.recap-modal-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===_recapModal.tab));
-}
-function _renderRecapGallery(files){
-  const photos=files.filter(f=>f.type==='photo');
-  const videos=files.filter(f=>f.type==='video');
-  const el=document.getElementById('recapGalleryInner');if(!el)return;
-  if(_recapModal.loading){el.innerHTML=`<div class="recap-gallery-loading">${tx('galleryLoading')}</div>`;return;}
-  if(_recapModal.tab==='photo'){
-    if(!photos.length){
-      const _r=RECAP.find(x=>x.id===_recapModal.id);
-      const emptyMsg=_r&&!_r.folder_id?tx('galleryNoFolder'):tx('galleryNoPhoto');
-      el.innerHTML=`<div class="recap-gallery-empty">${emptyMsg}</div>`;return;
-    }
-    // Item 2: thumbnail jadi button lightbox, bukan link ke Drive
-    el.innerHTML=`<div class="recap-gallery-grid">${photos.map((f,i)=>`<button class="recap-gallery-thumb" onclick="openLightbox(${i})" title="${escapeHTML(f.name)}"><img src="${escapeHTML(f.thumbnail)}" alt="${escapeHTML(f.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></button>`).join('')}</div>`;
-  }else{
-    if(!videos.length){el.innerHTML=`<div class="recap-gallery-empty">${tx('galleryNoVideo')}</div>`;return;}
-    el.innerHTML=`<div class="recap-video-grid">${videos.map(f=>`<a href="${escapeHTML(f.driveLink)}" target="_blank" rel="noopener" class="recap-video-thumb" title="${escapeHTML(f.name)}"><img src="${escapeHTML(f.thumbnail)}" alt="${escapeHTML(f.name)}" loading="lazy" onerror="this.src=''"><div class="recap-video-play">▶</div><div class="recap-video-name">${escapeHTML(f.name)}</div></a>`).join('')}</div>`;
-  }
-  // Item 3: update count badge di modal header
-  const badge=document.getElementById('recapModalCount');
-  if(badge)badge.textContent=`${photos.length} foto${videos.length?' · '+videos.length+' video':''}`;
-}
-
-/* helper: bangun URL gambar full-res dari Drive file ID — lh3 bisa dimuat browser tanpa CORS issue */
-function _lbSrc(f){return `https://lh3.googleusercontent.com/d/${f.id}`;}
-let _lbIdx=0;
-function _lbPhotos(){return _recapModal.files.filter(f=>f.type==='photo');}
-function openLightbox(idx){
-  const photos=_lbPhotos();if(!photos.length)return;
-  _lbIdx=idx;
-  const f=photos[_lbIdx];
-  const lb=document.getElementById('recapLightbox');if(!lb)return;
-  const img=document.getElementById('rlbImg');
-  img.style.opacity='0';
-  img.src=_lbSrc(f);
-  img.onload=()=>{img.style.opacity='1';};
-  img.onerror=()=>{img.style.opacity='1';};
-  document.getElementById('rlbCaption').textContent=`${f.name} · ${_lbIdx+1}/${photos.length}`;
-  const rlbEl=document.getElementById('rlbDriveLink');rlbEl.href=f.driveLink;rlbEl.textContent=tx('rlbDriveLinkTxt');
-  lb.style.display='flex';
-  document.addEventListener('keydown',_lbKeydown);
-  // touch swipe
-  lb.addEventListener('touchstart',_lbTouchStart,{passive:true});
-  lb.addEventListener('touchend',_lbTouchEnd,{passive:true});
-}
-function closeLightbox(){
-  const lb=document.getElementById('recapLightbox');if(!lb)return;
-  lb.style.display='none';
-  document.getElementById('rlbImg').src='';
-  document.removeEventListener('keydown',_lbKeydown);
-  lb.removeEventListener('touchstart',_lbTouchStart);
-  lb.removeEventListener('touchend',_lbTouchEnd);
-}
-function lightboxNav(dir){
-  const photos=_lbPhotos();if(!photos.length)return;
-  _lbIdx=(_lbIdx+dir+photos.length)%photos.length;
-  const f=photos[_lbIdx];
-  const img=document.getElementById('rlbImg');
-  img.style.opacity='0';
-  img.onload=()=>{img.style.opacity='1';};
-  img.onerror=()=>{img.style.opacity='1';};
-  setTimeout(()=>{img.src=_lbSrc(f);},120);
-  document.getElementById('rlbCaption').textContent=`${f.name} · ${_lbIdx+1}/${photos.length}`;
-  const rlbEl=document.getElementById('rlbDriveLink');rlbEl.href=f.driveLink;rlbEl.textContent=tx('rlbDriveLinkTxt');
-}
-function _lbKeydown(e){
-  if(e.key==='ArrowLeft')lightboxNav(-1);
-  else if(e.key==='ArrowRight')lightboxNav(1);
-  else if(e.key==='Escape')closeLightbox();
-}
-let _lbTouchX=0;
-function _lbTouchStart(e){_lbTouchX=e.changedTouches[0].clientX;}
-function _lbTouchEnd(e){
-  const dx=e.changedTouches[0].clientX-_lbTouchX;
-  if(Math.abs(dx)>40)lightboxNav(dx<0?1:-1);
-}
-
-/* ══ RECAP ADMIN (Item 5) ══ */
-let _radmEdit=null,_radmActive=true;
-function toggleRadmActive(){
-  _radmActive=!_radmActive;
-  document.getElementById('radmActiveTrack').classList.toggle('on',_radmActive);
-  document.getElementById('radmActiveLbl').textContent=_radmActive?tx('radmActiveLblOn'):tx('radmActiveLblOff');
-}
-function openRecapAdminModal(){
-  document.getElementById('adminDd').classList.remove('open');
-  _radmEdit=null;_radmActive=true;
-  _resetRecapAdmForm();
-  _renderRecapAdmList();
-  openModal('recapAdminModal');
-}
-function closeRecapAdminModal(){closeModal('recapAdminModal');}
-function _resetRecapAdmForm(){
-  document.getElementById('radmTitle').value='';
-  document.getElementById('radmCategory').value='ibadah';
-  document.getElementById('radmDate').value='';
-  document.getElementById('radmCoverUrl').value='';
-  document.getElementById('radmBgColor').value='#1a2e5e';
-  document.getElementById('radmFolderId').value='';
-  document.getElementById('radmPhotoCount').value='';
-  document.getElementById('radmSortOrder').value='';
-  _radmActive=true;
-  document.getElementById('radmActiveTrack').classList.add('on');
-  document.getElementById('radmActiveLbl').textContent=tx('radmActiveLblOn');
-  document.getElementById('radmSaveBtn').textContent=tx('radmSaveBtnAdd');
-  const _rcb=document.getElementById('radmCancelBtn');if(_rcb){_rcb.style.display='none';_rcb.textContent=tx('radmCancelEditBtn');}
-  _radmEdit=null;
-}
-function cancelRecapAdminEdit(){_radmEdit=null;_resetRecapAdmForm();}
-function editRecapAdmin(id){
-  const r=RECAP.find(x=>x.id===id);if(!r)return;
-  _radmEdit=id;
-  document.getElementById('radmTitle').value=r.title||'';
-  document.getElementById('radmCategory').value=r.category||'ibadah';
-  document.getElementById('radmDate').value=r.date||'';
-  document.getElementById('radmCoverUrl').value=r.cover_url||'';
-  document.getElementById('radmBgColor').value=r.bg_color||'#1a2e5e';
-  document.getElementById('radmFolderId').value=r.folder_id||'';
-  document.getElementById('radmPhotoCount').value=r.photo_count!=null?r.photo_count:'';
-  document.getElementById('radmSortOrder').value=r.sort_order!=null?r.sort_order:'';
-  _radmActive=r.active!==false;
-  document.getElementById('radmActiveTrack').classList.toggle('on',_radmActive);
-  document.getElementById('radmActiveLbl').textContent=_radmActive?tx('radmActiveLblOn'):tx('radmActiveLblOff');
-  document.getElementById('radmSaveBtn').textContent=tx('radmSaveBtnEdit');
-  document.getElementById('radmCancelBtn').style.display='';
-  document.getElementById('radmTitle').focus();
-}
-async function saveRecapAdmin(){
-  const title=document.getElementById('radmTitle').value.trim();
-  const date=document.getElementById('radmDate').value;
-  if(!title){showToast('Judul harus diisi!','err');return;}
-  if(!date){showToast('Tanggal harus diisi!','err');return;}
-  const photoCountRaw=document.getElementById('radmPhotoCount').value;
-  const sortOrderRaw=document.getElementById('radmSortOrder').value;
-  const payload={
-    title,
-    category:document.getElementById('radmCategory').value,
-    date,
-    cover_url:document.getElementById('radmCoverUrl').value.trim()||null,
-    bg_color:document.getElementById('radmBgColor').value||'#1a2e5e',
-    folder_id:document.getElementById('radmFolderId').value.trim()||null,
-    photo_count:photoCountRaw!==''?parseInt(photoCountRaw):null,
-    sort_order:sortOrderRaw!==''?parseInt(sortOrderRaw):0,
-    active:_radmActive,
-  };
-  const btn=document.getElementById('radmSaveBtn');btn.disabled=true;btn.textContent='Menyimpan...';
-  try{
-    if(_radmEdit){
-      await dbWrite('recap_items','UPDATE',payload,{id:_radmEdit});
-      const idx=RECAP.findIndex(x=>x.id===_radmEdit);
-      if(idx>-1)RECAP[idx]={...RECAP[idx],...payload};
-      showToast('Recap diupdate ✓','ok');
-    }else{
-      const newId='recap_'+Date.now();
-      const inserted=await dbWrite('recap_items','INSERT',{id:newId,...payload});
-      const row=Array.isArray(inserted)?inserted[0]:{id:newId,...payload};
-      RECAP.push(row);
-      showToast('Recap ditambahkan ✓','ok');
-    }
-    _resetRecapAdmForm();
-    _renderRecapAdmList();
-    await renderRecap();
-  }catch(e){showToast('Gagal: '+e.message,'err');}
-  btn.disabled=false;
-}
-async function deleteRecapAdmin(id){
-  const r=RECAP.find(x=>x.id===id);const name=r?r.title:'recap ini';
-  showConfirmModal(`Hapus recap "${name}"? Tindakan ini tidak bisa dibatalkan.`,async()=>{
-    try{
-      await dbWrite('recap_items','DELETE',null,{id});
-      RECAP=RECAP.filter(x=>x.id!==id);
-      _renderRecapAdmList();
-      await renderRecap();
-      showToast('Recap dihapus.');
-    }catch(e){showToast('Gagal: '+e.message,'err');}
-  });
-}
-function _renderRecapAdmList(){
-  const list=document.getElementById('recapAdmList');if(!list)return;
-  const all=RECAP.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  if(!all.length){list.innerHTML=`<p style="color:var(--text3);font-size:.85rem;margin:0">${tx('recapAdmEmpty')}</p>`;return;}
-  list.innerHTML=all.map(r=>{
-    const meta=r.date?new Date(r.date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'';
-    const statusBadge=r.active===false?'<span style="font-size:.68rem;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:10px;margin-left:4px">nonaktif</span>':'';
-    const countBadge=r.photo_count?`<span style="font-size:.7rem;color:var(--text3)">· 📷 ${r.photo_count}</span>`:'';
-    return `<div class="recap-adm-item">
-      <div class="recap-adm-info">
-        <div class="recap-adm-title">${escapeHTML(r.title)}${statusBadge}</div>
-        <div class="recap-adm-meta">${meta} ${countBadge}</div>
-      </div>
-      <div class="recap-adm-actions">
-        <button class="btn btn-ghost btn-sm" onclick="editRecapAdmin('${r.id}')">✎</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteRecapAdmin('${r.id}')">×</button>
-      </div>
-    </div>`;
-  }).join('');
-}
 
 /* ══ DOCS ══ */
 function toEmbedUrl(url){const m=url.match(/\/file\/d\/([\w-]+)/);if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;return url;}
@@ -1327,50 +916,32 @@ function renderDocs(){
   if(!visible.length){grid.innerHTML=`<p class="doc-empty">${_lang==='en'?'No documents yet.':'Belum ada dokumen.'}</p>`;return;}
   visible.forEach(doc=>{
     const card=document.createElement('div');card.className='doc-card';
-    card.innerHTML=`<div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="doc-info"><div class="doc-title">${escapeHTML(doc.title)}</div><div class="doc-meta">${doc.category==='pengurus'?tx('docCatPrivate'):tx('docCatPublic')}</div></div><svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
+    card.innerHTML=`<div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="doc-info"><div class="doc-title">${escapeHTML(doc.title)}</div><div class="doc-meta">${doc.category==='pengurus'?'🔒 Pengurus':'📂 Publik'}</div></div><svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
     card.onclick=()=>openDocViewer(doc);grid.appendChild(card);
   });
 }
 function openDocViewer(doc){document.getElementById('docModalTitle').textContent=doc.title;document.getElementById('docFrame').src=toEmbedUrl(doc.link);openModal('docOverlay');}
 function closeDoc(){closeModal('docOverlay');document.getElementById('docFrame').src='';}
-let _docEditId=null;
-function _resetDocForm(){_docEditId=null;document.getElementById('docTitle').value='';document.getElementById('docLink').value='';document.getElementById('docCat').value='publik';document.getElementById('addDocBtn').textContent=tx('addDocBtn');document.getElementById('cancelDocEditBtn').style.display='none';}
-function cancelDocEdit(){_resetDocForm();}
-function editDoc(id){
-  const doc=DOCS.find(d=>d.id===id);if(!doc)return;
-  _docEditId=id;
-  document.getElementById('docTitle').value=doc.title;
-  document.getElementById('docLink').value=doc.link;
-  document.getElementById('docCat').value=doc.category||'publik';
-  document.getElementById('addDocBtn').textContent=tx('bannerSaveBtnEdit');
-  document.getElementById('cancelDocEditBtn').style.display='';
-  document.getElementById('docTitle').focus();
-}
 function renderDocAdmList(){
   const list=document.getElementById('docAdmList');if(!list)return;list.innerHTML='';
-  if(!DOCS.length){list.innerHTML=`<p class="doc-empty" style="margin-top:8px">${tx('docAdmEmpty')}</p>`;return;}
+  if(!DOCS.length){list.innerHTML='<p class="doc-empty" style="margin-top:8px">Belum ada dokumen.</p>';return;}
   DOCS.forEach(doc=>{
     const item=document.createElement('div');item.className='doc-adm-item';
-    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${escapeHTML(doc.title)}</div><div class="doc-adm-meta">${doc.category==='pengurus'?tx('docCatPrivate'):tx('docCatPublic')}</div></div><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="editDoc('${doc.id}')">✎</button><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteDoc('${doc.id}')">×</button></div>`;
+    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${escapeHTML(doc.title)}</div><div class="doc-adm-meta">${doc.category==='pengurus'?'🔒':'📂'} ${doc.category}</div></div><button class="doc-del" onclick="deleteDoc('${doc.id}')">×</button>`;
     list.appendChild(item);
   });
 }
-function openDocsModal(){document.getElementById('adminDd').classList.remove('open');_resetDocForm();renderDocAdmList();openModal('docsModal');}
+function openDocsModal(){document.getElementById('adminDd').classList.remove('open');renderDocAdmList();openModal('docsModal');}
 async function addDoc(){
   const title=document.getElementById('docTitle').value.trim();const link=document.getElementById('docLink').value.trim();const category=document.getElementById('docCat').value;
   if(!title||!link){showToast('Nama dan link harus diisi!','err');return;}
-  if(_docEditId){
-    try{await dbWrite('home_docs','UPDATE',{title,link,category},{id:_docEditId},'edit-doc');const idx=DOCS.findIndex(d=>d.id===_docEditId);if(idx>-1)DOCS[idx]={...DOCS[idx],title,link,category};renderDocs();renderDocAdmList();_resetDocForm();showToast('Dokumen diperbarui ✓','ok');}
-    catch(e){showToast('Gagal: '+e.message,'err');}
-    return;
-  }
   try{const ins=await dbIns('home_docs',{id:'doc_'+Date.now(),title,link,category});DOCS.push(Array.isArray(ins)?ins[0]:ins);renderDocs();renderDocAdmList();document.getElementById('docTitle').value='';document.getElementById('docLink').value='';showToast('Dokumen ditambahkan ✓','ok');}
   catch(e){showToast('Gagal: '+e.message,'err');}
 }
 async function deleteDoc(id){
   const doc=DOCS.find(d=>d.id===id);const name=doc?doc.title:'dokumen ini';
   showConfirmModal(_lang==='en'?`Delete "${name}"? This cannot be undone.`:`Hapus dokumen "${name}"? Tindakan ini tidak bisa dibatalkan.`,async()=>{
-    try{await dbDel('home_docs',`id=eq.${id}`);DOCS=DOCS.filter(d=>d.id!==id);if(_docEditId===id)_resetDocForm();renderDocs();renderDocAdmList();showToast('Dokumen dihapus.');}
+    try{await dbDel('home_docs',`id=eq.${id}`);DOCS=DOCS.filter(d=>d.id!==id);renderDocs();renderDocAdmList();showToast('Dokumen dihapus.');}
     catch(e){showToast('Gagal: '+e.message,'err');}
   });
 }
@@ -1378,18 +949,9 @@ async function deleteDoc(id){
 /* ══ VISIT COUNTER ══ */
 async function trackVisit(){
   try{
-    const LS_KEY='naposo_sid';const LS_EXP='naposo_sid_exp';
-    const now=Date.now();const exp=parseInt(localStorage.getItem(LS_EXP)||'0');
-    let sid=localStorage.getItem(LS_KEY);
-    if(!sid||now>exp){
-      sid='s_'+now+'_'+Math.random().toString(36).slice(2);
-      localStorage.setItem(LS_KEY,sid);
-      localStorage.setItem(LS_EXP,String(now+86400000));
-      await dbIns('visits',{session_id:sid});
-    }
-    const d=new Date();const monthStart=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-    const rows=await dbGet('visits',`select=id&created_at=gte.${monthStart}`);
-    const el=document.getElementById('footerVisits');if(el)el.textContent=rows.length;
+    let sid=sessionStorage.getItem('naposo_sid');
+    if(!sid){sid='s_'+Date.now()+'_'+Math.random().toString(36).slice(2);sessionStorage.setItem('naposo_sid',sid);await dbIns('visits',{session_id:sid});}
+    const rows=await dbGet('visits','select=id');const el=document.getElementById('footerVisits');if(el)el.textContent=rows.length;
   }catch(e){}
 }
 
@@ -1408,37 +970,15 @@ function initParallax(){
 }
 
 /* ══ INIT ══ */
-
-/* ══ ADMIN ACTIVITY LOG ══ */
-async function loadAdminActivityLog(){
-  const el=document.getElementById('bnActivityLog');if(!el)return;
-  el.innerHTML=`<span class="bn-act-empty">${tx('actLogLoading')}</span>`;
-  try{
-    const rows=await dbGet('event_logs','select=action,actor,note,created_at&order=created_at.desc&limit=10');
-    if(!rows||!rows.length){el.innerHTML=`<span class="bn-act-empty">${tx('actLogEmpty')}</span>`;return;}
-    el.innerHTML=rows.map(r=>{
-      const d=new Date(r.created_at);
-      const ts=d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="bn-act-row"><span class="bn-act-action">${escapeHTML(r.action||'')}</span><span class="bn-act-note">${escapeHTML(r.note||r.actor||'')}</span><span class="bn-act-ts">${ts}</span></div>`;
-    }).join('');
-  }catch(e){el.innerHTML=`<span class="bn-act-empty">${tx('actLogError')}</span>`;}
-}
-
 async function init(){
   applyDark();applyLang();buildLoginDropdown();
   const fy=document.getElementById('fyear');if(fy)fy.textContent=new Date().getFullYear();
-  ['loginModal','editEventModal','docsModal','announceModal','docOverlay','recapAdminModal'].forEach(id=>{
+  ['loginModal','editEventModal','docsModal','announceModal','docOverlay'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.addEventListener('click',e=>{if(e.target===el){if(id==='docOverlay')closeDoc();else closeModal(id);}});
   });
-  // Item 5 (Sesi 55): auto-extract folder ID kalau admin paste full Drive URL
-  const radmFolderEl=document.getElementById('radmFolderId');
-  if(radmFolderEl)radmFolderEl.addEventListener('blur',function(){
-    const m=this.value.trim().match(/\/folders\/([^/?&#]+)/);
-    if(m)this.value=m[1];
-  });
   const savedToken=localStorage.getItem('naposo_token');const savedName=localStorage.getItem('naposo_admin_name');
-  if(savedToken&&savedName){isAdmin=true;_applyAdminUI(savedName);_applyRoleBadge();}
+  if(savedToken&&savedName){isAdmin=true;_applyAdminUI(savedName);}
   await loadBanners();
   trackVisit();
   await loadData();
@@ -1468,40 +1008,21 @@ function initDirtyState(){
 function driveToThumbnailIdx(url){if(!url)return '';const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);return m?`https://lh3.googleusercontent.com/d/${m[1]}`:url;}
 function renderRevWidget(post){
   const sec=document.getElementById('revWidgetSection');if(!sec)return;
-  if(post!==undefined)_lastRevPost=post;
-  if(!_lastRevPost){sec.style.display='none';return;}
-  post=_lastRevPost;
+  if(!post){sec.style.display='none';return;}
   sec.style.display='';
-  const MS=_lang==='en'?MS_EN:MS_ID;
+  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const d=new Date(post.date+'T00:00:00');
   const dateLbl=`${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
   const imgSrc=driveToThumbnailIdx(post.poster_url);
-  const dayType=post.day_type||'senin';
-  const dayLbl=dayType==='senin'?'Senin':'Jumat';
-  const href=`reversement.html?id=${encodeURIComponent(post.id)}`;
-  const eyebrow=tx('revWidgetTitle');
-  const ctaTxt=_lang==='en'?'Read more →':'Baca selengkapnya →';
-  const posterHTML=imgSrc
-    ?`<img src="${escapeHTML(imgSrc)}" alt="${escapeHTML(post.title)}" class="rev-widget-poster-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="rev-widget-poster-fb" style="display:none">📖</div>`
-    :`<div class="rev-widget-poster-fb">📖</div>`;
-  const verseHTML=post.verse_ref?`<div class="rev-widget-verse"><svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" style="color:var(--text3);flex-shrink:0"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h11A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11zm1.5-.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-11z"/><path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg>${escapeHTML(post.verse_ref)}</div>`:'';
-  const excerptHTML=post.excerpt?`<div class="rev-widget-excerpt">${escapeHTML(post.excerpt)}</div>`:'';
-  const seriesHTML=post.series_name?`<span style="color:var(--border)">·</span><span class="rev-widget-series">Seri: ${escapeHTML(post.series_name)}</span>`:'';
+  const dayLbl=post.day_type==='senin'?'Senin':'Jumat';
   document.getElementById('revWidgetInner').innerHTML=`
-    <div class="rev-widget-card" onclick="window.location.href='${href}'">
-      <div class="rev-widget-poster-wrap">
-        <div class="rev-widget-poster-inner">
-          ${posterHTML}
-          <span class="rev-widget-day-badge ${dayType}">${dayLbl}</span>
-        </div>
-      </div>
+    <div class="rev-widget-card" onclick="window.location.href='reversement.html?id='+encodeURIComponent('${post.id}')" style="cursor:pointer">
+      ${imgSrc?`<div class="rev-widget-img-wrap"><img src="${escapeHTML(imgSrc)}" alt="${escapeHTML(post.title)}" class="rev-widget-img" onerror="this.parentElement.style.display='none'"></div>`:''}
       <div class="rev-widget-body">
-        <div class="rev-widget-eyebrow">${eyebrow}</div>
+        <div class="rev-widget-meta"><span class="rev-day-badge ${post.day_type||''}" style="font-size:10px;padding:2px 8px">${dayLbl}</span><span style="font-size:11px;color:var(--text3)">${dateLbl}</span></div>
         <div class="rev-widget-title">${escapeHTML(post.title)}</div>
-        <div class="rev-widget-meta"><span>${dateLbl}</span>${seriesHTML}</div>
-        ${verseHTML}
-        ${excerptHTML}
-        <a class="rev-widget-cta" href="${href}">${ctaTxt}</a>
+        ${post.verse_ref?`<div class="rev-widget-verse">📖 ${escapeHTML(post.verse_ref)}</div>`:''}
+        <a class="rev-widget-cta" href="reversement.html?id=${encodeURIComponent(post.id)}">Baca selengkapnya →</a>
       </div>
     </div>`;
 }
@@ -1510,27 +1031,14 @@ function renderRevWidget(post){
 async function loadData(){
   renderSkeletonEvents();
   try{
-    // Fetch paralel — cats, events, docs, rev widget dilakukan bersamaan
-    // renderEvents() tetap menunggu cats selesai agar warna kategori benar
-    const [catsRes,eventsRes,docsRes,revRes]=await Promise.allSettled([
-      dbGet('categories','select=*&order=sort_order.asc'),
-      dbGet('events','select=*&order=date.asc'),
-      dbGet('home_docs','select=*&order=created_at.asc'),
-      dbGet('reversement_posts','select=id,title,verse_ref,poster_url,date,day_type&published=eq.true&order=date.desc&limit=1')
-    ]);
-    if(catsRes.status==='fulfilled'&&catsRes.value?.length){
-      const co={},ni={};catsRes.value.forEach(c=>{co[c.id]=c.color;ni[c.id]=c.label_id||c.label||c.id;});
-      Object.assign(CATS,co);Object.assign(CNAMES,ni);
-    }
-    if(eventsRes.status==='fulfilled'){EVENTS=eventsRes.value||[];window.EVENTS=EVENTS;}
-    else throw eventsRes.reason; // events wajib — lempar error ke outer catch
-    DOCS=docsRes.status==='fulfilled'?docsRes.value||[]:[];
-    const revPosts=revRes.status==='fulfilled'?revRes.value:null;
-    renderRevWidget(revPosts?.length?revPosts[0]:null);
-    renderEvents();await renderRecap();renderDocs();
+    try{const cats=await dbGet('categories','select=*&order=sort_order.asc');if(cats&&cats.length){const co={},ni={};cats.forEach(c=>{co[c.id]=c.color;ni[c.id]=c.label_id||c.label||c.id;});Object.assign(CATS,co);Object.assign(CNAMES,ni);}}catch(e){}
+    EVENTS=await dbGet('events','select=*&order=date.asc');window.EVENTS=EVENTS;
+    try{DOCS=await dbGet('home_docs','select=*&order=created_at.asc');}catch(e){DOCS=[];}
+    try{const revPosts=await dbGet('reversement_posts','select=id,title,verse_ref,poster_url,date,day_type&published=eq.true&order=date.desc&limit=1');renderRevWidget(revPosts&&revPosts.length?revPosts[0]:null);}catch(e){renderRevWidget(null);}
+    renderEvents();renderRecap();renderDocs();
     if(isAdmin)renderDocAdmList();
     initScrollReveal();initParallax();if(window._observeCards)window._observeCards();
-    checkBirthdays();
+    checkBirthdays(); // ← cek ulang tahun hari ini
   }catch(e){const g=document.getElementById('eventsGrid');if(g)g.innerHTML=`<div class="ev-empty">Gagal memuat data.</div>`;}
 }
 
@@ -1548,8 +1056,7 @@ function initPullToRefresh(){
 
 /* ══ BOTTOM NAV ══ */
 function openBnSheet(){
-  document.getElementById('bnSheet').classList.add('open');
-  if(isAdmin)loadAdminActivityLog();document.getElementById('bnSheetOverlay').classList.add('open');
+  document.getElementById('bnSheet').classList.add('open');document.getElementById('bnSheetOverlay').classList.add('open');
   const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
   const blt=document.getElementById('bnLangTrack');if(blt)blt.classList.toggle('on',_lang==='en');
   const stt=document.getElementById('scrollTopBtn');if(stt)stt.style.opacity='0';
@@ -1568,7 +1075,6 @@ function _syncBnAdminUI(name){
     if(bnName)bnName.textContent=name;if(bnNameTop)bnNameTop.textContent=name;
     if(bnTopRow)bnTopRow.style.display='block';if(bnIcon)bnIcon.textContent='✓';
     if(bnLabel)bnLabel.textContent=name.split(' ')[0];
-    const bnBadge=document.getElementById('bnAdminBadge');if(bnBadge)bnBadge.style.display='inline';
   }else{
     if(adminSec)adminSec.style.display='none';if(guestSec)guestSec.style.display='block';
     if(bnTopRow)bnTopRow.style.display='none';if(bnIcon)bnIcon.textContent='🔐';

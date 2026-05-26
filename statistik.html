@@ -43,10 +43,21 @@
   </a>
   <div class="hdr-right-desktop">
     <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
-    <a class="navbar-pill pill-home" href="index.html">🏠 Home</a>
-    <a class="navbar-pill pill-home" href="kalender.html">📅 Kalender</a>
-    <a class="navbar-pill pill-home active-pill" href="statistik.html">📊 Statistik</a>
-    <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 Login</button>
+    <button class="icon-toggle" id="langToggleBtn" onclick="toggleLang()">EN</button>
+    <div class="hdr-nav-sep"></div>
+    <a class="navbar-pill pill-home" href="index.html">🏠 <span id="navHome">Home</span></a>
+    <a class="navbar-pill pill-home" href="kalender.html">📅 <span id="navKalender">Kalender</span></a>
+    <a class="navbar-pill pill-rev" href="reversement.html">✝️ <span id="navRev">Reversement</span></a>
+    <a class="navbar-pill pill-stat active-pill" href="statistik.html">📊 Statistik</a>
+    <div class="admin-dd-anchor" id="adminDdAnchor">
+      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span><span id="adminActiveDot" class="admin-active-dot" style="display:none"></span></button>
+      <div class="admin-dd" id="adminDd">
+        <div class="admin-dd-section" id="adminDdSectionLbl">Aksi</div>
+        <button class="admin-dd-item" onclick="openExportModal();document.getElementById('adminDd').classList.remove('open')">📤 <span id="ddExportStat">Export Statistik</span></button>
+        <div class="admin-dd-sep"></div>
+        <button class="admin-dd-item danger" onclick="confirmLogout()">→ <span id="ddLogout">Logout</span></button>
+      </div>
+    </div>
   </div>
 </div>
 </header>
@@ -60,50 +71,78 @@
   <!-- Akses ditolak sebelum login -->
   <div class="stat-access-denied" id="accessDenied">
     <div class="icon">🔒</div>
-    <div style="font-weight:700;font-size:1.1rem">Halaman Khusus Pengurus</div>
-    <div style="font-size:.85rem;color:var(--text3)">Silakan login terlebih dahulu untuk melihat statistik.</div>
-    <button class="btn btn-primary" onclick="handleLoginBtn()" style="margin-top:8px">🔐 Login</button>
+    <div style="font-weight:700;font-size:1.1rem" id="accessDeniedTitle">Halaman Khusus Pengurus</div>
+    <div style="font-size:.85rem;color:var(--text3)" id="accessDeniedSub">Silakan login terlebih dahulu untuk melihat statistik.</div>
+    <button class="btn btn-primary" onclick="handleLoginBtn()" style="margin-top:8px">🔐 <span id="accessDeniedBtn">Login</span></button>
   </div>
 
   <!-- Dashboard statistik -->
   <div id="statDashboard" style="display:none">
     <div style="margin-bottom:20px">
-      <h2 style="font-size:1.3rem;font-weight:800;color:var(--text);margin:0 0 4px">📊 Statistik Pelayanan</h2>
-      <div style="font-size:.8rem;color:var(--text3)">Data event, kunjungan, dan kategori kegiatan Naposo HKBP Ujung Menteng.</div>
+      <h2 style="font-size:1.3rem;font-weight:800;color:var(--text);margin:0 0 4px" id="dashTitle">📊 Statistik Pelayanan</h2>
+      <div style="font-size:.8rem;color:var(--text3)" id="dashSub">Data event, kunjungan, dan kategori kegiatan Naposo HKBP Ujung Menteng.</div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+      <div style="font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:10px">🔍 <span id="filterHdr">FILTER</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.72rem;color:var(--text3);font-weight:600" id="filterYearLbl">Tahun</label>
+          <select id="filterYear" onchange="applyStatFilter()" style="font-size:.8rem;padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)"></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.72rem;color:var(--text3);font-weight:600" id="filterMonthFromLbl">Bulan Awal</label>
+          <select id="filterMonthFrom" onchange="applyStatFilter()" style="font-size:.8rem;padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)">
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.72rem;color:var(--text3);font-weight:600" id="filterMonthToLbl">Bulan Akhir</label>
+          <select id="filterMonthTo" onchange="applyStatFilter()" style="font-size:.8rem;padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)">
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.72rem;color:var(--text3);font-weight:600" id="filterCatLbl">Kategori</label>
+          <select id="filterCat" onchange="applyStatFilter()" style="font-size:.8rem;padding:5px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text)">
+            <option value="" id="filterCatAll">Semua Kategori</option>
+          </select>
+        </div>
+        <button onclick="resetStatFilter()" id="resetFilterBtn" style="font-size:.78rem;padding:5px 12px;border:1px solid var(--border2);border-radius:8px;background:none;color:var(--text2);cursor:pointer;align-self:flex-end">↺ Reset</button>
+      </div>
+      <div id="filterSummary" style="margin-top:8px;font-size:.75rem;color:var(--blue);font-weight:600;display:none"></div>
     </div>
 
     <!-- KPI Cards -->
     <div class="stat-grid" id="kpiGrid">
-      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiTotal">–</div><div class="stat-kpi-lbl">TOTAL EVENT</div></div>
-      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiMonth">–</div><div class="stat-kpi-lbl">BULAN INI</div></div>
-      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiDraft">–</div><div class="stat-kpi-lbl">DRAFT</div></div>
-      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisits">–</div><div class="stat-kpi-lbl">TOTAL KUNJUNGAN</div></div>
-      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisitsWeek">–</div><div class="stat-kpi-lbl">KUNJUNGAN 7 HARI</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiTotal">–</div><div class="stat-kpi-lbl" id="kpiTotalLbl">TOTAL EVENT</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiMonth">–</div><div class="stat-kpi-lbl" id="kpiMonthLbl">BULAN INI</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiDraft">–</div><div class="stat-kpi-lbl" id="kpiDraftLbl">DRAFT</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisits">–</div><div class="stat-kpi-lbl" id="kpiVisitsLbl">TOTAL KUNJUNGAN</div></div>
+      <div class="stat-kpi"><div class="stat-kpi-val" id="kpiVisitsWeek">–</div><div class="stat-kpi-lbl" id="kpiVisitsWeekLbl">KUNJUNGAN 7 HARI</div></div>
     </div>
 
-    <!-- Chart: Kunjungan per hari (30 hari terakhir) -->
     <div class="stat-card">
-      <div class="stat-card-title">📈 KUNJUNGAN 30 HARI TERAKHIR</div>
+      <div class="stat-card-title" id="visitChartTitle">📈 KUNJUNGAN 30 HARI TERAKHIR</div>
       <canvas id="visitChart" height="80"></canvas>
     </div>
 
     <!-- Chart: Event per bulan (tahun ini) -->
     <div class="stat-card">
-      <div class="stat-card-title">📅 EVENT PER BULAN (TAHUN INI)</div>
+      <div class="stat-card-title" id="monthChartTitle">📅 EVENT PER BULAN (TAHUN INI)</div>
       <canvas id="monthChart" height="80"></canvas>
     </div>
 
     <!-- Distribusi kategori -->
     <div class="stat-card">
-      <div class="stat-card-title">🏷️ DISTRIBUSI KATEGORI</div>
+      <div class="stat-card-title" id="catBarsTitle">🏷️ DISTRIBUSI KATEGORI</div>
       <div id="catBars"></div>
     </div>
 
     <!-- Tabel event terbaru -->
     <div class="stat-card">
-      <div class="stat-card-title">🕐 EVENT TERBARU / AKAN DATANG</div>
+      <div class="stat-card-title" id="evTableTitle">🕐 EVENT TERBARU / AKAN DATANG</div>
       <table class="stat-table" id="evTable">
-        <thead><tr><th>Tanggal</th><th>Judul</th><th>Kategori</th><th>Status</th></tr></thead>
+        <thead><tr><th id="thDate">Tanggal</th><th id="thTitle">Judul</th><th id="thCat">Kategori</th><th id="thStatus">Status</th></tr></thead>
         <tbody id="evTableBody"></tbody>
       </table>
     </div>
@@ -113,10 +152,10 @@
 <!-- Login modal -->
 <div class="overlay" id="loginModal">
 <div class="modal" style="max-width:350px">
-  <div class="modal-hdr"><h2>Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
+  <div class="modal-hdr"><h2 id="loginTitle">Login Pengurus</h2><button class="modal-x" onclick="closeModal('loginModal')">×</button></div>
   <div class="modal-body">
-    <div class="form-g"><label>Nama Pengurus</label><select id="loginName"><option value="">-- Pilih nama --</option></select></div>
-    <div class="form-g"><label>Password</label>
+    <div class="form-g"><label id="lbName">Nama Pengurus</label><select id="loginName"><option value="" id="loginSelectDefault">-- Pilih nama --</option></select></div>
+    <div class="form-g"><label id="lbPw">Password</label>
       <div class="pw-wrap">
         <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
         <button class="pw-eye" type="button" onclick="togglePw()">
@@ -127,10 +166,69 @@
     <p class="login-err" id="loginErr">Password salah.</p>
   </div>
   <div class="modal-foot">
-    <button class="btn btn-ghost" onclick="closeModal('loginModal')">Batal</button>
-    <button class="btn btn-primary" onclick="doLogin()">Masuk</button>
+    <button class="btn btn-ghost" onclick="closeModal('loginModal')" id="loginCancelBtn">Batal</button>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginSubmitBtn">Masuk</button>
   </div>
 </div>
+</div>
+
+<!-- ══ EXPORT MODAL ══ -->
+<div class="overlay" id="exportModal">
+<div class="modal export-modal">
+  <div class="modal-hdr">
+    <h2 id="exportModalTitle">📤 Export Statistik</h2>
+    <button class="modal-x" onclick="closeModal('exportModal')">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="export-section-title" id="exportFmtTitle">Format Export</div>
+    <div class="export-grid">
+      <div class="export-card selected" id="expCardPdf" onclick="selectExportFormat('pdf')">
+        <div class="export-card-icon">📄</div>
+        <div class="export-card-title">PDF</div>
+        <div class="export-card-desc" id="expPdfDesc">Laporan siap cetak, ringkasan lengkap</div>
+      </div>
+      <div class="export-card" id="expCardCsv" onclick="selectExportFormat('csv')">
+        <div class="export-card-icon">📊</div>
+        <div class="export-card-title">CSV / Excel</div>
+        <div class="export-card-desc" id="expCsvDesc">Data mentah, bisa diolah di spreadsheet</div>
+      </div>
+    </div>
+    <div class="export-section-title" id="exportScopeTitle">Data yang Di-export</div>
+    <div class="export-scope-row">
+      <button class="export-scope-btn on" id="scopeBtnEvents" onclick="selectExportScope('events')"><span id="scopeLblEvents">Semua Event</span></button>
+      <button class="export-scope-btn" id="scopeBtnMonthly" onclick="selectExportScope('monthly')"><span id="scopeLblMonthly">Rekap Bulanan</span></button>
+      <button class="export-scope-btn" id="scopeBtnVisits" onclick="selectExportScope('visits')"><span id="scopeLblVisits">Kunjungan</span></button>
+    </div>
+    <div class="export-progress" id="exportProgress">
+      <div class="export-progress-bar"><div class="export-progress-fill" id="exportProgressFill"></div></div>
+      <div class="export-progress-txt" id="exportProgressTxt">Menyiapkan…</div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('exportModal')" id="exportCancelBtn">Batal</button>
+    <button class="btn btn-primary" id="doExportBtn" onclick="doStatExport()">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+      <span id="doExportBtnTxt">Export Sekarang</span>
+    </button>
+  </div>
+</div>
+</div>
+
+<!-- ══ CONFIRM MODAL ══ -->
+<div class="overlay" id="confirmModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <h2 id="confirmModalTitle">Konfirmasi</h2>
+      <button class="modal-x" onclick="closeModal('confirmModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmModalMsg" style="font-size:.87rem;line-height:1.6;color:var(--text)"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')" id="confirmCancelBtn">Batal</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Ya, Logout</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -142,6 +240,134 @@ const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Gr
 let darkMode=localStorage.getItem('naposo_dark')==='1';
 let isAdmin=false,_adminName='';
 
+/* ══ I18N ══ */
+let _lang=localStorage.getItem('naposo_lang')||'id';
+const MS_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const MS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS_SHORT_ID=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const MS_SHORT_EN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS_ID=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const DAYS_EN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const T={
+  navHome:{id:'Home',en:'Home'},
+  navKalender:{id:'Kalender',en:'Calendar'},
+  navRev:{id:'Reversement',en:'Reversement'},
+  loginBtnTxt:{id:'Login',en:'Login'},
+  adminDdSectionLbl:{id:'Aksi',en:'Actions'},
+  ddExportStat:{id:'Export Statistik',en:'Export Statistics'},
+  ddLogout:{id:'Logout',en:'Logout'},
+  accessDeniedTitle:{id:'Halaman Khusus Pengurus',en:'Admin Only Page'},
+  accessDeniedSub:{id:'Silakan login terlebih dahulu untuk melihat statistik.',en:'Please log in to view statistics.'},
+  accessDeniedBtn:{id:'Login',en:'Login'},
+  dashTitle:{id:'📊 Statistik Pelayanan',en:'📊 Service Statistics'},
+  dashSub:{id:'Data event, kunjungan, dan kategori kegiatan Naposo HKBP Ujung Menteng.',en:'Event, visit, and activity category data for Naposo HKBP Ujung Menteng.'},
+  filterHdr:{id:'FILTER',en:'FILTER'},
+  filterYearLbl:{id:'Tahun',en:'Year'},
+  filterMonthFromLbl:{id:'Bulan Awal',en:'From Month'},
+  filterMonthToLbl:{id:'Bulan Akhir',en:'To Month'},
+  filterCatLbl:{id:'Kategori',en:'Category'},
+  filterCatAll:{id:'Semua Kategori',en:'All Categories'},
+  resetFilterBtn:{id:'↺ Reset',en:'↺ Reset'},
+  kpiTotalLbl:{id:'TOTAL EVENT',en:'TOTAL EVENTS'},
+  kpiMonthLbl:{id:'BULAN INI',en:'THIS MONTH'},
+  kpiDraftLbl:{id:'DRAFT',en:'DRAFT'},
+  kpiVisitsLbl:{id:'TOTAL KUNJUNGAN',en:'TOTAL VISITS'},
+  kpiVisitsWeekLbl:{id:'KUNJUNGAN 7 HARI',en:'VISITS 7 DAYS'},
+  visitChartTitle:{id:'📈 KUNJUNGAN 30 HARI TERAKHIR',en:'📈 VISITS LAST 30 DAYS'},
+  monthChartTitle:{id:'📅 EVENT PER BULAN (TAHUN INI)',en:'📅 EVENTS PER MONTH (THIS YEAR)'},
+  catBarsTitle:{id:'🏷️ DISTRIBUSI KATEGORI',en:'🏷️ CATEGORY DISTRIBUTION'},
+  evTableTitle:{id:'🕐 EVENT TERBARU / AKAN DATANG',en:'🕐 RECENT / UPCOMING EVENTS'},
+  thDate:{id:'Tanggal',en:'Date'},
+  thTitle:{id:'Judul',en:'Title'},
+  thCat:{id:'Kategori',en:'Category'},
+  thStatus:{id:'Status',en:'Status'},
+  loginTitle:{id:'Login Pengurus',en:'Admin Login'},
+  lbName:{id:'Nama Pengurus',en:'Admin Name'},
+  lbPw:{id:'Password',en:'Password'},
+  loginSelectDefault:{id:'-- Pilih nama --',en:'-- Select name --'},
+  loginCancelBtn:{id:'Batal',en:'Cancel'},
+  loginSubmitBtn:{id:'Masuk',en:'Sign In'},
+  exportModalTitle:{id:'📤 Export Statistik',en:'📤 Export Statistics'},
+  exportFmtTitle:{id:'Format Export',en:'Export Format'},
+  expPdfDesc:{id:'Laporan siap cetak, ringkasan lengkap',en:'Print-ready report, full summary'},
+  expCsvDesc:{id:'Data mentah, bisa diolah di spreadsheet',en:'Raw data, editable in spreadsheet'},
+  exportScopeTitle:{id:'Data yang Di-export',en:'Data to Export'},
+  scopeLblEvents:{id:'Semua Event',en:'All Events'},
+  scopeLblMonthly:{id:'Rekap Bulanan',en:'Monthly Recap'},
+  scopeLblVisits:{id:'Kunjungan',en:'Visits'},
+  exportCancelBtn:{id:'Batal',en:'Cancel'},
+  doExportBtnTxt:{id:'Export Sekarang',en:'Export Now'},
+  exportPreparing:{id:'Menyiapkan…',en:'Preparing…'},
+  exportMakingSheet:{id:'Membuat spreadsheet…',en:'Building spreadsheet…'},
+  exportPacking:{id:'Mengemas file…',en:'Packaging file…'},
+  exportDoneCSV:{id:'Selesai! File CSV siap diunduh.',en:'Done! CSV file ready to download.'},
+  exportOkCSV:{id:'Export CSV berhasil ✓',en:'CSV exported successfully ✓'},
+  exportMakingPDF:{id:'Menyiapkan laporan PDF…',en:'Preparing PDF report…'},
+  exportOpeningPrint:{id:'Membuka jendela cetak…',en:'Opening print window…'},
+  exportDonePDF:{id:'Jendela cetak terbuka.',en:'Print window opened.'},
+  exportOkPDF:{id:'Export PDF berhasil ✓',en:'PDF exported successfully ✓'},
+  exportPopupBlocked:{id:'Popup diblokir. Izinkan popup di browser.',en:'Popup blocked. Please allow popups in your browser.'},
+  confirmCancelBtn:{id:'Batal',en:'Cancel'},
+  confirmOkLogout:{id:'Ya, Logout',en:'Yes, Logout'},
+  logoutConfirm:{id:'Keluar dari mode admin?',en:'Exit admin mode?'},
+  logoutOk:{id:'Logout berhasil.',en:'Logged out successfully.'},
+  loadFail:{id:'Gagal memuat data',en:'Failed to load data'},
+  filterShowing:{id:'Menampilkan',en:'Showing'},
+  filterAllMonths:{id:'Semua bulan',en:'All months'},
+  filterEvents:{id:'event',en:'events'},
+  statusDone:{id:'Selesai',en:'Done'},
+  statusUpcoming:{id:'Mendatang',en:'Upcoming'},
+  adminBarHi:{id:'Halo, ',en:'Hello, '},
+  csvHdrDate:{id:'Tanggal',en:'Date'},
+  csvHdrDay:{id:'Hari',en:'Day'},
+  csvHdrTitle:{id:'Judul Kegiatan',en:'Activity Title'},
+  csvHdrCat:{id:'Kategori',en:'Category'},
+  csvHdrStatus:{id:'Status',en:'Status'},
+  csvHdrStart:{id:'Waktu Mulai',en:'Start Time'},
+  csvHdrEnd:{id:'Waktu Selesai',en:'End Time'},
+  csvHdrMonth:{id:'Bulan',en:'Month'},
+  csvHdrTotal:{id:'Jumlah Event',en:'Total Events'},
+  csvHdrVisitDate:{id:'Tanggal',en:'Date'},
+  csvHdrVisitCount:{id:'Jumlah Kunjungan',en:'Visit Count'},
+  pdfEvListTitle:{id:'Daftar Event',en:'Event List'},
+  pdfMonthlyTitle:{id:'Rekap Event Per Bulan',en:'Monthly Event Recap'},
+  pdfVisitTitle:{id:'Data Kunjungan 30 Hari Terakhir',en:'Visit Data Last 30 Days'},
+  pdfThDate:{id:'Tanggal',en:'Date'},
+  pdfThDay:{id:'Hari',en:'Day'},
+  pdfThTitle:{id:'Judul Kegiatan',en:'Activity Title'},
+  pdfThCat:{id:'Kategori',en:'Category'},
+  pdfThStatus:{id:'Status',en:'Status'},
+  pdfThMonth:{id:'Bulan',en:'Month'},
+  pdfThTotal:{id:'Total Event',en:'Total Events'},
+  pdfThPublished:{id:'Published',en:'Published'},
+  pdfThDraft:{id:'Draft',en:'Draft'},
+  pdfThVisitDate:{id:'Tanggal',en:'Date'},
+  pdfThVisitCount:{id:'Jumlah Kunjungan',en:'Visit Count'},
+  pdfPrintedOn:{id:'Dicetak',en:'Printed on'},
+  pdfYear:{id:'Tahun',en:'Year'},
+};
+function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
+function applyLang(){
+  document.documentElement.lang=_lang;
+  Object.keys(T).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=tx(id);});
+  const ltb=document.getElementById('langToggleBtn');if(ltb)ltb.textContent=_lang==='id'?'EN':'ID';
+  // Placeholder login password
+  const lp=document.getElementById('loginPw');if(lp)lp.placeholder=_lang==='en'?'Enter password':'Masukkan password';
+  // Rebuild login dropdown untuk update default option
+  buildLoginDropdown();
+  // Rebuild month selects
+  _buildMonthSelects();
+  // Re-render filter summary dan table jika data sudah ada
+  if(_allEvents.length)applyStatFilter();
+  // Admin bar
+  if(isAdmin&&_adminName){const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=tx('adminBarHi')+_adminName+'.';}
+}
+function toggleLang(){_lang=_lang==='id'?'en':'id';localStorage.setItem('naposo_lang',_lang);applyLang();}
+
+// Konstanta kategori — definisikan sekali, dipakai semua chart/tabel
+const CAT_LABELS={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH','perayaan-ulang-tahun':'Ulang Tahun','ulang-tahun':'Ulang Tahun Anggota',ultah:'Perayaan Ulang Tahun',olahraga:'Olahraga',other:'Lainnya'};
+const CAT_COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2','event-gabungan':'#ec89b0',bph:'#dc2626','perayaan-ulang-tahun':'#06b6d4','ulang-tahun':'#06b6d4',ultah:'#06b6d4',olahraga:'#08e7c2',other:'#94a3b8'};
+
 function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(o.headers||{})},...o});}
 async function sbGet(p){const r=await sb(p);if(!r.ok)throw new Error(await r.text());return r.json();}
 
@@ -149,24 +375,56 @@ function applyDark(){
   document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
   const btn=document.getElementById('darkToggleBtn');if(btn)btn.textContent=darkMode?'☀️':'🌙';
 }
-function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();}
+function toggleDark(){darkMode=!darkMode;localStorage.setItem('naposo_dark',darkMode?'1':'0');applyDark();if(_visitChart||_monthChart){renderVisitChart(_allVisits);renderMonthChart(_getFilteredEvents());}}
 
 function openModal(id){const el=document.getElementById(id);if(el){el.classList.add('on');document.body.style.overflow='hidden';}}
 function closeModal(id){const el=document.getElementById(id);if(el){el.classList.remove('on');document.body.style.overflow='';}}
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
 
+let _statExportFormat='pdf', _statExportScope='events';
+
 function handleLoginBtn(){
-  if(isAdmin)return;
+  if(isAdmin){const dd=document.getElementById('adminDd');if(dd)dd.classList.toggle('open');return;}
   buildLoginDropdown();
   document.getElementById('loginErr').style.display='none';
   document.getElementById('loginPw').value='';
   openModal('loginModal');
 }
 function buildLoginDropdown(){
-  const sel=document.getElementById('loginName');sel.innerHTML='<option value="">-- Pilih nama --</option>';
+  const sel=document.getElementById('loginName');if(!sel)return;
+  sel.innerHTML=`<option value="">${tx('loginSelectDefault')}</option>`;
   [...USER_NAMES].sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.appendChild(o);});
 }
 function togglePw(){const inp=document.getElementById('loginPw');inp.type=inp.type==='text'?'password':'text';}
+
+document.addEventListener('click',function(e){
+  const anchor=document.getElementById('adminDdAnchor');
+  const dd=document.getElementById('adminDd');
+  if(dd&&dd.classList.contains('open')&&anchor&&!anchor.contains(e.target)){dd.classList.remove('open');}
+});
+
+function confirmLogout(){
+  const msg=document.getElementById('confirmModalMsg');
+  if(msg)msg.textContent=tx('logoutConfirm');
+  const ok=document.getElementById('confirmOkBtn');
+  if(ok){ok.textContent=tx('confirmOkLogout');ok.onclick=()=>{doLogout();closeModal('confirmModal');};}
+  const cancel=document.getElementById('confirmCancelBtn');
+  if(cancel)cancel.textContent=tx('confirmCancelBtn');
+  openModal('confirmModal');
+}
+function doLogout(){
+  localStorage.removeItem('naposo_token');
+  localStorage.removeItem('naposo_admin_name');
+  localStorage.removeItem('naposo_role');
+  isAdmin=false;_adminName='';
+  const bar=document.getElementById('adminBar');if(bar)bar.classList.remove('on');
+  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='none';
+  const btn=document.getElementById('loginBtn');if(btn){btn.innerHTML='🔐 <span id="loginBtnTxt">Login</span><span id="adminActiveDot" class="admin-active-dot" style="display:none"></span>';}
+  const dd=document.getElementById('adminDd');if(dd)dd.classList.remove('open');
+  document.getElementById('accessDenied').style.display='';
+  document.getElementById('statDashboard').style.display='none';
+  showToast(tx('logoutOk'));
+}
 
 async function doLogin(){
   const name=document.getElementById('loginName').value;
@@ -189,16 +447,245 @@ async function doLogin(){
 function _applyAdminUI(name){
   _adminName=name;
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
-  const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent='Halo, '+name+'.';
-  const btn=document.getElementById('loginBtn');if(btn)btn.textContent='✓ '+name;
+  const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=tx('adminBarHi')+name+'.';
+  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='inline-block';
+  const btn=document.getElementById('loginBtn');if(btn){btn.textContent='✓ '+name;}
   document.getElementById('accessDenied').style.display='none';
   document.getElementById('statDashboard').style.display='';
 }
 
+/* ══ EXPORT ══ */
+function openExportModal(){
+  selectExportFormat('pdf');selectExportScope('events');
+  document.getElementById('exportProgress').classList.remove('on');
+  document.getElementById('doExportBtn').disabled=false;
+  openModal('exportModal');
+}
+function selectExportFormat(fmt){
+  _statExportFormat=fmt;
+  ['pdf','csv'].forEach(f=>{
+    const el=document.getElementById('expCard'+f.charAt(0).toUpperCase()+f.slice(1));
+    if(el)el.classList.toggle('selected',f===fmt);
+  });
+}
+function selectExportScope(scope){
+  _statExportScope=scope;
+  ['events','monthly','visits'].forEach(s=>{
+    const el=document.getElementById('scopeBtn'+s.charAt(0).toUpperCase()+s.slice(1));
+    if(el)el.classList.toggle('on',s===scope);
+  });
+}
+function setExportProgress(pct,key){
+  document.getElementById('exportProgress').classList.add('on');
+  document.getElementById('exportProgressFill').style.width=pct+'%';
+  document.getElementById('exportProgressTxt').textContent=typeof key==='string'&&T[key]?tx(key):key;
+}
+function triggerDownload(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function doStatExport(){
+  if(_statExportFormat==='pdf') statExportPDF();
+  else statExportCSV();
+}
+
+function statExportCSV(){
+  setExportProgress(30,'exportMakingSheet');
+  const yr=document.getElementById('filterYear')?.value||new Date().getFullYear();
+  const MS=_lang==='en'?MS_EN:MS_ID;
+  const DAYS=_lang==='en'?DAYS_EN:DAYS_ID;
+  let rows, filename;
+  if(_statExportScope==='events'){
+    rows=[[tx('csvHdrDate'),tx('csvHdrDay'),tx('csvHdrTitle'),tx('csvHdrCat'),tx('csvHdrStatus'),tx('csvHdrStart'),tx('csvHdrEnd')]];
+    (_allEvents||[]).forEach(ev=>{
+      const d=new Date(ev.date+'T00:00:00');
+      rows.push([ev.date,DAYS[d.getDay()],ev.title||'',ev.category||'',ev.status||'',ev.time_start||'',ev.time_end||'']);
+    });
+    filename=`Statistik_Event_Naposo_${yr}.csv`;
+  } else if(_statExportScope==='monthly'){
+    rows=[[tx('csvHdrMonth'),tx('csvHdrTotal'),'Draft','Published']];
+    const byMonth={};
+    (_allEvents||[]).forEach(ev=>{
+      const m=ev.date.slice(5,7);
+      if(!byMonth[m])byMonth[m]={total:0,draft:0,pub:0};
+      byMonth[m].total++;
+      if(ev.status==='draft')byMonth[m].draft++;else byMonth[m].pub++;
+    });
+    for(let i=1;i<=12;i++){
+      const k=String(i).padStart(2,'0');
+      const d=byMonth[k]||{total:0,draft:0,pub:0};
+      rows.push([MS[i-1],d.total,d.draft,d.pub]);
+    }
+    filename=`Statistik_Bulanan_Naposo_${yr}.csv`;
+  } else {
+    rows=[[tx('csvHdrVisitDate'),tx('csvHdrVisitCount')]];
+    (_allVisits||[]).forEach(v=>rows.push([v.date||v.visited_at?.slice(0,10)||'',v.count||1]));
+    filename=`Statistik_Kunjungan_Naposo_${yr}.csv`;
+  }
+  setExportProgress(80,'exportPacking');
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  triggerDownload(blob,filename);
+  setExportProgress(100,'exportDoneCSV');
+  showToast(tx('exportOkCSV'),'ok');
+}
+
+function statExportPDF(){
+  setExportProgress(30,'exportMakingPDF');
+  const yr=document.getElementById('filterYear')?.value||new Date().getFullYear();
+  const MS=_lang==='en'?MS_EN:MS_ID;
+  const DAYS=_lang==='en'?DAYS_EN:DAYS_ID;
+  const w=window.open('','_blank');
+  if(!w){showToast(tx('exportPopupBlocked'),'err');return;}
+
+  let bodyContent='';
+  if(_statExportScope==='events'){
+    const evs=(_allEvents||[]).sort((a,b)=>a.date.localeCompare(b.date));
+    const byMonth={};
+    evs.forEach(ev=>{const m=ev.date.slice(0,7);if(!byMonth[m])byMonth[m]=[];byMonth[m].push(ev);});
+    bodyContent=`<h2>${tx('pdfEvListTitle')} ${yr}</h2>`;
+    Object.keys(byMonth).sort().forEach(ym=>{
+      const [y,m]=ym.split('-');
+      bodyContent+=`<h3>${MS[parseInt(m)-1]} ${y}</h3><table><thead><tr><th>${tx('pdfThDate')}</th><th>${tx('pdfThDay')}</th><th>${tx('pdfThTitle')}</th><th>${tx('pdfThCat')}</th><th>${tx('pdfThStatus')}</th></tr></thead><tbody>`;
+      byMonth[ym].forEach((ev,i)=>{
+        const d=new Date(ev.date+'T00:00:00');
+        bodyContent+=`<tr class="${i%2?'odd':''}"><td>${ev.date}</td><td>${DAYS[d.getDay()]}</td><td>${ev.title||''}</td><td>${ev.category||''}</td><td>${ev.status||''}</td></tr>`;
+      });
+      bodyContent+='</tbody></table>';
+    });
+  } else if(_statExportScope==='monthly'){
+    const byMonth={};
+    (_allEvents||[]).forEach(ev=>{const m=ev.date.slice(5,7);if(!byMonth[m])byMonth[m]={total:0,draft:0,pub:0};byMonth[m].total++;if(ev.status==='draft')byMonth[m].draft++;else byMonth[m].pub++;});
+    bodyContent=`<h2>${tx('pdfMonthlyTitle')} ${yr}</h2><table><thead><tr><th>${tx('pdfThMonth')}</th><th>${tx('pdfThTotal')}</th><th>${tx('pdfThPublished')}</th><th>${tx('pdfThDraft')}</th></tr></thead><tbody>`;
+    for(let i=1;i<=12;i++){const k=String(i).padStart(2,'0');const d=byMonth[k]||{total:0,draft:0,pub:0};bodyContent+=`<tr class="${i%2?'odd':''}"><td>${MS[i-1]}</td><td>${d.total}</td><td>${d.pub}</td><td>${d.draft}</td></tr>`;}
+    bodyContent+='</tbody></table>';
+  } else {
+    const visits=(_allVisits||[]).slice(-30);
+    bodyContent=`<h2>${tx('pdfVisitTitle')}</h2><table><thead><tr><th>${tx('pdfThVisitDate')}</th><th>${tx('pdfThVisitCount')}</th></tr></thead><tbody>`;
+    visits.forEach((v,i)=>{bodyContent+=`<tr class="${i%2?'odd':''}"><td>${v.date||v.visited_at?.slice(0,10)||''}</td><td>${v.count||1}</td></tr>`;});
+    bodyContent+='</tbody></table>';
+  }
+
+  setExportProgress(70,'exportOpeningPrint');
+  const printedOn=new Date().toLocaleDateString(_lang==='en'?'en-GB':'id-ID',{day:'numeric',month:'long',year:'numeric'});
+  const _s='script',_st='style';
+  const pdfHTML=[
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"/>',
+    `<title>Statistik Pelayanan Naposo ${yr}<\/title>`,
+    '<'+_st+'>',
+    '*{box-sizing:border-box;margin:0;padding:0}',
+    'body{font-family:"Segoe UI",Arial,sans-serif;font-size:11px;color:#1e293b;padding:20px}',
+    '.hdr{text-align:center;padding-bottom:14px;border-bottom:2px solid #1d4ed8;margin-bottom:20px}',
+    '.hdr h1{font-size:15px;font-weight:800;color:#1d4ed8}.hdr p{font-size:10px;color:#64748b;margin-top:3px}',
+    'h2{font-size:13px;font-weight:700;color:#1e293b;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0}',
+    'h3{font-size:11px;font-weight:700;color:#1d4ed8;margin:14px 0 6px;background:#eff6ff;padding:4px 8px;border-radius:4px}',
+    'table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px}',
+    'th{background:#1d4ed8;color:#fff;padding:6px 8px;text-align:left;font-weight:600}',
+    'td{padding:5px 8px;border-bottom:1px solid #f1f5f9}tr.odd td{background:#f8fafc}',
+    '.foot{text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0}',
+    '@media print{body{padding:10px}}',
+    '<\/'+_st+'><\/head><body>',
+    `<div class="hdr"><h1>📊 Statistik Pelayanan Naposo HKBP Ujung Menteng<\/h1>`,
+    `<p>${tx('pdfYear')} ${yr} · ${tx('pdfPrintedOn')} ${printedOn}<\/p><\/div>`,
+    bodyContent,
+    '<div class="foot">Naposo HKBP Ujung Menteng · naposo.my.id · Soli Deo Gloria 🙏<\/div>',
+    '<'+_s+'>window.onload=()=>window.print();<\/'+_s+'>',
+    '<\/body><\/html>'
+  ].join('');
+  w.document.write(pdfHTML);
+  w.document.close();
+  setExportProgress(100,'exportDonePDF');
+  showToast(tx('exportOkPDF'),'ok');
+}
 function showToast(msg,type=''){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;setTimeout(()=>el.classList.remove('on'),3000);}
 
 /* ══ STATS ══ */
 let _visitChart=null,_monthChart=null;
+let _allEvents=[],_allVisits=[];
+
+function _buildMonthSelects(){
+  const MS=_lang==='en'?MS_EN:MS_ID;
+  ['filterMonthFrom','filterMonthTo'].forEach(selId=>{
+    const sel=document.getElementById(selId);if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML=MS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
+    sel.value=cur||'0';
+  });
+}
+
+function _buildFilterDropdowns(){
+  // Populate tahun dari data
+  const years=[...new Set(_allEvents.map(e=>e.date.slice(0,4)))].sort().reverse();
+  const curYear=new Date().getFullYear().toString();
+  const ySel=document.getElementById('filterYear');
+  if(ySel){
+    ySel.innerHTML=years.map(y=>`<option value="${y}"${y===curYear?' selected':''}>${y}</option>`).join('');
+  }
+  // Build month selects
+  _buildMonthSelects();
+  // Populate kategori
+  const cats=[...new Set(_allEvents.map(e=>e.category))].sort();
+  const LABELS=CAT_LABELS;
+  const cSel=document.getElementById('filterCat');
+  if(cSel){
+    cSel.innerHTML=`<option value="">${tx('filterCatAll')}</option>`+cats.map(c=>`<option value="${c}">${LABELS[c]||c}</option>`).join('');
+  }
+  // Default bulan: 0 – 11
+  const mFrom=document.getElementById('filterMonthFrom');
+  const mTo=document.getElementById('filterMonthTo');
+  if(mFrom)mFrom.value='0';
+  if(mTo)mTo.value='11';
+}
+
+function _getFilteredEvents(){
+  const year=document.getElementById('filterYear')?.value||new Date().getFullYear().toString();
+  const mFrom=parseInt(document.getElementById('filterMonthFrom')?.value||'0');
+  const mTo=parseInt(document.getElementById('filterMonthTo')?.value||'11');
+  const cat=document.getElementById('filterCat')?.value||'';
+  const from=Math.min(mFrom,mTo);const to=Math.max(mFrom,mTo);
+  return _allEvents.filter(e=>{
+    if(!e.date.startsWith(year))return false;
+    const m=parseInt(e.date.slice(5,7))-1;
+    if(m<from||m>to)return false;
+    if(cat&&e.category!==cat)return false;
+    return true;
+  });
+}
+
+function applyStatFilter(){
+  const events=_getFilteredEvents();
+  // Update summary
+  const year=document.getElementById('filterYear')?.value||'';
+  const mFrom=parseInt(document.getElementById('filterMonthFrom')?.value||'0');
+  const mTo=parseInt(document.getElementById('filterMonthTo')?.value||'11');
+  const cat=document.getElementById('filterCat')?.value||'';
+  const MS_SHORT=_lang==='en'?MS_SHORT_EN:MS_SHORT_ID;
+  const LABELS=CAT_LABELS;
+  const from=Math.min(mFrom,mTo);const to=Math.max(mFrom,mTo);
+  const isFiltered=cat||from!==0||to!==11;
+  const sumEl=document.getElementById('filterSummary');
+  if(sumEl){
+    const rangeStr=from===to?MS_SHORT[from]:`${MS_SHORT[from]} – ${MS_SHORT[to]}`;
+    const catStr=cat?` · ${LABELS[cat]||cat}`:'';
+    const monthStr=isFiltered?rangeStr:tx('filterAllMonths');
+    sumEl.textContent=`${tx('filterShowing')}: ${year} · ${monthStr}${catStr} → ${events.length} ${tx('filterEvents')}`;
+    sumEl.style.display='block';
+  }
+  renderKPI(events,_allVisits);
+  renderMonthChart(events);
+  renderCatBars(events);
+  renderEvTable(events);
+}
+
+function resetStatFilter(){
+  const curYear=new Date().getFullYear().toString();
+  const ySel=document.getElementById('filterYear');if(ySel)ySel.value=curYear;
+  const mFrom=document.getElementById('filterMonthFrom');if(mFrom)mFrom.value='0';
+  const mTo=document.getElementById('filterMonthTo');if(mTo)mTo.value='11';
+  const cSel=document.getElementById('filterCat');if(cSel)cSel.value='';
+  applyStatFilter();
+}
 
 async function loadStats(){
   try{
@@ -206,12 +693,17 @@ async function loadStats(){
       sbGet('events?select=id,date,title,category,status&order=date.desc'),
       sbGet('visits?select=id,session_id,created_at&order=created_at.desc'),
     ]);
+    _allEvents=events;_allVisits=visits;
+    _buildFilterDropdowns();
     renderKPI(events, visits);
     renderVisitChart(visits);
     renderMonthChart(events);
     renderCatBars(events);
     renderEvTable(events);
-  }catch(e){showToast('Gagal memuat data: '+e.message,'err');}
+    // Trigger filter summary
+    const sumEl=document.getElementById('filterSummary');
+    if(sumEl){const year=new Date().getFullYear();sumEl.textContent=`${tx('filterShowing')}: ${year} · ${tx('filterAllMonths')} · ${events.length} ${tx('filterEvents')}`;sumEl.style.display='block';}
+  }catch(e){showToast(tx('loadFail')+': '+e.message,'err');}
 }
 
 function renderKPI(events, visits){
@@ -239,7 +731,7 @@ function renderVisitChart(visits){
   if(_visitChart)_visitChart.destroy();
   _visitChart=new Chart(ctx,{
     type:'bar',
-    data:{labels,datasets:[{label:'Kunjungan',data,backgroundColor:'rgba(59,130,246,.55)',borderColor:'rgba(59,130,246,.9)',borderWidth:1,borderRadius:3}]},
+    data:{labels,datasets:[{label:tx('kpiVisitsLbl'),data,backgroundColor:'rgba(59,130,246,.55)',borderColor:'rgba(59,130,246,.9)',borderWidth:1,borderRadius:3}]},
     options:{responsive:true,plugins:{legend:{display:false}},scales:{
       x:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:9},maxRotation:60},grid:{display:false}},
       y:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10},stepSize:1},grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)'}}
@@ -248,10 +740,14 @@ function renderVisitChart(visits){
 }
 
 function renderMonthChart(events){
-  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  const year=new Date().getFullYear();
-  const data=MS.map((_,i)=>{
-    const mStr=`${year}-${String(i+1).padStart(2,'0')}`;
+  const MS_SHORT=_lang==='en'?MS_SHORT_EN:MS_SHORT_ID;
+  const year=document.getElementById('filterYear')?.value||new Date().getFullYear().toString();
+  const mFrom=parseInt(document.getElementById('filterMonthFrom')?.value||'0');
+  const mTo=parseInt(document.getElementById('filterMonthTo')?.value||'11');
+  const from=Math.min(mFrom,mTo);const to=Math.max(mFrom,mTo);
+  const labels=MS_SHORT.slice(from,to+1);
+  const data=labels.map((_,i)=>{
+    const mStr=`${year}-${String(from+i+1).padStart(2,'0')}`;
     return events.filter(e=>e.date.startsWith(mStr)&&e.status!=='draft').length;
   });
   const ctx=document.getElementById('monthChart').getContext('2d');
@@ -259,7 +755,7 @@ function renderMonthChart(events){
   if(_monthChart)_monthChart.destroy();
   _monthChart=new Chart(ctx,{
     type:'bar',
-    data:{labels:MS,datasets:[{label:'Event',data,backgroundColor:'rgba(201,162,39,.6)',borderColor:'rgba(201,162,39,.9)',borderWidth:1,borderRadius:4}]},
+    data:{labels,datasets:[{label:tx('evTableTitle'),data,backgroundColor:'rgba(201,162,39,.6)',borderColor:'rgba(201,162,39,.9)',borderWidth:1,borderRadius:4}]},
     options:{responsive:true,plugins:{legend:{display:false}},scales:{
       x:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10}},grid:{display:false}},
       y:{ticks:{color:isDark?'rgba(255,255,255,.5)':'rgba(0,0,0,.45)',font:{size:10},stepSize:1},grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.05)'}}
@@ -272,8 +768,8 @@ function renderCatBars(events){
   events.filter(e=>e.status!=='draft').forEach(e=>{counts[e.category]=(counts[e.category]||0)+1;});
   const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   const max=sorted[0]?.[1]||1;
-  const COLORS={koor:'#7c3aed',ibadah:'#d97706',rapat:'#1d4ed8',latihan:'#16a34a',reversement:'#db2777',doa:'#0891b2','event-gabungan':'#ec89b0',bph:'#dc2626','perayaan-ulang-tahun':'#06b6d4',olahraga:'#08e7c2',other:'#94a3b8'};
-  const LABELS={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH','perayaan-ulang-tahun':'Ulang Tahun',olahraga:'Olahraga',other:'Lainnya'};
+  const COLORS=CAT_COLORS; // dari konstanta global
+  const LABELS=CAT_LABELS; // dari konstanta global
   document.getElementById('catBars').innerHTML=sorted.map(([cat,count])=>`
     <div class="stat-bar-row">
       <div class="stat-bar-lbl">${LABELS[cat]||cat}</div>
@@ -285,23 +781,24 @@ function renderCatBars(events){
 function renderEvTable(events){
   const today=new Date().toISOString().slice(0,10);
   const sorted=[...events].sort((a,b)=>b.date.localeCompare(a.date));
-  const MS=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  const LABELS={koor:'Koor',ibadah:'Ibadah',rapat:'Rapat',latihan:'Latihan',reversement:'Reversement',doa:'Doa','event-gabungan':'Event Gabungan',bph:'BPH','perayaan-ulang-tahun':'Ulang Tahun',olahraga:'Olahraga',other:'Lainnya'};
+  const MS_SHORT=_lang==='en'?MS_SHORT_EN:MS_SHORT_ID;
+  const LABELS=CAT_LABELS;
   document.getElementById('evTableBody').innerHTML=sorted.slice(0,20).map(e=>{
     const d=new Date(e.date+'T00:00:00');
-    const ds=`${d.getDate()} ${MS[d.getMonth()]} ${d.getFullYear()}`;
+    const ds=`${d.getDate()} ${MS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
     const isPast=e.date<today;
     const statusBadge=e.status==='draft'
       ?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.15);color:#b45309;border:1px solid rgba(245,158,11,.3)">Draft</span>'
       :isPast
-        ?'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(100,100,100,.1);color:var(--text3)">Selesai</span>'
-        :'<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3)">Mendatang</span>';
+        ?`<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(100,100,100,.1);color:var(--text3)">${tx('statusDone')}</span>`
+        :`<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3)">${tx('statusUpcoming')}</span>`;
     return `<tr><td>${ds}</td><td style="font-weight:600">${e.title}</td><td>${LABELS[e.category]||e.category}</td><td>${statusBadge}</td></tr>`;
   }).join('');
 }
 
 /* ══ INIT ══ */
 applyDark();
+applyLang();
 document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeModal(el.id);}));
 const savedToken=localStorage.getItem('naposo_token');const savedName=localStorage.getItem('naposo_admin_name');
 if(savedToken&&savedName){isAdmin=true;_adminName=savedName;_applyAdminUI(savedName);loadStats();}

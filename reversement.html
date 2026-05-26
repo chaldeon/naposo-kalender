@@ -30,6 +30,7 @@
 <!-- ══ HEADER ══ -->
 <header>
 <div class="hdr">
+  <div class="hdr-left">
   <a class="hdr-brand" href="index.html">
     <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
       <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
@@ -41,6 +42,17 @@
     </div>
   </a>
 
+  <!-- Header search bar -->
+  <div class="hdr-search" id="hdrSearchWrap">
+    <div class="homepage-search-wrap hdr-search-inner">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14" class="homepage-search-icon"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+      <input type="text" id="revHdrSearch" placeholder="Cari renungan…" oninput="onRevSearch(this.value);document.getElementById('revHdrSearchClear').style.display=this.value?'block':'none'" autocomplete="off" onkeydown="onRevSearchKeydown(event)"/>
+      <button id="revHdrSearchClear" onclick="clearRevSearch()" style="display:none;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.6);padding:0 2px;font-size:1rem;line-height:1">✕</button>
+    </div>
+    <div class="rev-search-dropdown" id="revSearchDropdown" style="display:none"></div>
+  </div>
+  </div><!-- /hdr-left -->
+
   <!-- Desktop nav -->
   <div class="hdr-right-desktop">
     <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
@@ -49,11 +61,16 @@
     <a class="navbar-pill pill-home" href="index.html">🏠 <span id="navHome">Home</span></a>
     <a class="navbar-pill pill-home" href="kalender.html">📅 <span id="navKalender">Kalender</span></a>
     <a class="navbar-pill pill-rev active-pill" href="reversement.html">✝️ <span id="navRev">Reversement</span></a>
+    <a class="navbar-pill pill-stat" id="navStatPill" href="statistik.html" style="display:none">📊 Statistik</a>
     <!-- Login / Admin area -->
     <div class="admin-dd-anchor" id="adminDdAnchor">
-      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span></button>
+      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span><span id="adminActiveDot" class="admin-active-dot" style="display:none"></span></button>
       <div class="admin-dd" id="adminDd">
-        <button class="admin-dd-item danger" onclick="doLogout()">→ <span id="ddLogout">Logout</span></button>
+        <div class="admin-dd-section">Aksi</div>
+        <button class="admin-dd-item" onclick="openAdminForm();document.getElementById('adminDd').classList.remove('open')">✝️ <span>Tambah Renungan</span></button>
+        <a class="admin-dd-item" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
+        <div class="admin-dd-sep"></div>
+        <button class="admin-dd-item danger" onclick="confirmLogout()">→ <span id="ddLogout">Logout</span></button>
       </div>
     </div>
   </div>
@@ -112,7 +129,7 @@
 <div class="bn-sheet-overlay" id="bnSheetOverlay" onclick="closeBnSheet()"></div>
 <div class="bn-sheet" id="bnSheet">
   <div class="bn-sheet-handle"></div>
-  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span></div>
+  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span> <span id="bnAdminBadge" class="bn-role-badge" style="display:none">superadmin</span></div>
   <div class="bn-sheet-item" onclick="toggleDark();closeBnSheet()">
     <span>🌙 <span id="bnDarkLbl">Dark Mode</span></span>
     <div class="tog-track" id="bnDarkTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
@@ -123,8 +140,18 @@
   </div>
   <div class="bn-sheet-sep"></div>
   <div id="bnAdminSection" style="display:none;flex-direction:column;gap:0">
+    <div class="bn-sheet-section-lbl">Aksi Cepat</div>
+    <button class="bn-sheet-item bn-sheet-action" onclick="typeof openRevAdmin==='function'&&openRevAdmin();closeBnSheet()">✝️ <span>Tambah Renungan</span></button>
+    <a class="bn-sheet-item bn-sheet-action" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
     <div class="bn-sheet-sep"></div>
-    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="doLogout();closeBnSheet()"><span id="bnLogout">Logout</span></button>
+    <div class="bn-sheet-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Log Aktivitas</span>
+      <button onclick="loadAdminActivityLog()" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--gold-lt);padding:0">↻</button>
+    </div>
+    <div id="bnActivityLog" class="bn-activity-log"><span class="bn-act-empty">Memuat…</span></div>
+    <div class="bn-sheet-sep"></div>
+    <div class="bn-sheet-section-lbl">Akun</div>
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="confirmLogout()"><span id="bnLogout">Logout</span></button>
   </div>
   <div id="bnGuestSection">
     <button class="bn-sheet-item bn-sheet-action bn-sheet-login" onclick="closeBnSheet();handleLoginBtn()">🔐 <span id="bnLoginLbl">Login Admin</span></button>
@@ -144,23 +171,6 @@
     <h2 class="rev-hero-title">Reversement</h2>
     <p class="rev-hero-sub" id="revHeroSub">Ayat dan renungan untuk memulai harimu bersama Naposo · Senin &amp; Jumat</p>
   </div>
-</div>
-
-<!-- ══ SEARCH BAR ══ -->
-<div class="rev-search-bar-wrap" id="revSearchWrap">
-  <div class="rev-search-input-row">
-    <span class="rev-search-icon">🔍</span>
-    <input
-      class="rev-search-input"
-      id="revSearchInput"
-      type="text"
-      placeholder="Cari judul atau ayat…"
-      oninput="onRevSearch(this.value)"
-      onkeydown="onRevSearchKeydown(event)"
-      autocomplete="off"
-    />
-  </div>
-  <div class="rev-search-dropdown" id="revSearchDropdown" style="display:none"></div>
 </div>
 
 <!-- ══ FILTER TABS + ADMIN ADD BUTTON ══ -->
@@ -227,7 +237,7 @@
     <!-- Strip collapsed: judul + more -->
     <div class="rev-bs-strip" id="revBsStrip" onclick="expandBottomSheet()">
       <span class="rev-bs-strip-title" id="revBsTitle"></span>
-      <span class="rev-bs-strip-more">baca selengkapnya</span>
+      <span class="rev-bs-strip-more" id="revBsStripMore">baca selengkapnya</span>
     </div>
     <!-- Body expanded -->
     <div class="rev-bs-body" id="revBsBody">
@@ -290,6 +300,11 @@
       <div class="rev-form-group">
         <label class="form-label" id="fldPosterUrl">Link Poster Google Drive</label>
         <input class="form-input" id="afPosterUrl" type="url" placeholder="https://drive.google.com/file/d/.../view"/>
+      </div>
+      <!-- Excerpt (ringkasan singkat, dipakai widget beranda) -->
+      <div class="rev-form-group">
+        <label class="form-label" id="fldExcerpt">Kutipan Singkat <span style="font-weight:400;font-size:.78rem;color:var(--text3)">(muncul di widget beranda)</span></label>
+        <textarea class="form-input rev-form-textarea" id="afExcerpt" placeholder="Ringkasan 1–2 kalimat…" style="min-height:60px"></textarea>
       </div>
       <!-- Body -->
       <div class="rev-form-group">
@@ -367,6 +382,7 @@
 <!-- ══ SCROLL TO TOP ══ -->
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll ke atas">↑</button>
 
+<script src="js/utils.js"></script>
 <script src="js/reversement.js"></script>
 </body>
 </html>

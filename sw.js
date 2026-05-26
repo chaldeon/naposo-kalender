@@ -2,11 +2,12 @@
 // Strategi: network-first untuk HTML, CSS, JS — cache-first untuk gambar & font
 
 // ⚠️ Bump versi ini setiap deploy agar cache lama dihapus
-const CACHE_NAME = 'naposo-v7';
+const CACHE_NAME = 'naposo-v9';
 const STATIC_ASSETS = [
   '/css/index.css',
   '/css/kalender.css',
   '/css/reversement.css',
+  '/js/utils.js',
   '/js/index.js',
   '/js/kalender.js',
   '/js/reversement.js',

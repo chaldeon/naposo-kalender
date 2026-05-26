@@ -29,6 +29,7 @@
 <!-- ══ HEADER ══ -->
 <header>
 <div class="hdr">
+  <div class="hdr-left">
   <a class="hdr-brand" href="index.html">
     <svg width="34" height="34" viewBox="0 0 40 40" fill="none" style="flex-shrink:0">
       <circle cx="20" cy="20" r="19" stroke="#c9a227" stroke-width="1.5" fill="rgba(201,162,39,.08)"/>
@@ -41,6 +42,16 @@
     </div>
   </a>
 
+  <!-- Header search bar -->
+  <div class="hdr-search" id="hdrSearchWrap">
+    <div class="homepage-search-wrap hdr-search-inner" id="searchWrap">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14" class="homepage-search-icon"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+      <input type="text" id="homepageSearch" placeholder="Cari kegiatan atau renungan…" oninput="onHomepageSearch(this.value)" autocomplete="off" onkeydown="onSearchKeydown(event)"/>
+      <button id="searchClearBtn" onclick="clearHomepageSearch()" style="display:none;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.6);padding:0 2px;font-size:1rem;line-height:1">✕</button>
+    </div>
+  </div>
+  </div><!-- /hdr-left -->
+
   <!-- Desktop nav -->
   <div class="hdr-right-desktop">
     <button class="icon-toggle" id="darkToggleBtn" onclick="toggleDark()" title="Toggle Dark Mode">🌙</button>
@@ -49,14 +60,18 @@
     <a class="navbar-pill pill-home active-pill" href="index.html">🏠 <span id="navHome">Home</span></a>
     <a class="navbar-pill pill-home" href="kalender.html">📅 <span id="navKalender">Kalender</span></a>
     <a class="navbar-pill pill-rev" href="reversement.html">✝️ <span id="navRev">Reversement</span></a>
+    <a class="navbar-pill pill-stat" id="navStatPill" href="statistik.html" style="display:none">📊 Statistik</a>
     <!-- Login / Admin area -->
     <div class="admin-dd-anchor" id="adminDdAnchor">
-      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span></button>
+      <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span><span id="adminActiveDot" class="admin-active-dot" style="display:none"></span></button>
       <div class="admin-dd" id="adminDd">
+        <div class="admin-dd-section">Aksi</div>
         <button class="admin-dd-item" onclick="openDocsModal()">📂 <span id="ddDocs">Kelola Dokumen</span></button>
-        <button class="admin-dd-item" onclick="openAnnounceModal()">📢 <span id="ddAnnounce">Pengumuman</span></button>
+        <button class="admin-dd-item" id="ddRecapBtn" onclick="openRecapAdminModal()">🖼️ <span id="ddRecap">Kelola Recap</span></button>
+        <button class="admin-dd-item" onclick="openAnnounceModal()">📢 <span id="ddAnnounce">Kelola Pengumuman</span></button>
         <a class="admin-dd-item" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
-        <button class="admin-dd-item danger" onclick="doLogout()">→ <span id="ddLogout">Logout</span></button>
+        <div class="admin-dd-sep"></div>
+        <button class="admin-dd-item danger" onclick="confirmLogout()">→ <span id="ddLogout">Logout</span></button>
       </div>
     </div>
   </div>
@@ -86,7 +101,8 @@
     <div id="adminMobileRow" style="display:none;flex-direction:column;gap:6px;width:100%">
       <div style="font-size:.75rem;color:var(--gold-lt);text-align:center;padding:4px 0;font-weight:600">✔ <span id="adminMobileNameTxt"></span></div>
       <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)" onclick="openDocsModal();closeHamburger()">📂 <span id="mobDocs">Kelola Dokumen</span></button>
-      <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)" onclick="openAnnounceModal();closeHamburger()">📢 <span id="mobAnnounce">Pengumuman</span></button>
+      <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)" onclick="openRecapAdminModal();closeHamburger()">🖼️ <span id="mobRecap">Kelola Recap</span></button>
+      <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.2)" onclick="openAnnounceModal();closeHamburger()">📢 <span id="mobAnnounce">Kelola Pengumuman</span></button>
       <button class="btn btn-sm" style="width:100%;justify-content:center;background:rgba(220,38,38,.18);color:#fca5a5;border:1px solid rgba(220,38,38,.35)" onclick="doLogout();closeHamburger()"><span id="logoutBtnMobTxt">Logout</span></button>
     </div>
   </div>
@@ -118,7 +134,7 @@
 <div class="bn-sheet" id="bnSheet">
   <div class="bn-sheet-handle"></div>
   <!-- Nama admin di paling atas, hanya tampil saat login -->
-  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span></div>
+  <div id="bnAdminTopName" style="display:none" class="bn-sheet-admin-name">✔ <span id="bnAdminNameTop"></span> <span id="bnAdminBadge" class="bn-role-badge" style="display:none">superadmin</span></div>
   <div class="bn-sheet-item" onclick="toggleDark();closeBnSheet()">
     <span>🌙 <span id="bnDarkLbl">Dark Mode</span></span>
     <div class="tog-track" id="bnDarkTrack" style="pointer-events:none"><div class="tog-thumb"></div></div>
@@ -129,10 +145,20 @@
   </div>
   <div class="bn-sheet-sep"></div>
   <div id="bnAdminSection" style="display:none;flex-direction:column;gap:0">
+    <div class="bn-sheet-section-lbl" id="bnSheetActionsLbl">Aksi Cepat</div>
     <button class="bn-sheet-item bn-sheet-action" onclick="openDocsModal();closeBnSheet()">📂 <span id="bnDocs">Kelola Dokumen</span></button>
-    <button class="bn-sheet-item bn-sheet-action" onclick="openAnnounceModal();closeBnSheet()">📢 <span id="bnAnnounce">Pengumuman</span></button>
+    <button class="bn-sheet-item bn-sheet-action" id="bnRecapBtn" onclick="openRecapAdminModal();closeBnSheet()">🖼️ <span id="bnRecap">Kelola Recap</span></button>
+    <button class="bn-sheet-item bn-sheet-action" onclick="openAnnounceModal();closeBnSheet()">📢 <span id="bnAnnounce">Kelola Pengumuman</span></button>
+    <a class="bn-sheet-item bn-sheet-action" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
     <div class="bn-sheet-sep"></div>
-    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="doLogout();closeBnSheet()"><span id="bnLogout">Logout</span></button>
+    <div class="bn-sheet-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
+      <span id="bnSheetLogLbl">Log Aktivitas</span>
+      <button onclick="loadAdminActivityLog()" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--gold-lt);padding:0">↻</button>
+    </div>
+    <div id="bnActivityLog" class="bn-activity-log"><span class="bn-act-empty">Memuat…</span></div>
+    <div class="bn-sheet-sep"></div>
+    <div class="bn-sheet-section-lbl" id="bnSheetAccountLbl">Akun</div>
+    <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="confirmLogout()"><span id="bnLogout">Logout</span></button>
   </div>
   <div id="bnGuestSection">
     <button class="bn-sheet-item bn-sheet-action bn-sheet-login" onclick="closeBnSheet();handleLoginBtn()">🔐 <span id="bnLoginLbl">Login Admin</span></button>
@@ -163,16 +189,10 @@
       </svg>
     </div>
     <h1 class="hero-title" id="heroTitle">Naposo HKBP Ujung Menteng</h1>
-    <p class="hero-sub" id="heroSub">Selamat datang Naps! Temukan jadwal kegiatan dan informasi terkini.</p>
-    <div class="hero-tags">
-      <span class="hero-tag" id="tagIbadah" data-tip="Ibadah Naposo & Pelayanan">Ibadah</span>
-      <span class="hero-tag" id="tagKoor" data-tip="Latihan & Penampilan Koor">Koor</span>
-      <span class="hero-tag" id="tagPelayanan" data-tip="Kegiatan Pelayanan Jemaat">Pelayanan</span>
-      <span class="hero-tag" id="tagKesehatian" data-tip="Kesehatian & Persekutuan">Kesehatian</span>
-      <span class="hero-tag" id="tagDoa" data-tip="Doa Bersama & Teduh">Doa</span>
-    </div>
+    <p class="hero-sub" id="heroSub">Shalom, Naps. Cek kegiatan Naposo dan renungan terbaru.</p>
   </div>
 </section>
+
 
 <!-- ══ MAIN ══ -->
 <main class="wrap">
@@ -183,19 +203,20 @@
       <h2 class="sec-title" id="secEvents">Kegiatan Terdekat</h2>
       <a href="kalender.html" class="sec-link" id="secEventsLink">Lihat semua →</a>
     </div>
-    <!-- Search beranda -->
-    <div class="homepage-search-wrap">
-      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" class="homepage-search-icon"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.868-3.834zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-      <input type="text" id="homepageSearch" placeholder="Cari kegiatan…" oninput="onHomepageSearch(this.value)" autocomplete="off"/>
+
+    <div class="events-scroll-wrap">
+      <div class="events-grid" id="eventsGrid"></div>
+      <div class="ev-swipe-hint" id="evSwipeHint">Geser untuk lihat lebih →</div>
+      <div class="ev-scroll-track" id="evScrollTrack" aria-hidden="true"><div class="ev-scroll-thumb" id="evScrollThumb"></div></div>
+      <div class="ev-dots" id="evDots" aria-hidden="true"></div>
     </div>
-    <div class="events-grid" id="eventsGrid"></div>
   </section>
 
   <!-- [Sesi 40 Item 3] Widget Renungan Terbaru -->
   <section class="rev-widget-section reveal reveal-delay-2" id="revWidgetSection" style="display:none">
     <div class="sec-hdr">
-      <h2 class="sec-title">Renungan Terbaru</h2>
-      <a href="reversement.html" class="sec-link">Lihat semua →</a>
+      <h2 class="sec-title" id="revWidgetTitle">Renungan Terbaru</h2>
+      <a href="reversement.html" class="sec-link" id="revWidgetSeeAll">Lihat semua →</a>
     </div>
     <div id="revWidgetInner"></div>
   </section>
@@ -207,13 +228,7 @@
     </div>
     <div class="recap-carousel-wrap">
       <div class="recap-carousel" id="recapCarousel"></div>
-      <div class="recap-bottom-row">
-        <div class="recap-progress-track"><div class="recap-progress-bar" id="recapProgressBar"></div></div>
-        <div class="recap-nav">
-          <button class="recap-nav-btn" id="recapPrev" onclick="recapScroll(-1)" title="Sebelumnya">←</button>
-          <button class="recap-nav-btn" id="recapNext" onclick="recapScroll(1)" title="Berikutnya">→</button>
-        </div>
-      </div>
+      <div class="ev-scroll-track" id="recapScrollTrack" aria-hidden="true"><div class="ev-scroll-thumb" id="recapScrollThumb"></div></div>
     </div>
   </section>
 
@@ -283,7 +298,7 @@
       <div class="form-g">
         <label id="lbPw">Password</label>
         <div class="pw-wrap">
-          <input type="password" id="loginPw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <input type="password" id="loginPw" placeholder="Masukkan password" data-i18n-placeholder="loginPwPlaceholder" onkeydown="if(event.key==='Enter')doLogin()"/>
           <button class="pw-eye" type="button" onclick="togglePw('loginPw',this)">
             <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>
           </button>
@@ -333,6 +348,10 @@
         <label id="lbEditLink">Link (Opsional)</label>
         <input type="url" id="editLink" placeholder="https://..."/></div>
       <div class="form-g">
+        <label id="lbEditThumbnail" style="display:flex;align-items:center;gap:5px">🖼 Thumbnail Card <span style="font-size:.7rem;font-weight:400;color:var(--text3)" id="editThumbnailHint">(16:9 landscape · opsional)</span></label>
+        <input type="url" id="editThumbnail" placeholder="Google Drive link gambar 16:9…"/>
+      </div>
+      <div class="form-g">
         <label id="lbEditNote">Catatan (Opsional)</label>
         <input type="text" id="editNote" placeholder="Detail tambahan..."/>
       </div>
@@ -346,7 +365,7 @@
       </label>
       <label class="check-row" style="margin-top:4px">
         <input type="checkbox" id="editDraft"/>
-        <span>📝 Simpan sebagai Draft (tidak tampil ke publik)</span>
+        <span id="editDraftLabel">📝 Simpan sebagai Draft (tidak tampil ke publik)</span>
       </label>
       <input type="hidden" id="editEventId"/>
     </div>
@@ -369,11 +388,15 @@
       <div class="drow">
         <div class="dfg"><label id="lbDocLink">Link (Google Drive / URL)</label><input type="text" id="docLink" placeholder="https://drive.google.com/..."/></div>
         <div class="dfg" style="max-width:140px"><label id="lbDocCat">Kategori</label>
-          <select id="docCat"><option value="publik">📂 Publik</option><option value="pengurus">🔒 Pengurus</option></select>
+          <select id="docCat"><option value="publik" id="docCatPublic">📂 Publik</option><option value="pengurus" id="docCatPrivate">🔒 Pengurus</option></select>
         </div>
       </div>
       <button class="btn btn-success btn-sm" onclick="addDoc()" id="addDocBtn">+ Tambah</button>
-      <div class="doc-adm-list" id="docAdmList"></div>
+      <button class="btn btn-ghost btn-sm" onclick="cancelDocEdit()" id="cancelDocEditBtn" style="display:none">Batal</button>
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px" id="docAdmListTitle">DAFTAR DOKUMEN</div>
+        <div class="doc-adm-list" id="docAdmList"></div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('docsModal')" id="docCloseBtn">Tutup</button>
@@ -389,31 +412,32 @@
       <button class="modal-x" onclick="closeModal('announceModal')">×</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:16px">
-      <!-- Daftar banner -->
-      <div>
-        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:6px">BANNER AKTIF</div>
-        <div id="bannerAdmList"></div>
-      </div>
-      <hr style="border:none;border-top:1px solid var(--border)"/>
       <!-- Form tambah / edit -->
       <div>
         <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:8px" id="bannerFormTitle">TAMBAH BANNER</div>
-        <div class="form-g"><label>Teks Banner</label><input type="text" id="annText" placeholder="cth: Pendaftaran ulang anggota dibuka!"/></div>
+        <div class="form-g"><label id="bannerTextLabel">Teks Banner</label><input type="text" id="annText" placeholder="cth: Pendaftaran ulang anggota dibuka!"/></div>
         <div class="form-g" style="display:flex;gap:10px;align-items:center">
-          <label style="margin:0;white-space:nowrap">Warna</label>
+          <label style="margin:0;white-space:nowrap" id="bannerColorLabel">Warna</label>
           <input type="color" id="annColor" value="#1e5ac8" style="width:36px;height:30px;border:none;border-radius:6px;cursor:pointer;padding:2px;flex-shrink:0"/>
         </div>
-        <div class="form-g"><label>Link (opsional)</label><input type="url" id="annLink" placeholder="https://forms.gle/…"/></div>
-        <div class="form-g"><label>Label Tombol (opsional)</label><input type="text" id="annLinkLabel" placeholder="cth: Daftar Sekarang →"/></div>
+        <div class="form-g"><label id="bannerLinkUrlLabel">Link (opsional)</label><input type="url" id="annLink" placeholder="https://forms.gle/…"/></div>
+        <div class="form-g"><label id="bannerBtnLblLabel">Label Tombol (opsional)</label><input type="text" id="annLinkLabel" placeholder="cth: Daftar Sekarang →"/></div>
         <label class="check-row" style="margin-top:4px">
           <input type="checkbox" id="annActiveCheck" checked/>
-          <span>Aktifkan banner</span>
+          <span id="bannerActiveCheckLbl">Aktifkan banner</span>
         </label>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-success btn-sm" onclick="saveAnnounce()" id="annSaveBtn">+ Tambah</button>
+          <button class="btn btn-ghost btn-sm" onclick="_resetBannerForm()" id="annCancelBtn" style="display:none">Batal</button>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px" id="bannerListTitle">DAFTAR BANNER</div>
+        <div id="bannerAdmList"></div>
       </div>
     </div>
-    <div class="modal-foot" style="justify-content:flex-end;gap:8px">
-      <button class="btn btn-ghost" onclick="_resetBannerForm()" id="annCancelBtn">Reset</button>
-      <button class="btn btn-primary" onclick="saveAnnounce()" id="annSaveBtn">Tambah</button>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('announceModal')">Tutup</button>
     </div>
   </div>
 </div>
@@ -464,12 +488,12 @@
     <button class="modal-x" onclick="closeBirthdayModal()" style="position:absolute;top:12px;right:12px">×</button>
     <div class="bday-modal-header">
       <div class="bday-emoji-row">🎉 🎂 🎊</div>
-      <div class="bday-modal-title">Selamat Ulang Tahun!</div>
+      <div class="bday-modal-title" id="bdayModalTitle">Selamat Ulang Tahun!</div>
       <div class="bday-modal-sub" id="bdayModalSub">Kiriman kasih dari Naposo HKBP Ujung Menteng</div>
     </div>
     <div class="modal-body bday-modal-body" id="birthdayModalContent" style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 24px"></div>
     <div class="modal-foot" style="justify-content:center;padding-bottom:20px">
-      <button class="btn btn-primary" onclick="closeBirthdayModal();fireConfetti()" style="background:linear-gradient(135deg,#c9a227,#e6b830);border:none;color:#0a1f44;font-weight:700;padding:10px 28px">🙏 Amin!</button>
+      <button class="btn btn-primary" onclick="closeBirthdayModal();fireConfetti()" style="background:linear-gradient(135deg,#c9a227,#e6b830);border:none;color:#0a1f44;font-weight:700;padding:10px 28px" id="bdayModalBtn">🙏 Amin!</button>
     </div>
   </div>
 </div>
@@ -495,6 +519,104 @@
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll ke atas">↑</button>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="js/utils.js"></script>
 <script src="js/index.js"></script>
+  <!-- Search Dropdown (di body agar tidak terpotong overflow) -->
+  <div id="searchDropdown" style="display:none;position:fixed;z-index:2000"></div>
+
+<!-- ══ RECAP GALLERY MODAL ══ -->
+<div class="overlay" id="recapModal" onclick="if(event.target===this)closeRecapModal()">
+  <div class="modal" style="max-width:640px;padding:0">
+    <div id="recapModalHero" style="position:relative;height:160px;background:#1a2e5e;display:flex;align-items:flex-end">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%)"></div>
+      <button class="modal-x" onclick="closeRecapModal()" style="position:absolute;top:10px;right:10px">×</button>
+      <div style="position:relative;padding:16px 20px;width:100%">
+        <div id="recapModalTag" style="font-size:10px;font-weight:700;letter-spacing:.06em;color:rgba(255,255,255,.7);margin-bottom:4px"></div>
+        <div id="recapModalTitle" style="font-size:20px;font-weight:700;color:#fff;font-family:var(--font-s)"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <span id="recapModalDate" style="font-size:12px;color:rgba(255,255,255,.6)"></span>
+          <span id="recapModalCount" style="font-size:11px;color:rgba(255,255,255,.5)"></span>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 20px 20px">
+      <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px">
+        <button class="recap-modal-tab active" data-tab="photo" onclick="switchRecapTab('photo')" id="recapTabPhoto">📷 Foto</button>
+        <button class="recap-modal-tab" data-tab="video" onclick="switchRecapTab('video')" id="recapTabVideo">▶ Video</button>
+      </div>
+      <div id="recapGalleryInner" style="min-height:120px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIGHTBOX (Item 2) ══ -->
+<div id="recapLightbox" class="recap-lightbox" style="display:none" onclick="if(event.target===this)closeLightbox()">
+  <button class="rlb-close" onclick="closeLightbox()">×</button>
+  <button class="rlb-nav rlb-prev" onclick="lightboxNav(-1)">&#8249;</button>
+  <div class="rlb-img-wrap">
+    <img id="rlbImg" src="" alt="" class="rlb-img">
+  </div>
+  <button class="rlb-nav rlb-next" onclick="lightboxNav(1)">&#8250;</button>
+  <div class="rlb-footer">
+    <span id="rlbCaption" class="rlb-caption"></span>
+    <a id="rlbDriveLink" href="#" target="_blank" rel="noopener" class="rlb-drive-link">Buka di Drive &#8599;</a>
+  </div>
+</div>
+
+<!-- ══ RECAP ADMIN MODAL (Item 5) ══ -->
+<div class="overlay" id="recapAdminModal" onclick="if(event.target===this)closeRecapAdminModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <h2>🖼️ Kelola Recap</h2>
+      <button class="modal-x" onclick="closeRecapAdminModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="recapAdmFormWrap">
+        <div class="dfg"><label>Judul <span style="color:var(--red)">*</span></label><input type="text" id="radmTitle" placeholder="cth: Natal RN 2025"></div>
+        <div class="drow" style="gap:8px">
+          <div class="dfg" style="flex:1"><label>Kategori</label>
+            <select id="radmCategory">
+              <option value="ibadah">Ibadah</option>
+              <option value="koor">Koor</option>
+              <option value="event-gabungan">Event Gabungan</option>
+              <option value="olahraga">Olahraga</option>
+              <option value="doa">Doa</option>
+              <option value="reversement">Reversement</option>
+              <option value="rapat">Rapat</option>
+              <option value="other">Lainnya</option>
+            </select>
+          </div>
+          <div class="dfg" style="max-width:130px"><label>Tanggal <span style="color:var(--red)">*</span></label><input type="date" id="radmDate"></div>
+        </div>
+        <div class="drow" style="gap:8px">
+          <div class="dfg" style="flex:1"><label>Cover URL <span style="color:var(--text3);font-weight:400;font-size:.75rem">(opsional)</span></label><input type="url" id="radmCoverUrl" placeholder="https://..."></div>
+          <div class="dfg" style="max-width:110px"><label>Warna BG</label><input type="color" id="radmBgColor" value="#1a2e5e" style="height:36px;padding:2px 4px;cursor:pointer"></div>
+        </div>
+        <div class="dfg"><label>Folder ID Drive <span style="color:var(--text3);font-weight:400;font-size:.75rem">(ID folder Google Drive, bukan full URL)</span></label><input type="text" id="radmFolderId" placeholder="cth: 15-Q65ZNKw1yzO3nxx1aYNJ94eQh7v6QM"></div>
+        <div class="drow" style="gap:8px">
+          <div class="dfg" style="max-width:110px"><label>Jml Foto <span style="color:var(--text3);font-weight:400;font-size:.75rem">(opsional)</span></label><input type="number" id="radmPhotoCount" placeholder="0" min="0"></div>
+          <div class="dfg" style="max-width:110px"><label>Urutan</label><input type="number" id="radmSortOrder" placeholder="0" min="0"></div>
+          <div class="dfg" style="flex:1;justify-content:center;padding-top:20px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:500">
+              <div class="tog-track" id="radmActiveTrack" onclick="toggleRadmActive()" style="cursor:pointer"><div class="tog-thumb"></div></div>
+              <span id="radmActiveLbl">Aktif</span>
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-success btn-sm" id="radmSaveBtn" onclick="saveRecapAdmin()">💾 Simpan</button>
+          <button class="btn btn-ghost btn-sm" id="radmCancelBtn" onclick="cancelRecapAdminEdit()" style="display:none">Batal Edit</button>
+        </div>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:.75rem;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px" id="recapAdmListTitle">Daftar Recap</div>
+        <div id="recapAdmList"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeRecapAdminModal()">Tutup</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

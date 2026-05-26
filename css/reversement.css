@@ -3,6 +3,9 @@
    Naposo HKBP Ujung Menteng
 ══════════════════════════════════════════════ */
 
+/* Anchor for search dropdown */
+.hdr-search{position:relative;}
+
 /* ── Active pill state ── */
 .active-pill{background:var(--gold)!important;color:var(--navy)!important;border-color:var(--gold)!important}
 
@@ -16,6 +19,8 @@
 .admin-dd-item+.admin-dd-item{border-top:1px solid var(--border)}
 .admin-dd-item.danger{color:var(--red)}
 .admin-dd-item.danger:hover{background:rgba(220,38,38,.07)}
+.admin-dd-section{font-size:.65rem;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.4);text-transform:uppercase;padding:6px 12px 2px;pointer-events:none}
+.admin-dd-sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
 
 /* ══ ADMIN BAR ══ */
 .admin-bar{background:linear-gradient(90deg,#1a4a8a,#0a1f44);border-bottom:2px solid var(--gold);
@@ -58,7 +63,7 @@
 .rev-filter-wrap{
   display:flex;gap:8px;padding:16px 20px 8px;
   overflow-x:auto;scrollbar-width:none;background:var(--bg);
-  border-bottom:1px solid var(--border);position:sticky;top:58px;z-index:10;
+  border-bottom:1px solid var(--border);
 }
 .rev-filter-wrap::-webkit-scrollbar{display:none}
 .rev-filter-btn{
@@ -240,7 +245,7 @@
 /* ══ MOBILE: Instagram Reels style ══ */
 @media(max-width:640px){
   .rev-hero{padding:40px 16px 32px}
-  .rev-filter-wrap{top:54px;padding:12px 16px 8px;gap:6px}
+  .rev-filter-wrap{padding:12px 16px 8px;gap:6px}
   .rev-main{padding:16px 14px 32px}
   .rev-grid{grid-template-columns:repeat(2,1fr);gap:12px}
   .rev-card-body{padding:10px 12px 12px}
@@ -654,30 +659,9 @@ body.is-admin .rev-add-wrap{display:block}
 }
 .bn-sheet-sep{height:1px;background:rgba(255,255,255,.1);margin:4px 0}
 
-/* ══ SEARCH BAR ══ */
-.rev-search-bar-wrap{
-  position:sticky;top:58px;z-index:12;
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  padding:10px 20px 0;
-}
-.rev-search-input-row{
-  display:flex;align-items:center;gap:8px;
-  background:var(--surface);border:1.5px solid var(--border2);
-  border-radius:10px;padding:8px 12px;
-  transition:border-color .18s;
-}
-.rev-search-input-row:focus-within{border-color:var(--gold);}
-.rev-search-icon{font-size:.9rem;flex-shrink:0;color:var(--text3);}
-.rev-search-input{
-  flex:1;background:transparent;border:none;outline:none;
-  font-size:.87rem;color:var(--text);font-family:var(--font-b);
-}
-.rev-search-input::placeholder{color:var(--text3);}
-
 /* Dropdown */
 .rev-search-dropdown{
-  position:absolute;left:20px;right:20px;
+  position:absolute;left:0;right:0;top:100%;
   background:var(--surface);border:1px solid var(--border2);
   border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.18);
   z-index:1500;margin-top:4px;overflow:hidden;
@@ -716,7 +700,68 @@ body.is-admin .rev-add-wrap{display:block}
 .rev-pg-btn.disabled,.rev-pg-btn[disabled]{opacity:.35;cursor:not-allowed;}
 .rev-pg-ellipsis{font-size:.85rem;color:var(--text3);padding:0 4px;line-height:36px;}
 
+/* ══ BADGE BARU ══ */
+.rev-new-badge{
+  position:absolute;top:10px;right:10px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  color:#fff;font-size:9px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.1em;
+  padding:3px 9px;border-radius:10px;
+  pointer-events:none;
+  box-shadow:0 2px 8px rgba(245,158,11,.45);
+  animation:newBadgePop .35s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes newBadgePop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+
+/* ══ REACTION BAR ══ */
+.rev-reaction-bar{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:12px 0 4px;
+  border-top:1px solid var(--border);
+  margin-top:8px;
+}
+.rev-rx-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:20px;
+  border:1.5px solid var(--border2);
+  background:var(--surface2);
+  color:var(--text2);
+  font-size:.82rem;font-weight:600;
+  cursor:pointer;font-family:var(--font-b);
+  transition:all .18s;
+  min-height:36px;
+}
+.rev-rx-btn:hover{border-color:var(--gold);background:rgba(201,162,39,.1);color:var(--text)}
+.rev-rx-btn.active{
+  border-color:var(--gold);
+  background:rgba(201,162,39,.18);
+  color:var(--navy);
+}
+[data-theme="dark"] .rev-rx-btn.active{color:var(--gold-lt)}
+.rev-rx-emoji{font-size:1rem;line-height:1}
+.rev-rx-count{font-size:.78rem;font-weight:700;color:var(--text2)}
+.rev-rx-btn.active .rev-rx-count{color:var(--navy)}
+[data-theme="dark"] .rev-rx-btn.active .rev-rx-count{color:var(--gold-lt)}
+
+/* Reaction bar di mobile bottom sheet — teks putih */
+.rev-reaction-bar--dark .rev-rx-btn{
+  border-color:rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.8);
+}
+.rev-reaction-bar--dark .rev-rx-btn:hover{
+  border-color:var(--gold);
+  background:rgba(201,162,39,.2);
+}
+.rev-reaction-bar--dark .rev-rx-btn.active{
+  border-color:var(--gold);
+  background:rgba(201,162,39,.25);
+  color:#fff;
+}
+.rev-reaction-bar--dark .rev-rx-count{color:rgba(255,255,255,.7)}
+.rev-reaction-bar--dark .rev-rx-btn.active .rev-rx-count{color:#fff}
+
 @media(max-width:640px){
-  .rev-search-bar-wrap{top:0;padding:8px 14px 0;}
-  .rev-filter-wrap{top:52px;}
+  .rev-reaction-bar{gap:6px}
+  .rev-rx-btn{padding:5px 10px;font-size:.78rem;min-height:40px}
 }

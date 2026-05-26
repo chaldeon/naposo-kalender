@@ -3,18 +3,15 @@ const SUPA_URL='https://wejbubxrlqyazlodhbua.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
 const USER_NAMES=['Andre','Catherine','Daniel','David','Dea','Eliza','Frans','Grace','Gunawan','Lisken','Mutiara','Rut','Selfa','Tomy'];
 
+// driveToThumbnail — reversement-specific variant (drive.google.com/thumbnail, sz=w800)
+// BEDA dengan utils.js yang pakai lh3.googleusercontent.com — sengaja tidak digabung
 function driveToThumbnail(url){
   if(!url)return '';
   const m=url.match(/\/file\/d\/([\w-]+)/);
   if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
   return url;
 }
-
-/* ── Item 1 (XSS guard) — escapeHTML ── */
-function escapeHTML(str){
-  if(!str)return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
+// escapeHTML & showToast diambil dari utils.js (dimuat sebelum script ini)
 
 /* ══ SUPABASE HELPER ══ */
 async function sb(path,opts={}){
@@ -71,6 +68,8 @@ const T={
   fldVerseRef:{id:'Referensi Ayat',en:'Verse Reference'},
   fldPosterUrl:{id:'Link Poster Google Drive',en:'Google Drive Poster Link'},
   fldBody:{id:'Redaksi',en:'Body Text'},
+  fldExcerpt:{id:'Kutipan Singkat',en:'Short Excerpt'},
+  revBsStripMore:{id:'baca selengkapnya',en:'read more'},
   fldPublished:{id:'Tampilkan (Published)',en:'Publish'},
   btnSave:{id:'Simpan',en:'Save'},
   btnCancel:{id:'Batal',en:'Cancel'},
@@ -84,8 +83,9 @@ const T={
   errSave:{id:'Gagal menyimpan post.',en:'Failed to save post.'},
   errDel:{id:'Gagal menghapus post.',en:'Failed to delete post.'},
   errLoad:{id:'Gagal memuat konten.',en:'Failed to load content.'},
-  footerVisitLbl:{id:'kunjungan',en:'visits'},
+  footerVisitLbl:{id:'kunjungan bulan ini',en:'visits this month'},
   feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
+  revSearchPlaceholder:{id:'Cari renungan…',en:'Search devotionals…'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){
@@ -98,6 +98,7 @@ function applyLang(){
     const abt=document.getElementById('adminBarTxt');
     if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+_adminName+'.';
   }
+  const rhs=document.getElementById('revHdrSearch');if(rhs)rhs.placeholder=tx('revSearchPlaceholder');
   renderGrid();
 }
 function toggleLang(){_lang=_lang==='id'?'en':'id';localStorage.setItem('naposo_lang',_lang);applyLang();}
@@ -217,6 +218,7 @@ async function doLogin(){
     }
     localStorage.setItem('naposo_token',data.token||'1');
     localStorage.setItem('naposo_admin_name',name);
+    if(data.role)localStorage.setItem('naposo_role',data.role);else localStorage.removeItem('naposo_role');
     isAdmin=true;
     closeModal('loginModal');
     _applyAdminUI(name);
@@ -229,14 +231,38 @@ function doLogout(){
   isAdmin=false;
   localStorage.removeItem('naposo_token');
   localStorage.removeItem('naposo_admin_name');
+  localStorage.removeItem('naposo_role');
   _resetAuthUI();
   showToast('Logout berhasil.');
   loadPosts();
 }
+
+function isSuperAdmin(){return localStorage.getItem('naposo_role')==='superadmin';}
+function confirmLogout(){if(window.confirm('Keluar dari mode admin?')){doLogout();}}
+function _applyRoleBadge(){
+  const badge=document.getElementById('bnAdminBadge');
+  if(badge)badge.style.display=isSuperAdmin()?'inline':'none';
+}
+async function loadAdminActivityLog(){
+  const el=document.getElementById('bnActivityLog');if(!el)return;
+  el.innerHTML='<span class="bn-act-empty">Memuat…</span>';
+  try{
+    const rows=await dbGet('event_logs','select=action,actor,note,created_at&order=created_at.desc&limit=10');
+    if(!rows||!rows.length){el.innerHTML='<span class="bn-act-empty">Belum ada aktivitas.</span>';return;}
+    el.innerHTML=rows.map(r=>{
+      const d=new Date(r.created_at);
+      const ts=d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="bn-act-row"><span class="bn-act-action">'+escapeHTML(r.action||'')+'</span><span class="bn-act-note">'+escapeHTML(r.note||r.actor||'')+'</span><span class="bn-act-ts">'+ts+'</span></div>';
+    }).join('');
+  }catch(e){el.innerHTML='<span class="bn-act-empty">Gagal memuat log.</span>';}
+}
+
 let _adminName='';
 function _applyAdminUI(name){
   _adminName=name;
   document.body.classList.add('is-admin');
+  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='inline-block';
+  _applyRoleBadge();
   const btn=document.getElementById('loginBtn');
   if(btn){btn.textContent=`✓ ${name}`;}
   const mobRow=document.getElementById('adminMobileRow');
@@ -247,11 +273,13 @@ function _applyAdminUI(name){
   if(mobName){mobName.textContent=name;}
   const bar=document.getElementById('adminBar');if(bar)bar.classList.add('on');
   const abt=document.getElementById('adminBarTxt');if(abt)abt.textContent=(_lang==='en'?'Hello, ':'Halo, ')+name+'.';
+  const statPill=document.getElementById('navStatPill');if(statPill)statPill.style.display='';
   _syncBnAdminUI(name);
 }
 function _resetAuthUI(){
   _adminName='';
   document.body.classList.remove('is-admin');
+  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='none';
   const btn=document.getElementById('loginBtn');
   if(btn){btn.innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;}
   const mobRow=document.getElementById('adminMobileRow');
@@ -268,14 +296,7 @@ document.addEventListener('click',e=>{
   if(dd&&anchor&&dd.classList.contains('open')&&!anchor.contains(e.target))dd.classList.remove('open');
 });
 
-/* ══ TOAST ══ */
-let _tt;
-function showToast(msg,type=''){
-  const el=document.getElementById('toast');if(!el)return;
-  el.textContent=msg;
-  el.className=`toast on${type==='ok'?' ok':type==='err'?' err':''}`;
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),3000);
-}
+// showToast dari utils.js
 
 /* ══ DATA STATE ══ */
 let POSTS=[];
@@ -284,6 +305,109 @@ let _currentPage=1;
 let _allPostsCache=null; // cache untuk search (semua post tanpa filter halaman)
 let _searchQuery='';
 let _searchDropdownOpen=false;
+
+/* ══ REACTIONS ══ */
+const REACTION_TYPES=['amin','tersentuh','menguatkan'];
+const REACTION_META={
+  amin:     {emoji:'🙏', label_id:'Amin',       label_en:'Amen'},
+  tersentuh:{emoji:'❤️', label_id:'Tersentuh',  label_en:'Touched'},
+  menguatkan:{emoji:'✨',label_id:'Menguatkan', label_en:'Uplifting'},
+};
+// Cache counts: { [postId]: { amin:N, tersentuh:N, menguatkan:N } }
+const _reactionCache={};
+const _reactionCacheTs={}; // timestamp terakhir fetch per postId
+const REACTION_CACHE_TTL=5*60*1000; // 5 menit
+// User pilihan per post (pakai localStorage)
+function _getMyReaction(postId){return localStorage.getItem(`rev_rx_${postId}`)||null;}
+function _setMyReaction(postId,type){
+  if(type)localStorage.setItem(`rev_rx_${postId}`,type);
+  else localStorage.removeItem(`rev_rx_${postId}`);
+}
+
+async function fetchReactions(postId,{force=false}={}){
+  // Gunakan cache jika masih dalam TTL dan tidak dipaksa refresh
+  const now=Date.now();
+  if(!force&&_reactionCache[postId]&&(now-(_reactionCacheTs[postId]||0))<REACTION_CACHE_TTL){
+    return _reactionCache[postId];
+  }
+  try{
+    const rows=await sb(`reversement_reactions?post_id=eq.${encodeURIComponent(postId)}&select=type`)||[];
+    const counts={amin:0,tersentuh:0,menguatkan:0};
+    rows.forEach(r=>{if(counts[r.type]!==undefined)counts[r.type]++;});
+    _reactionCache[postId]=counts;
+    _reactionCacheTs[postId]=Date.now();
+    return counts;
+  }catch(e){
+    // Tabel belum ada atau error — kembalikan kosong tanpa crash
+    _reactionCache[postId]={amin:0,tersentuh:0,menguatkan:0};
+    return _reactionCache[postId];
+  }
+}
+
+async function toggleReaction(postId,type){
+  const prev=_getMyReaction(postId);
+  const isSame=prev===type;
+  // Optimistic update
+  const counts=_reactionCache[postId]||{amin:0,tersentuh:0,menguatkan:0};
+  if(prev&&counts[prev]>0)counts[prev]--;
+  if(!isSame)counts[type]++;
+  _reactionCache[postId]=counts;
+  _setMyReaction(postId,isSame?null:type);
+  _renderReactionBar(postId);
+  // Sync ke Supabase
+  try{
+    // sessionKey per sesi tab (bukan persisten) — pakai sessionStorage agar reset saat tab ditutup
+    // Efek: user yang buka tab baru bisa reaction lagi, tapi tidak bisa spam dalam satu sesi
+    let sessionKey=sessionStorage.getItem('rev_session_key');
+    if(!sessionKey){
+      sessionKey=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():'rsk_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+      sessionStorage.setItem('rev_session_key',sessionKey);
+    }
+    // Hapus reaksi lama user ini untuk post ini
+    await sb(`reversement_reactions?post_id=eq.${encodeURIComponent(postId)}&user_key=eq.${encodeURIComponent(sessionKey)}`,{method:'DELETE',prefer:'return=minimal'});
+    // Insert yang baru kalau tidak toggle off
+    if(!isSame){
+      await sb('reversement_reactions',{method:'POST',prefer:'return=minimal',body:{post_id:postId,type,user_key:sessionKey}});
+    }
+    // Refresh counts dari server — force agar bypass TTL cache
+    await fetchReactions(postId,{force:true});
+    _renderReactionBar(postId);
+  }catch(e){
+    // Gagal sync — tidak crash, optimistic state tetap
+    console.warn('reaction sync failed:',e);
+  }
+}
+
+function _renderReactionBar(postId){
+  // Update semua elemen .rev-reaction-bar[data-post-id=postId]
+  document.querySelectorAll(`.rev-reaction-bar[data-post-id="${postId}"]`).forEach(bar=>{
+    bar.innerHTML=_reactionBarHTML(postId);
+  });
+}
+
+function _reactionBarHTML(postId){
+  const counts=_reactionCache[postId]||{amin:0,tersentuh:0,menguatkan:0};
+  const myRx=_getMyReaction(postId);
+  return REACTION_TYPES.map(type=>{
+    const m=REACTION_META[type];
+    const n=counts[type]||0;
+    const active=myRx===type;
+    const lbl=_lang==='en'?m.label_en:m.label_id;
+    return `<button class="rev-rx-btn${active?' active':''}" onclick="event.stopPropagation();toggleReaction('${postId}','${type}')" aria-label="${lbl}" title="${lbl}">
+      <span class="rev-rx-emoji">${m.emoji}</span>
+      ${n>0?`<span class="rev-rx-count">${n}</span>`:''}
+    </button>`;
+  }).join('');
+}
+
+function _reactionBarEl(postId){
+  return `<div class="rev-reaction-bar" data-post-id="${postId}">${_reactionBarHTML(postId)}</div>`;
+}
+
+async function _loadAndRenderReactions(postId){
+  await fetchReactions(postId);
+  _renderReactionBar(postId);
+}
 
 /* ══ Item 8: Skeleton Loader ══ */
 function renderSkeletonGrid(){
@@ -379,7 +503,7 @@ function filterPosts(f){
   _filter=f;
   _searchQuery='';
   _allPostsCache=null;
-  const inp=document.getElementById('revSearchInput');if(inp)inp.value='';
+  const hdrInp=document.getElementById('revHdrSearch');if(hdrInp){hdrInp.value='';const cb=document.getElementById('revHdrSearchClear');if(cb)cb.style.display='none';}
   closeSearchDropdown();
   document.querySelectorAll('.rev-filter-btn').forEach(b=>{
     b.classList.toggle('active',b.dataset.filter===f);
@@ -452,8 +576,12 @@ function renderGrid(){
     const imgSrc=hasPoster?driveToThumbnail(p.poster_url):'';
     const dayLbl=p.day_type==='senin'?(_lang==='en'?'Monday':'Senin'):(_lang==='en'?'Friday':'Jumat');
     const snippet=(p.body||'').replace(/\n/g,' ').slice(0,140)+'…';
-    const seriesLbl=p.series||'Reversement';
+    const seriesLbl=p.series_name||p.series||'Reversement';
     const delay=idx*55;
+
+    // Badge "Baru" — hanya post paling terbaru (halaman 1, index 0, bukan setiap halaman)
+    const isNew=_currentPage===1&&idx===0&&p.published!==false;
+    const newBadge=isNew?`<span class="rev-new-badge">${_lang==='en'?'New':'Baru'}</span>`:'';
 
     // Item 1: escapeHTML untuk alt + title
     const safeTitle=escapeHTML(p.title);
@@ -470,6 +598,7 @@ function renderGrid(){
     return `<div class="rev-card card-animate${!p.published?' rev-card-draft':''}" style="animation-delay:${delay}ms" onclick="openRevModal('${p.id}')">
       ${posterHtml}
       ${!p.published?draftBadge:''}
+      ${isNew?newBadge:''}
       <div class="rev-card-body">
         <div class="rev-card-meta">
           <span class="rev-day-badge ${p.day_type}">${dayLbl}</span>
@@ -488,7 +617,7 @@ function renderGrid(){
 /* ══ SEARCH ══ */
 let _searchDebounce=null;
 
-function onRevSearch(val){
+async function onRevSearch(val){
   clearTimeout(_searchDebounce);
   _searchDebounce=setTimeout(async()=>{
     const q=val.trim();
@@ -500,10 +629,11 @@ function onRevSearch(val){
       }
       return;
     }
-    // Fetch cache jika belum ada
+    // Fetch cache jika belum ada — sertakan filter hari jika aktif
     if(!_allPostsCache){
       const pubFilter=isAdmin?'':'&published=eq.true';
-      _allPostsCache=await sb(`reversement_posts?select=*${pubFilter}&order=date.desc`)||[];
+      const dayFilter=_filter!=='all'?`&day_type=eq.${_filter}`:'';
+      _allPostsCache=await sb(`reversement_posts?select=*${pubFilter}${dayFilter}&order=date.desc`)||[];
     }
     _searchQuery=q;
     renderSearchDropdown(q);
@@ -561,8 +691,8 @@ function closeSearchDropdown(){
 function onRevSearchKeydown(e){
   if(e.key==='Escape'){
     closeSearchDropdown();
-    const inp=document.getElementById('revSearchInput');
-    if(inp){inp.value='';_searchQuery='';_allPostsCache=null;loadPosts(true);}
+    _searchQuery='';_allPostsCache=null;loadPosts(true);
+    const hdrInp=document.getElementById('revHdrSearch');if(hdrInp){hdrInp.value='';const cb=document.getElementById('revHdrSearchClear');if(cb)cb.style.display='none';}
   }
   if(e.key==='Enter'){
     closeSearchDropdown();
@@ -570,8 +700,16 @@ function onRevSearchKeydown(e){
   }
 }
 
+function clearRevSearch(){
+  const hdrInp=document.getElementById('revHdrSearch');if(hdrInp)hdrInp.value='';
+  const cb=document.getElementById('revHdrSearchClear');if(cb)cb.style.display='none';
+  _searchQuery='';_allPostsCache=null;
+  closeSearchDropdown();
+  loadPosts(true);
+}
+
 document.addEventListener('click',e=>{
-  const wrap=document.getElementById('revSearchWrap');
+  const wrap=document.getElementById('hdrSearchWrap');
   if(wrap&&!wrap.contains(e.target))closeSearchDropdown();
 });
 
@@ -579,8 +717,16 @@ document.addEventListener('click',e=>{
 let _activePost=null;
 const _isMobile=()=>window.innerWidth<=640;
 
-function openRevModal(id){
-  const post=POSTS.find(p=>p.id===id);
+async function openRevModal(id){
+  // Cari di POSTS (halaman aktif) dulu, fallback ke cache semua post
+  let post=POSTS.find(p=>p.id===id)||(_allPostsCache&&_allPostsCache.find(p=>p.id===id));
+  // Kalau masih tidak ketemu (mis. dari deep link sebelum cache terisi), fetch individual
+  if(!post){
+    try{
+      const res=await sb(`reversement_posts?id=eq.${encodeURIComponent(id)}&select=*`);
+      post=res&&res[0]||null;
+    }catch(e){console.error('openRevModal fetch:',e);}
+  }
   if(!post)return;
   _activePost=post;
   const hasPoster=!!post.poster_url;
@@ -610,6 +756,19 @@ function openRevModal(id){
   document.getElementById('revModalTitle').textContent=post.title;
   document.getElementById('revModalVerse').textContent=post.verse_ref||'';
   document.getElementById('revModalBody').textContent=post.body||'';
+
+  // Reaction bar — desktop modal
+  let rxEl=document.getElementById('revModalReactionBar');
+  if(!rxEl){
+    rxEl=document.createElement('div');
+    rxEl.id='revModalReactionBar';
+    const bodyEl=document.getElementById('revModalBody');
+    bodyEl.insertAdjacentElement('afterend',rxEl);
+  }
+  rxEl.className='rev-reaction-bar';
+  rxEl.dataset.postId=post.id;
+  rxEl.innerHTML=_reactionBarHTML(post.id);
+  _loadAndRenderReactions(post.id);
   const adminActions=document.getElementById('revModalAdminActions');
   if(adminActions)adminActions.style.display=isAdmin?'flex':'none';
   const editBtn=document.getElementById('revModalEditBtn');
@@ -648,6 +807,18 @@ function _populateBottomSheet(post,dayLbl){
   document.getElementById('revBsDate').textContent=formatDate(post.date);
   document.getElementById('revBsVerse').textContent=post.verse_ref||'';
   document.getElementById('revBsBody2').textContent=post.body||'';
+
+  // Reaction bar — mobile bottom sheet
+  let bsRx=document.getElementById('revBsReactionBar');
+  if(!bsRx){
+    bsRx=document.createElement('div');
+    bsRx.id='revBsReactionBar';
+    const bsBody2=document.getElementById('revBsBody2');
+    bsBody2.insertAdjacentElement('afterend',bsRx);
+  }
+  bsRx.className='rev-reaction-bar rev-reaction-bar--dark';
+  bsRx.dataset.postId=post.id;
+  bsRx.innerHTML=_reactionBarHTML(post.id);
   const bsAdmin=document.getElementById('revBsAdminActions');
   if(bsAdmin)bsAdmin.style.display=isAdmin?'flex':'none';
   const bsEdit=document.getElementById('revBsEditBtn');
@@ -719,7 +890,7 @@ let _editingId=null;
 function openAdminForm(postId=null){
   _editingId=postId;
   const f=document.getElementById('adminFormModal');if(!f)return;
-  ['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afBody'].forEach(id=>{
+  ['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afExcerpt','afBody'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('afSeries').value='Reversement';
@@ -733,11 +904,12 @@ function openAdminForm(postId=null){
     if(post){
       if(formTitle)formTitle.textContent=tx('adminFormEditTitle');
       document.getElementById('afTitle').value=post.title||'';
-      document.getElementById('afSeries').value=post.series||'Reversement';
+      document.getElementById('afSeries').value=post.series_name||post.series||'Reversement';
       document.getElementById('afDayType').value=post.day_type||'senin';
       document.getElementById('afDate').value=post.date||'';
       document.getElementById('afVerseRef').value=post.verse_ref||'';
       document.getElementById('afPosterUrl').value=post.poster_url||'';
+      document.getElementById('afExcerpt').value=post.excerpt||'';
       document.getElementById('afBody').value=post.body||'';
       document.getElementById('afPublished').checked=post.published!==false;
     }
@@ -789,11 +961,12 @@ async function saveAdminForm(){
   const id=isEdit?_editingId:generatePostId(dateVal);
   const payload={
     title:titleVal,
-    series:document.getElementById('afSeries').value.trim()||'Reversement',
+    series_name:document.getElementById('afSeries').value.trim()||'Reversement',
     day_type:document.getElementById('afDayType').value,
     date:dateVal,
     verse_ref:document.getElementById('afVerseRef').value.trim()||null,
     poster_url:document.getElementById('afPosterUrl').value.trim()||null,
+    excerpt:document.getElementById('afExcerpt').value.trim()||null,
     body:document.getElementById('afBody').value.trim()||null,
     published:document.getElementById('afPublished').checked,
   };
@@ -855,10 +1028,13 @@ document.addEventListener('keydown',e=>{
 /* ══ VISIT COUNTER ══ */
 async function trackVisit(){
   const timeout=ms=>new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms));
-  let sid=sessionStorage.getItem('naposo_sid');
-  if(!sid){
-    sid='sid_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
-    sessionStorage.setItem('naposo_sid',sid);
+  const LS_KEY='naposo_sid';const LS_EXP='naposo_sid_exp';
+  const now=Date.now();const exp=parseInt(localStorage.getItem(LS_EXP)||'0');
+  let sid=localStorage.getItem(LS_KEY);
+  if(!sid||now>exp){
+    sid='sid_'+now+'_'+Math.random().toString(36).slice(2,9);
+    localStorage.setItem(LS_KEY,sid);
+    localStorage.setItem(LS_EXP,String(now+86400000));
     try{
       await Promise.race([
         sb('visits',{method:'POST',prefer:'resolution=ignore-duplicates,return=minimal',body:{session_id:sid}}),
@@ -867,8 +1043,9 @@ async function trackVisit(){
     }catch(_){}
   }
   try{
+    const d=new Date();const monthStart=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
     const res=await Promise.race([
-      fetch(`${SUPA_URL}/rest/v1/visits?select=count`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Prefer':'count=exact','Range':'0-0'}}),
+      fetch(`${SUPA_URL}/rest/v1/visits?select=count&created_at=gte.${monthStart}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Prefer':'count=exact','Range':'0-0'}}),
       timeout(3000)
     ]);
     const count=res.headers.get('content-range')?.split('/')?.pop()||'–';
@@ -887,7 +1064,7 @@ function initScrollTop(){
 /* ══ Item 6: Dirty State tracking for admin form ══ */
 let _formDirty=false;
 function initDirtyState(){
-  const watchIds=['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afBody'];
+  const watchIds=['afTitle','afSeries','afDate','afVerseRef','afPosterUrl','afExcerpt','afBody'];
   watchIds.forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.addEventListener('input',()=>{_formDirty=true;});
@@ -921,11 +1098,11 @@ function initDirtyState(){
 
   const deepId=new URLSearchParams(location.search).get('id');
   if(deepId){
-    const target=POSTS.find(p=>p.id===deepId);
-    if(target)openRevModal(target.id);
     // [Sesi 40 Item 5] Tampilkan breadcrumb
     const _bb=document.getElementById('backToHome');
     if(_bb)_bb.style.display='flex';
+    // openRevModal sudah handle fallback fetch sendiri, tidak perlu cek POSTS dulu
+    await openRevModal(deepId);
   }
 
   initScrollTop();   // Item 9
@@ -957,7 +1134,8 @@ function initPullToRefresh(){
     if(!triggered)return;
     const lbl=document.getElementById('ptrLabel');
     if(lbl)lbl.textContent=_lang==='en'?'Refreshing…':'Memuat ulang…';
-    _searchQuery='';_allPostsCache=null;const si=document.getElementById('revSearchInput');if(si)si.value='';
+    _searchQuery='';_allPostsCache=null;
+    const hdrInp=document.getElementById('revHdrSearch');if(hdrInp){hdrInp.value='';const cb=document.getElementById('revHdrSearchClear');if(cb)cb.style.display='none';}
     await loadPosts();
     hideSpinner();
   },{passive:true});
@@ -967,6 +1145,7 @@ function initPullToRefresh(){
    SESI 35 — BOTTOM NAV
    ══════════════════════════════ */
 function openBnSheet(){
+  if(isAdmin)loadAdminActivityLog();
   document.getElementById('bnSheet').classList.add('open');
   document.getElementById('bnSheetOverlay').classList.add('open');
   const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
@@ -994,6 +1173,7 @@ function _syncBnAdminUI(name){
     if(bnTopRow)bnTopRow.style.display='block';
     if(bnIcon)bnIcon.textContent='✓';
     if(bnLabel)bnLabel.textContent=name.split(' ')[0];
+    const bnBadge=document.getElementById('bnAdminBadge');if(bnBadge)bnBadge.style.display=isSuperAdmin()?'inline':'none';
   } else {
     if(adminSec)adminSec.style.display='none';
     if(guestSec)guestSec.style.display='block';

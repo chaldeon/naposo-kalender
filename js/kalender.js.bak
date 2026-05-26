@@ -3,22 +3,6 @@ const SUPA_URL='https://wejbubxrlqyazlodhbua.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlamJ1YnhybHF5YXpsb2RoYnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTU0NDUsImV4cCI6MjA5MTg5MTQ0NX0.fFBvRU7wlRvzigDLtN6ot_9D6GMxL9h4J_mwVaNoBsU';
 function sb(p,o={}){return fetch(`${SUPA_URL}/rest/v1/${p}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Content-Type':'application/json','Prefer':'return=representation',...(o.headers||{})},...o});}
 async function sbGet(p){const r=await sb(p);if(!r.ok)throw new Error(await r.text());return r.json();}
-
-function isSuperAdmin(){return localStorage.getItem('naposo_role')==='superadmin';}
-function confirmLogout(){if(window.confirm(lang==='en'?'Log out of admin mode?':'Keluar dari mode admin?')){doLogout();}}
-async function loadAdminActivityLog(){
-  const el=document.getElementById('bnActivityLog');if(!el)return;
-  el.innerHTML=`<span class="bn-act-empty">${tx('actLogLoading')}</span>`;
-  try{
-    const rows=await sbGet('event_logs?select=action,actor,note,created_at&order=created_at.desc&limit=10');
-    if(!rows||!rows.length){el.innerHTML=`<span class="bn-act-empty">${tx('actLogEmpty')}</span>`;return;}
-    el.innerHTML=rows.map(r=>{
-      const d=new Date(r.created_at);
-      const ts=d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-      return '<div class="bn-act-row"><span class="bn-act-action">'+escapeHTML(r.action||'')+'</span><span class="bn-act-note">'+escapeHTML(r.note||r.actor||'')+'</span><span class="bn-act-ts">'+ts+'</span></div>';
-    }).join('');
-  }catch(e){el.innerHTML=`<span class="bn-act-empty">${tx('actLogFail')}</span>`;}
-}
 async function dbGet(t,q=''){const r=await sb(`${t}?${q}`);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbIns(t,d){const r=await sb(t,{method:'POST',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function dbUpd(t,m,d){const r=await sb(`${t}?${m}`,{method:'PATCH',body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json();}
@@ -80,11 +64,11 @@ function recurNextQuarterStart(dateStr){
 async function extendRecurGroup(groupId){
   // Ambil semua instance dalam grup (sortir ascending)
   const instances=EVENTS.filter(e=>e.recur_group_id===groupId).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!instances.length){showToast(tx('extendNoInstance'),'err');return;}
+  if(!instances.length){showToast('Tidak ada instance ditemukan.','err');return;}
   const first=instances[0];
   const last=instances[instances.length-1];
   const pattern=first.recur_pattern;
-  if(!pattern){showToast(tx('extendNoPat'),'err');return;}
+  if(!pattern){showToast('Pola pengulangan tidak ditemukan.','err');return;}
   // Generate dari tanggal terakhir, ke kuartal berikutnya
   const nextQStart=recurNextQuarterStart(last.date);
   const nextQEnd=recurQuarterEnd(nextQStart);
@@ -96,10 +80,11 @@ async function extendRecurGroup(groupId){
   const existingDates=new Set(instances.map(e=>e.date));
   const toCreate=[...new Set([...newDates,...extraDates])].filter(d=>!existingDates.has(d)&&d<=nextQEnd).sort();
   if(!toCreate.length){
-    showToast(tx('extendNoNew',nextQStart.slice(0,7),nextQEnd.slice(0,7)),'err');
+    const labels={'weekly':'mingguan','biweekly':'2 mingguan','monthly':'bulanan'};
+    showToast(`Tidak ada instance baru untuk kuartal ${nextQStart.slice(0,7)} – ${nextQEnd.slice(0,7)}.`,'err');
     return;
   }
-  const msg=tx('extendMsg',toCreate.length,nextQStart.slice(0,7).replace('-','/'),nextQEnd.slice(0,7).replace('-','/'));
+  const msg=`Tambah ${toCreate.length} instance ke kuartal ${nextQStart.slice(0,7).replace('-','/')} – ${nextQEnd.slice(0,7).replace('-','/')}?`;
   showConfirmModal(msg,async()=>{
     setSyncBadge('load',tx('saving'));
     let ok=0;
@@ -115,9 +100,9 @@ async function extendRecurGroup(groupId){
     }
     EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
     renderCalendar();renderStats();
-    showToast(tx('extendSuccess',ok),'ok');
+    showToast(`${ok} kegiatan berhasil ditambahkan ✓`,'ok');
     setSyncBadge('ok',tx('connected'));
-  },tx('extendAdd'));
+  },'Tambah');
 }
 
 /**
@@ -162,11 +147,11 @@ function toggleRecurInfo(){
   if(!dateVal){wrap.style.display='none';return;}
   const dates=recurDates(dateVal,pat);
   const quarterEnd=recurQuarterEnd(dateVal);
-  const labels=tx('recurLabels');
+  const labels={'weekly':'mingguan','biweekly':'2 mingguan','monthly':'bulanan'};
   wrap.style.display='block';
   wrap.textContent=dates.length
-    ?tx('recurInfoCount',dates.length,labels[pat]||pat,quarterEnd)
-    :tx('recurInfoNone',quarterEnd);
+    ?`Akan dibuat ${dates.length} instance ${labels[pat]} hingga akhir kuartal (${quarterEnd}).`
+    :`Tidak ada instance dalam kuartal ini (akhir kuartal: ${quarterEnd}).`;
 }
 
 /**
@@ -317,7 +302,7 @@ const T={
     navHomeMob:'Home',navKalenderMob:'Kalender',navRevMob:'Reversement',
     logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Tambah',lbDate:'Tanggal',lbTitle:'Judul Kegiatan',lbStart:'Waktu Mulai',lbEnd:'Waktu Selesai',
-    lbCat:'Kategori',lbNote:'Catatan (opsional)',lbThumbnail:'🖼 Thumbnail Card',cancelBtn:'Batal',saveBtn:'Simpan',
+    lbCat:'Kategori',lbNote:'Catatan (opsional)',cancelBtn:'Batal',saveBtn:'Simpan',
     loginTitle:'Login Pengurus',lbName:'Nama Pengurus',selectName:'-- Pilih nama --',
     lbPw:'Password',loginErr:'Password salah atau nama tidak dipilih.',
     loginBtn2:'Masuk',detailTitle:'Detail Kegiatan',closeBtn:'Tutup',editBtn:'Ubah',deleteBtn:'Hapus',
@@ -329,7 +314,7 @@ const T={
     welcome:'Selamat datang',modeActive:'Mode edit aktif.',
     searchPlaceholder:'Cari kegiatan…',allCats:'Semua Kategori',
     statTotal:'Total Kegiatan',statMonth:'Bulan ini',statToday:'Hari ini',statVisit:'Total kunjungan',
-    footerVisit:'kunjungan bulan ini',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
+    footerVisit:'kunjungan',darkModeLbl:'Dark Mode',langModeLbl:'Bahasa',
     moreEventsLabel:(n)=>`+${n} lagi`,catMgrBtn:'⚙ Kelola',
     undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',ddLogout:'Logout',
     exportModalTitle:'Export Kalender',expSecFormat:'Format Export',expSecScope:'Data yang Di-export',
@@ -343,118 +328,13 @@ const T={
     scGrid:'Tampilan Grid',scAgenda:'Tampilan Agenda',scToday:'Hari ini',
     scPrev:'Bulan sebelumnya',scNext:'Bulan berikutnya',scSearch:'Fokus pencarian',
     scUndo:'Undo (pengurus)',scRedo:'Redo (pengurus)',scClose:'Tutup modal',scGuide:'Panduan ini',
-    // Bottom sheet / admin dd
-    bnAksiCepat:'Aksi Cepat',ddAksi:'Aksi',ddAddEvent:'Tambah Event',ddStatistik:'Statistik',
-    bnLogAktivitas:'Log Aktivitas',bnAkun:'Akun',bnLoginAdmin:'Login Admin',
-    bnAddEvent:'Tambah Event',
-    // Recurring modals
-    recurEditTitle:'Edit Kegiatan Berulang',recurEditMsg:'Kegiatan ini adalah bagian dari seri berulang. Mau edit yang mana?',
-    recurEditOne:'Edit hanya kegiatan ini',recurEditAll:'Edit semua yang akan datang',
-    recurDelTitle:'Hapus Kegiatan Berulang',recurDelMsg:'Kegiatan ini adalah bagian dari seri berulang. Mau hapus yang mana?',
-    recurDelOne:'Hapus hanya kegiatan ini',recurDelAll:'Hapus semua yang akan datang',
-    // Form labels (event modal)
-    evFeaturedLbl:'⭐ Tampilkan di Beranda',evDraftLbl:'📝 Simpan sebagai Draft (tidak tampil ke publik)',
-    evGabunganLbl:'GABUNGAN?',
-    recurLbl:'🔁 Pengulangan',recurNone:'Tidak berulang',recurWeekly:'Setiap minggu',
-    recurBiweekly:'Setiap 2 minggu',recurMonthly:'Setiap bulan',
-    // Confirm modal title
-    confirmTitle:'Konfirmasi',
-    // Loading / empty states
-    calLoading:'Memuat data…',backToHome:'← Beranda',
-    // Search placeholder
-    searchPlaceholderEvent:'Cari event…',
-    // Detail modal defaults
-    detailDefault:'Detail Event',
-    // Stats popup
-    statTotalLbl:'Total Event',
-    // Agenda / detail misc
-    agNoEventToday:'Tidak ada kegiatan hari ini — nikmati harimu! 🌿',
-    agNoEventMonth:'Tidak ada kegiatan bulan ini',agNoEventSub:'Coba bulan lain atau reset filter.',
-    agResetFilter:'Reset Filter',agNoResult:(q)=>`Tidak ada hasil untuk "${q}".`,
-    agSearchBanner:(n,q)=>`🔍 ${n} hasil untuk "${q}"`,agClearSearch:'✕ Hapus pencarian',
-    agEventCount:(n)=>`${n} kegiatan`,agSearchResultCount:(n)=>`${n} hasil`,
-    sdEmpty:(q)=>`Tidak ada hasil untuk "${q}"`,sdShowAll:(n)=>`Tampilkan semua ${n} hasil →`,
-    // Undo/redo toast
-    undoSuccess:'Undo berhasil ✓',undoFail:'Tidak ada yang bisa di-undo.',undoErr:(m)=>`Undo gagal: ${m}`,
-    redoSuccess:'Redo berhasil ✓',redoFail:'Tidak ada yang bisa di-redo.',redoErr:(m)=>`Redo gagal: ${m}`,
-    // Admin activity log
-    actLogLoading:'Memuat…',actLogEmpty:'Belum ada aktivitas.',actLogFail:'Gagal memuat log.',
-    // Misc inline
-    copiedEvToast:(t)=>`Kegiatan disalin: ${t}`,noCopied:'Belum ada kegiatan yang disalin.',
-    pasteNoItem:'Belum ada kegiatan yang disalin.',
-    extendMsg:(n,f,t)=>`Tambah ${n} instance ke kuartal ${f} – ${t}?`,extendAdd:'Tambah',
-    extendSuccess:(n)=>`${n} kegiatan berhasil ditambahkan ✓`,
-    extendNoInstance:'Tidak ada instance ditemukan.',extendNoPat:'Pola pengulangan tidak ditemukan.',
-    extendNoNew:(f,t)=>`Tidak ada instance baru untuk kuartal ${f} – ${t}.`,
-    recurInfoCount:(n,p,e)=>`Akan dibuat ${n} instance ${p} hingga akhir kuartal (${e}).`,
-    recurInfoNone:(e)=>`Tidak ada instance dalam kuartal ini (akhir kuartal: ${e}).`,
-    recurLabels:{weekly:'mingguan',biweekly:'2 mingguan',monthly:'bulanan'},
-    deleteRecurAll:(n,t)=>`Hapus semua ${n} kegiatan "${t}" yang akan datang? Tidak bisa dibatalkan.`,
-    deleteEvMsg:(n)=>`Hapus kegiatan "${n}"? Tindakan ini tidak bisa dibatalkan.`,
-    featuredOn:'Kegiatan ditampilkan di beranda ★',featuredOff:'Kegiatan dihapus dari beranda',
-    featuredFail:(m)=>`Gagal update: ${m}`,
-    warnPopupBlocked:'Popup diblokir. Izinkan popup di browser.',
-    exportOnlyAdmin:'Fitur export hanya untuk pengurus yang login.',
-    catColorUpdated:'Warna diperbarui!',catNameUpdated:'Nama diperbarui!',
-    // Det gallery / log
-    detGalleryLoading:'Memuat galeri…',detGalleryEmpty:'Belum ada foto.',detGalleryFail:'Gagal memuat galeri.',
-    detLogLoading:'Memuat riwayat…',detLogEmpty:'Belum ada riwayat perubahan.',detLogFail:'Gagal memuat riwayat.',
-    addGalleryMissingUrl:'URL foto wajib diisi.',addGalleryOk:(n)=>`${n} foto ditambahkan ✓`,
-    addGalleryOkPartial:(n,f)=>`${n} foto ditambahkan ✓ (${f} gagal)`,addGalleryFail:'Semua gagal ditambahkan.',
-    deleteGalleryConfirm:'Hapus foto ini?',deleteGalleryOk:'Foto dihapus.',
-    deleteGalleryFail:(m)=>`Gagal: ${m}`,
-    dupOk:'Kegiatan diduplikat ✓',
-    // Verifying login
-    verifying:'Memverifikasi…',
-    // Detail tab labels
-    detTabInfo:'ℹ️ Info',detTabGallery:'📸 Galeri',detTabLog:'📋 Riwayat',
-    // Det footer
-    detFeatOn:'★ Di Beranda',detFeatOff:'☆ Beranda',detExtend:'🔁 Perpanjang',
-    // Recurring save toast
-    savedRecurMany:(n)=>`(${n} kegiatan diupdate)`,savedRecurCreated:(n,t)=>`${t} (${n} kegiatan dibuat)`,
-    // GCal link label
-    addToGcal:'📆 Tambah ke Google Kalender',
-    // Modal detail bday
-    bdayGreeting:(n)=>`🎂 Selamat ulang tahun, ${n}!`,
-    // Revlink
-    openRenungan:'✝️ Buka Renungan →',
-    // Cat manager
-    catBuiltIn:'bawaan',
-    // Dirty state confirm
-    dirtyMsg:'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?',
-    // Login
-    verifyingBtn:'Memverifikasi…',
-    // Delete all recurring
-    deleteRecurOk:(n)=>`${n} kegiatan dihapus`,
-    // helo bar
-    haloPrefix:'Halo, ',
-    // export CSV/PDF labels
-    csvHeader:['Tanggal','Hari','Judul Kegiatan','Waktu','Kategori','Info Tambahan','Catatan'],
-    csvDayNames:['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'],
-    pdfDayNames:['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
-    pdfTitle:'Kalender Pelayanan Naposo HKBP Ujung Menteng',
-    pdfExported:(d)=>`Diekspor pada ${d}`,
-    pdfScopeAllMonths:'Semua Bulan',
-    exportRangeSep:'s/d',
-    pdfFooter:(n)=>`Naposo HKBP Ujung Menteng · Kalender Pelayanan 2026 · Total ${n} kegiatan`,
-    // Catatan admin dd (dropdown header)
-    loginBadgeAdmin:(n)=>`${n} (Pengurus)`,
-    // Logout
-    filterCatLbl:'Filter Kategori',
-    copyEvTitle:'Salin kegiatan',
-    exportCSVOk:'Export CSV berhasil ✓',
-    exportICalOk:'Export iCal berhasil ✓',
-    exportPNGOk:'Export PNG berhasil ✓',
-    exportPNGFail:(m)=>`Gagal export PNG: ${m}`,
-    // Touch-nav tooltip
-    prevMonth:'← Sebelumnya',nextMonth:'Berikutnya →',
   },
-  en:{loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Today',
+  en:{loginBadgeView:'View only',loginBtnTxt:'Login',todayBtnTxt:'Hari ini',
     navHome:'Home',navKalender:'Calendar',navRev:'Reversement',
     navHomeMob:'Home',navKalenderMob:'Calendar',navRevMob:'Reversement',
     logoutBtnMobTxt:'Logout',loginBtnMobileTxt:'Login',
     addBtnTxt:'Add',lbDate:'Date',lbTitle:'Event Title',lbStart:'Start Time',lbEnd:'End Time',
-    lbCat:'Category',lbNote:'Notes (optional)',lbThumbnail:'🖼 Thumbnail Card',cancelBtn:'Cancel',saveBtn:'Save',
+    lbCat:'Category',lbNote:'Notes (optional)',cancelBtn:'Cancel',saveBtn:'Save',
     loginTitle:'Admin Login',lbName:'Admin Name',selectName:'-- Select name --',
     lbPw:'Password',loginErr:'Wrong password or name not selected.',
     loginBtn2:'Sign In',detailTitle:'Event Detail',closeBtn:'Close',editBtn:'Edit',deleteBtn:'Delete',
@@ -466,7 +346,7 @@ const T={
     welcome:'Welcome',modeActive:'Edit mode active.',
     searchPlaceholder:'Search events…',allCats:'All Categories',
     statTotal:'Total Events',statMonth:'This month',statToday:'Today',statVisit:'Total visits',
-    footerVisit:'visits this month',darkModeLbl:'Dark Mode',langModeLbl:'Language',
+    footerVisit:'visits',darkModeLbl:'Dark Mode',langModeLbl:'Language',
     moreEventsLabel:(n)=>`+${n} more`,catMgrBtn:'⚙ Manage',
     undoBtn:'Undo',pasteBtn:'Paste',exportBtn:'Export',logoutBtn:'Logout',ddLogout:'Logout',
     exportModalTitle:'Export Calendar',expSecFormat:'Export Format',expSecScope:'Data to Export',
@@ -480,111 +360,6 @@ const T={
     scGrid:'Grid view',scAgenda:'Agenda view',scToday:'Today',
     scPrev:'Previous month',scNext:'Next month',scSearch:'Focus search',
     scUndo:'Undo (admin)',scRedo:'Redo (admin)',scClose:'Close modal',scGuide:'This guide',
-    // Bottom sheet / admin dd
-    bnAksiCepat:'Quick Actions',ddAksi:'Actions',ddAddEvent:'Add Event',ddStatistik:'Statistics',
-    bnLogAktivitas:'Activity Log',bnAkun:'Account',bnLoginAdmin:'Admin Login',
-    bnAddEvent:'Add Event',
-    // Recurring modals
-    recurEditTitle:'Edit Recurring Event',recurEditMsg:'This event is part of a recurring series. Which ones do you want to edit?',
-    recurEditOne:'Edit only this event',recurEditAll:'Edit all upcoming',
-    recurDelTitle:'Delete Recurring Event',recurDelMsg:'This event is part of a recurring series. Which ones do you want to delete?',
-    recurDelOne:'Delete only this event',recurDelAll:'Delete all upcoming',
-    // Form labels (event modal)
-    evFeaturedLbl:'⭐ Show on Home',evDraftLbl:'📝 Save as Draft (hidden from public)',
-    evGabunganLbl:'COMBINED?',
-    recurLbl:'🔁 Recurrence',recurNone:'Does not repeat',recurWeekly:'Every week',
-    recurBiweekly:'Every 2 weeks',recurMonthly:'Every month',
-    // Confirm modal title
-    confirmTitle:'Confirm',
-    // Loading / empty states
-    calLoading:'Loading data…',backToHome:'← Home',
-    // Search placeholder
-    searchPlaceholderEvent:'Search events…',
-    // Detail modal defaults
-    detailDefault:'Event Detail',
-    // Stats popup
-    statTotalLbl:'Total Events',
-    // Agenda / detail misc
-    agNoEventToday:'No events scheduled for today — enjoy your day! 🌿',
-    agNoEventMonth:'No events this month',agNoEventSub:'Try another month or reset the filter.',
-    agResetFilter:'Reset Filter',agNoResult:(q)=>`No results for "${q}".`,
-    agSearchBanner:(n,q)=>`🔍 ${n} results for "${q}"`,agClearSearch:'✕ Clear search',
-    agEventCount:(n)=>`${n} events`,agSearchResultCount:(n)=>`${n} results`,
-    sdEmpty:(q)=>`No results for "${q}"`,sdShowAll:(n)=>`Show all ${n} results →`,
-    // Undo/redo toast
-    undoSuccess:'Undo successful ✓',undoFail:'Nothing to undo.',undoErr:(m)=>`Undo failed: ${m}`,
-    redoSuccess:'Redo successful ✓',redoFail:'Nothing to redo.',redoErr:(m)=>`Redo failed: ${m}`,
-    // Admin activity log
-    actLogLoading:'Loading…',actLogEmpty:'No activity yet.',actLogFail:'Failed to load log.',
-    // Misc inline
-    copiedEvToast:(t)=>`Event copied: ${t}`,noCopied:'No event copied yet.',
-    pasteNoItem:'No event copied yet.',
-    extendMsg:(n,f,t)=>`Add ${n} instances to quarter ${f} – ${t}?`,extendAdd:'Add',
-    extendSuccess:(n)=>`${n} events added successfully ✓`,
-    extendNoInstance:'No instances found.',extendNoPat:'Recurrence pattern not found.',
-    extendNoNew:(f,t)=>`No new instances for quarter ${f} – ${t}.`,
-    recurInfoCount:(n,p,e)=>`${n} ${p} instances will be created until end of quarter (${e}).`,
-    recurInfoNone:(e)=>`No instances in this quarter (end of quarter: ${e}).`,
-    recurLabels:{weekly:'weekly',biweekly:'bi-weekly',monthly:'monthly'},
-    deleteRecurAll:(n,t)=>`Delete all ${n} upcoming instances of "${t}"? This cannot be undone.`,
-    deleteEvMsg:(n)=>`Delete event "${n}"? This cannot be undone.`,
-    featuredOn:'Event featured on home page ★',featuredOff:'Event removed from home page',
-    featuredFail:(m)=>`Update failed: ${m}`,
-    warnPopupBlocked:'Popup blocked. Please allow popups in your browser.',
-    exportOnlyAdmin:'Export feature is for logged-in admins only.',
-    catColorUpdated:'Color updated!',catNameUpdated:'Name updated!',
-    // Det gallery / log
-    detGalleryLoading:'Loading gallery…',detGalleryEmpty:'No photos yet.',detGalleryFail:'Failed to load gallery.',
-    detLogLoading:'Loading history…',detLogEmpty:'No change history yet.',detLogFail:'Failed to load history.',
-    addGalleryMissingUrl:'Photo URL is required.',addGalleryOk:(n)=>`${n} photo(s) added ✓`,
-    addGalleryOkPartial:(n,f)=>`${n} photo(s) added ✓ (${f} failed)`,addGalleryFail:'All failed to add.',
-    deleteGalleryConfirm:'Delete this photo?',deleteGalleryOk:'Photo deleted.',
-    deleteGalleryFail:(m)=>`Failed: ${m}`,
-    dupOk:'Event duplicated ✓',
-    // Verifying login
-    verifying:'Verifying…',
-    // Detail tab labels
-    detTabInfo:'ℹ️ Info',detTabGallery:'📸 Gallery',detTabLog:'📋 History',
-    // Det footer
-    detFeatOn:'★ On Home',detFeatOff:'☆ Home',detExtend:'🔁 Extend',
-    // Recurring save toast
-    savedRecurMany:(n)=>`(${n} events updated)`,savedRecurCreated:(n,t)=>`${t} (${n} events created)`,
-    // GCal link label
-    addToGcal:'📆 Add to Google Calendar',
-    // Modal detail bday
-    bdayGreeting:(n)=>`🎂 Happy birthday, ${n}!`,
-    // Revlink
-    openRenungan:'✝️ Open Devotional →',
-    // Cat manager
-    catBuiltIn:'built-in',
-    // Dirty state confirm
-    dirtyMsg:'There are unsaved changes. Close without saving?',
-    // Login
-    verifyingBtn:'Verifying…',
-    // Delete all recurring
-    deleteRecurOk:(n)=>`${n} events deleted`,
-    // helo bar
-    haloPrefix:'Hello, ',
-    // export CSV/PDF labels
-    csvHeader:['Date','Day','Event Title','Time','Category','Extra Info','Notes'],
-    csvDayNames:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-    pdfDayNames:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
-    pdfTitle:'Naposo HKBP Ujung Menteng Ministry Calendar',
-    pdfExported:(d)=>`Exported on ${d}`,
-    pdfScopeAllMonths:'All Months',
-    exportRangeSep:'to',
-    pdfFooter:(n)=>`Naposo HKBP Ujung Menteng · Ministry Calendar 2026 · Total ${n} events`,
-    // Catatan admin dd
-    loginBadgeAdmin:(n)=>`${n} (Admin)`,
-    // Logout
-    filterCatLbl:'Filter Category',
-    copyEvTitle:'Copy event',
-    exportCSVOk:'CSV exported ✓',
-    exportICalOk:'iCal exported ✓',
-    exportPNGOk:'PNG exported ✓',
-    exportPNGFail:(m)=>`PNG export failed: ${m}`,
-    // Touch-nav tooltip
-    prevMonth:'← Previous',nextMonth:'Next →',
   }
 };
 function tx(k,...a){const fn=(T[lang]||T.id)[k]||T.id[k]||k;return typeof fn==='function'?fn(...a):fn;}
@@ -613,10 +388,10 @@ let _adminName='';
 function setAdminBarTxt(name){
   _adminName=name;
   const abt=document.getElementById('adminBarTxt');
-  if(abt)abt.textContent=(lang==='en'?tx('haloPrefix'):tx('haloPrefix'))+name+'.';
+  if(abt)abt.textContent=(lang==='en'?'Hello, ':'Halo, ')+name+'.';
 }
 async function undoLast(){
-  if(!undoStack.length){showToast(tx('undoFail'),'err');return;}
+  if(!undoStack.length){showToast('Tidak ada yang bisa di-undo.','err');return;}
   const action=undoStack.pop();syncUndoBtn();
   try{
     let redoAction=null;
@@ -641,11 +416,11 @@ async function undoLast(){
     }
     if(redoAction){redoStack.push(redoAction);syncRedoBtn();}
     renderCalendar();renderStats();
-    showToast(tx('undoSuccess'),'ok');
-  } catch(e){showToast(tx('undoErr',e.message),'err');}
+    showToast('Undo berhasil ✓','ok');
+  } catch(e){showToast('Undo gagal: '+e.message,'err');}
 }
 async function redoLast(){
-  if(!redoStack.length){showToast(tx('redoFail'),'err');return;}
+  if(!redoStack.length){showToast('Tidak ada yang bisa di-redo.','err');return;}
   const action=redoStack.pop();syncRedoBtn();
   try{
     let undoAction=null;
@@ -670,8 +445,8 @@ async function redoLast(){
     }
     if(undoAction){undoStack.push(undoAction);syncUndoBtn();}
     renderCalendar();renderStats();
-    showToast(tx('redoSuccess'),'ok');
-  } catch(e){showToast(tx('redoErr',e.message),'err');}
+    showToast('Redo berhasil ✓','ok');
+  } catch(e){showToast('Redo gagal: '+e.message,'err');}
 }
 document.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
@@ -695,13 +470,10 @@ let currentMonth=TODAY.getMonth(); // selalu mulai dari bulan saat ini
 /* ══ TRAFFIC ══ */
 async function trackVisit(){
   const timeout=ms=>new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms));
-  const LS_KEY='naposo_sid';const LS_EXP='naposo_sid_exp';
-  const now=Date.now();const exp=parseInt(localStorage.getItem(LS_EXP)||'0');
-  let sid=localStorage.getItem(LS_KEY);
-  if(!sid||now>exp){
-    sid='sid_'+now+'_'+Math.random().toString(36).slice(2,9);
-    localStorage.setItem(LS_KEY,sid);
-    localStorage.setItem(LS_EXP,String(now+86400000));
+  let sid=sessionStorage.getItem('naposo_sid');
+  if(!sid){
+    sid='sid_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+    sessionStorage.setItem('naposo_sid',sid);
     try{
       await Promise.race([
         sb('visits',{method:'POST',headers:{'Prefer':'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({session_id:sid})}),
@@ -710,9 +482,8 @@ async function trackVisit(){
     }catch(_){}
   }
   try{
-    const d=new Date();const monthStart=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
     const res=await Promise.race([
-      fetch(`${SUPA_URL}/rest/v1/visits?select=count&created_at=gte.${monthStart}`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Prefer':'count=exact','Range':'0-0'}}),
+      fetch(`${SUPA_URL}/rest/v1/visits?select=count`,{headers:{'apikey':SUPA_KEY,'Authorization':`Bearer ${SUPA_KEY}`,'Prefer':'count=exact','Range':'0-0'}}),
       timeout(3000)
     ]);
     const count=res.headers.get('content-range')?.split('/')?.pop()||'–';
@@ -723,12 +494,9 @@ async function trackVisit(){
 /* ══ INIT ══ */
 async function init(){
   applyDark();
+  const visits=await trackVisit();
   document.getElementById('footerYear').textContent=new Date().getFullYear();
-  // trackVisit dijalankan non-blocking — counter kunjungan tidak kritikal untuk render UI
-  const visitsPromise=trackVisit();
-  visitsPromise.then(visits=>{
-    document.getElementById('footerVisits').textContent=visits.total||'–';
-  }).catch(()=>{});
+  document.getElementById('footerVisits').textContent=visits.total||'–';
   applyLangUI();buildLoginDropdown();buildCatFilterDropdown();buildLegend();buildTabs();
   // Tutup fixed dropdowns saat scroll agar posisi tidak stale
   window.addEventListener('scroll',()=>{
@@ -736,7 +504,7 @@ async function init(){
     closeSearchDropdown();
   },{passive:true,capture:true});
   document.addEventListener('click',e=>{
-    {const path=e.composedPath();const wrap=document.getElementById('catFilterWrap');if(!path.includes(wrap))document.getElementById('catFilterDropdown').classList.remove('open');}
+    if(!document.getElementById('catFilterWrap').contains(e.target)) document.getElementById('catFilterDropdown').classList.remove('open');
     if(!document.getElementById('infoBtn').parentElement.contains(e.target)) document.getElementById('statsPopup').classList.remove('open');
     if(!document.getElementById('hamburgerBtn').contains(e.target)&&!document.getElementById('hdrMenuPanel').contains(e.target)) closeHamburger();
     const deskWrap=document.getElementById('deskMonthBtn')?.closest('.desk-month-picker-wrap');
@@ -773,14 +541,11 @@ async function init(){
       const amt=document.getElementById('adminMobileNameTxt');if(amt)amt.textContent=savedName;
       const lbm=document.getElementById('loginBtnMobile');if(lbm)lbm.style.display='none';
       ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
-      ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=lang==='en'?`${savedName} (Admin)`:savedName+' (Pengurus)';});
+      ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=savedName+' (Pengurus)';});
       document.getElementById('loginBtn').textContent=`✓ ${savedName}`;document.getElementById('loginBtn').disabled=false;
       document.getElementById('loginBtnMobile').textContent=`✓ ${savedName}`;document.getElementById('loginBtnMobile').disabled=true;
       const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='flex';
       _syncBnAdminUI(savedName);
-      _applyRoleBadge();
-      const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='inline-block';
-      const statPill=document.getElementById('navStatPill');if(statPill)statPill.style.display='';
       setSyncBadge('ok',tx('connected'));
       renderCalendar();
     }
@@ -807,7 +572,7 @@ async function init(){
       const _bb=document.getElementById('backToHome');
       if(_bb)_bb.style.display='flex';
     }
-  }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ ${lang==='en'?'Failed to load data':'Gagal memuat data'}.<br><small>${e.message}</small></div>`;}
+  }catch(e){document.getElementById('calWrap').innerHTML=`<div class="loading-box" style="color:var(--red)">⚠ Gagal memuat data.<br><small>${e.message}</small></div>`;}
 }
 
 function startRealtime(){
@@ -883,46 +648,17 @@ function applyLangUI(){
     scopeLblAll:'scopeLblAll',scopeLblMonth:'scopeLblMonth',scopeLblPick:'scopeLblPick',scopeLblCat:'scopeLblCat',
     exportRangeSep:'exportRangeSep',exportCancelBtn:'exportCancelBtn',doExportBtnTxt:'doExportBtnTxt',
     feedbackFabTxt:'feedbackFabTxt',
-    // bottom sheet quick actions & admin dd
-    bnAksiCepatLbl:'ddAksi',ddStatistikLbl2:'ddStatistik',
-    bnLogAktivitasLbl:'bnLogAktivitas',bnAkunLbl:'bnAkun',bnLoginAdminLbl:'bnLoginAdmin',
-    bnAddEventLbl:'bnAddEvent',
-    ddAddEventLbl:'ddAddEvent',ddStatistikLbl:'ddStatistik',ddAksiLbl:'ddAksi',
-    // recurring modals titles/messages
-    recurEditTitleLbl:'recurEditTitle',recurEditMsgLbl:'recurEditMsg',
-    recurDelTitleLbl:'recurDelTitle',recurDelMsgLbl:'recurDelMsg',
-    // recurring modal buttons
-    recurEditOneBtn:'recurEditOne',recurEditAllBtn:'recurEditAll',
-    recurDelOneBtn:'recurDelOne',recurDelAllBtn:'recurDelAll',
-    recurEditCancelBtn:'cancelBtn',recurDelCancelBtn:'cancelBtn',
-    confirmCancelBtn:'cancelBtn',
-    // form labels
-    evFeaturedLblEl:'evFeaturedLbl',evDraftLblEl:'evDraftLbl',evGabunganLblEl:'evGabunganLbl',
-    recurLblEl:'recurLbl',
-    // confirm modal
-    confirmTitleLbl:'confirmTitle',
-    calLoadingTxt:'calLoading',
-    exportProgressTxtEl:'exportProgressTxt',
-    // back to home
-    backToHomeLbl:'backToHome',
   };
   Object.entries(ids).forEach(([el,key])=>{const e=document.getElementById(el);if(e)e.textContent=tx(key);});
-  // recur select options
-  const evRecur=document.getElementById('evRecur');
-  if(evRecur){
-    const opts=['','weekly','biweekly','monthly'];
-    const keys=['recurNone','recurWeekly','recurBiweekly','recurMonthly'];
-    evRecur.querySelectorAll('option').forEach((o,i)=>{if(keys[i])o.textContent=tx(keys[i]);});
-  }
-  const todayBtn=document.getElementById('todayBtn');if(todayBtn)todayBtn.textContent=tx('todayBtnTxt');
-  // mobile "Hari ini"/"Today" button
+  const todayBtn=document.getElementById('todayBtn');if(todayBtn)todayBtn.textContent=lang==='en'?'Today':'Hari ini';
+  // mobile "Hari ini" button
   document.querySelectorAll('.mob-toolbar .mob-nav-btn').forEach(btn=>{
     if(btn.textContent.trim()==='Hari ini'||btn.textContent.trim()==='Today'){
-      btn.textContent=tx('todayBtnTxt');
+      btn.textContent=lang==='en'?'Today':'Hari ini';
     }
   });
-  const si=document.getElementById('searchInput');if(si)si.placeholder=tx('searchPlaceholderEvent');
-  const msi=document.getElementById('mobSearchInput');if(msi)msi.placeholder=tx('searchPlaceholderEvent');
+  const si=document.getElementById('searchInput');if(si)si.placeholder=tx('searchPlaceholder');
+  const msi=document.getElementById('mobSearchInput');if(msi)msi.placeholder=tx('searchPlaceholder');
   if(!isAdmin){
     ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
   }
@@ -930,18 +666,6 @@ function applyLangUI(){
   document.getElementById('stLblMonth').textContent=tx('statMonth');
   document.getElementById('stLblToday').textContent=tx('statToday');
   if(isAdmin&&_adminName) setAdminBarTxt(_adminName);
-  // navStatPill has emoji prefix, update innerHTML to preserve it
-  const navStatPill=document.getElementById('navStatPill');
-  if(navStatPill)navStatPill.innerHTML=`📊 ${tx('ddStatistik')}`;
-  // update export month selects
-  ['exportMonthFrom','exportMonthTo'].forEach(selId=>{
-    const sel=document.getElementById(selId);
-    if(!sel)return;
-    const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
-    const cur=sel.value;
-    sel.innerHTML=MO.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
-    sel.value=cur;
-  });
   buildCatFilterDropdown();buildLegend();buildTabs();buildCatSelect();
   if(EVENTS.length){renderCalendar();renderStats();}
 }
@@ -1057,7 +781,7 @@ function buildMobCatList(){
   list.innerHTML='';
   // update judul section filter
   const sec=document.querySelector('.mob-menu-section');
-  if(sec)sec.textContent=tx('filterCatLbl');
+  if(sec)sec.textContent=lang==='en'?'Filter Category':'Filter Kategori';
   const allOpt=document.createElement('div');allOpt.className='mob-menu-item';
   allOpt.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><span>${tx('allCats')}</span>${filterCats.size===0?'<span class="mob-menu-check">✓</span>':''}`;
   allOpt.onclick=()=>{setCatFilter('all');closeMobMenu();};list.appendChild(allOpt);
@@ -1104,7 +828,7 @@ function buildCatFilterDropdown(){
   const btn=document.getElementById('catFilterBtn');
   if(filterCats.size===0){btn.classList.remove('active');document.getElementById('catFilterLabel').textContent=tx('allCats');}
   else if(filterCats.size===1){btn.classList.add('active');document.getElementById('catFilterLabel').textContent=catLabel([...filterCats][0]);}
-  else{btn.classList.add('active');document.getElementById('catFilterLabel').textContent=`${filterCats.size} ${lang==='en'?'categories':'kategori'}`;}
+  else{btn.classList.add('active');document.getElementById('catFilterLabel').textContent=`${filterCats.size} kategori`;}
 }
 function toggleCatFilterDropdown(){
   const dd=document.getElementById('catFilterDropdown');
@@ -1121,17 +845,13 @@ function toggleCatFilterDropdown(){
 function setCatFilter(cat){
   if(cat==='all'){filterCats.clear();}
   buildCatFilterDropdown();
-  // jangan tutup dropdown — biarkan user tutup sendiri
-  document.getElementById('catFilterDropdown').classList.add('open');
+  document.getElementById('catFilterDropdown').classList.remove('open');
   applyFilters();if(currentView==='agenda')renderAgenda();
 }
 function toggleCatFilter(cat){
   if(filterCats.has(cat)){filterCats.delete(cat);}
   else{filterCats.add(cat);}
-  buildCatFilterDropdown();
-  // jangan tutup dropdown — biarkan user tutup sendiri
-  document.getElementById('catFilterDropdown').classList.add('open');
-  applyFilters();if(currentView==='agenda')renderAgenda();
+  buildCatFilterDropdown();applyFilters();if(currentView==='agenda')renderAgenda();
 }
 
 /* ══ LEGEND ══ */
@@ -1165,7 +885,7 @@ function renderCatMgrList(){
     row.innerHTML=`
       <input type="color" value="${catColor(cat)}" onchange="editCatColor('${cat}',this.value)" style="width:22px;height:22px;border:none;border-radius:4px;cursor:pointer;padding:1px;flex-shrink:0">
       <input type="text" value="${catLabel(cat)}" onchange="editCatName('${cat}',this.value)" style="flex:1;padding:3px 6px;border:1px solid var(--border2);border-radius:5px;font-family:var(--font-b);font-size:.77rem;background:var(--surface);color:var(--text)">
-      ${isBI?`<span class="cat-built">${tx('catBuiltIn')}</span>`:`<button class="cat-del-btn" onclick="deleteCategory('${cat}')">×</button>`}`;
+      ${isBI?`<span class="cat-built">bawaan</span>`:`<button class="cat-del-btn" onclick="deleteCategory('${cat}')">×</button>`}`;
     list.appendChild(row);
   });
 }
@@ -1181,14 +901,14 @@ async function editCatColor(cat,color){
   CATS[cat]=color;
   if(!BUILT_IN.includes(cat)) await updateCatInDB(cat,{color});
   buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
-  if(EVENTS.length)renderCalendar();showToast(tx('catColorUpdated'),'ok');
+  if(EVENTS.length)renderCalendar();showToast('Warna diperbarui!','ok');
 }
 async function editCatName(cat,name){
   if(!name.trim())return;
   CNAMES_ID[cat]=name;CNAMES_EN[cat]=name;
   if(!BUILT_IN.includes(cat)) await updateCatInDB(cat,{label_id:name,label_en:name});
   buildCatFilterDropdown();buildLegend();buildCatSelect();renderCatMgrList();
-  if(EVENTS.length)renderCalendar();showToast(tx('catNameUpdated'),'ok');
+  if(EVENTS.length)renderCalendar();showToast('Nama diperbarui!','ok');
 }
 async function deleteCategory(cat){
   if(BUILT_IN.includes(cat))return;
@@ -1265,7 +985,7 @@ function showSearchDropdown(q){
   ).sort((a,b)=>a.date.localeCompare(b.date));
 
   if(!results.length){
-    dd.innerHTML=`<div class="sd-empty">${tx('sdEmpty',q)}</div>`;
+    dd.innerHTML=`<div class="sd-empty">Tidak ada hasil untuk "<strong>${q}</strong>"</div>`;
     dd.style.display='block';return;
   }
 
@@ -1295,7 +1015,7 @@ function showSearchDropdown(q){
 
   if(hasMore){
     html+=`<div class="sd-show-all" onclick="showAllSearchResults('${q}')">
-      ${tx('sdShowAll',results.length)}
+      Tampilkan semua ${results.length} hasil →
     </div>`;
   }
 
@@ -1355,7 +1075,7 @@ function renderAgendaAllMonths(q){
     e.title.toLowerCase().includes(q.toLowerCase())||(e.note||'').toLowerCase().includes(q.toLowerCase())
   ).sort((a,b)=>a.date.localeCompare(b.date));
 
-  if(!results.length){aw.innerHTML=`<div class="agenda-empty">${tx('agNoResult',escapeHTML(q))}</div>`;return;}
+  if(!results.length){aw.innerHTML=`<div class="agenda-empty">Tidak ada hasil untuk "<strong>${escapeHTML(q)}</strong>".</div>`;return;}
 
   // kelompok per bulan
   const byMonth={};
@@ -1365,13 +1085,13 @@ function renderAgendaAllMonths(q){
     byMonth[m].push(ev);
   });
 
-  let html=`<div class="agenda-search-banner">${tx('agSearchBanner',results.length,q)} <button class="agenda-search-clear" onclick="clearAllSearch()">${tx('agClearSearch')}</button></div>`;
+  let html=`<div class="agenda-search-banner">🔍 ${results.length} hasil untuk "<strong>${q}</strong>" <button class="agenda-search-clear" onclick="clearAllSearch()">✕ Hapus pencarian</button></div>`;
 
   Object.keys(byMonth).sort().forEach(ym=>{
     const [y,m]=ym.split('-');
     const monthEvs=byMonth[ym];
     html+=`<div class="agenda-month-block">`;
-    html+=`<div class="agenda-month-hdr">${MO[parseInt(m)-1]} ${y} <span>${tx('agSearchResultCount',monthEvs.length)}</span></div>`;
+    html+=`<div class="agenda-month-hdr">${MO[parseInt(m)-1]} ${y} <span>${monthEvs.length} hasil</span></div>`;
     const groups={};
     monthEvs.forEach(ev=>{if(!groups[ev.date])groups[ev.date]=[];groups[ev.date].push(ev);});
     Object.keys(groups).sort().forEach(date=>{
@@ -1453,10 +1173,10 @@ function renderAgenda(q){
     const MO2=lang==='en'?MONTHS_EN:MONTHS_ID;
     aw.innerHTML=`<div class="agenda-empty">
       <div style="font-size:2rem;margin-bottom:8px">📭</div>
-      <div style="font-weight:600;margin-bottom:6px">${tx('agNoEventMonth')}</div>
-      <div style="font-size:.82rem;color:var(--text2);margin-bottom:14px">${tx('agNoEventSub')}</div>
+      <div style="font-weight:600;margin-bottom:6px">${lang==='en'?'No events this month':'Tidak ada kegiatan bulan ini'}</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-bottom:14px">${lang==='en'?'Try another month or reset the filter.':'Coba bulan lain atau reset filter.'}</div>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        ${filterCats.size>0?`<button class="btn btn-sm" onclick="setCatFilter('all')" style="font-size:.78rem">✕ ${tx('agResetFilter')}</button>`:''}
+        ${filterCats.size>0?`<button class="btn btn-sm" onclick="setCatFilter('all')" style="font-size:.78rem">✕ ${lang==='en'?'Reset Filter':'Reset Filter'}</button>`:''}
         <button class="btn btn-sm" onclick="switchMonth(${currentMonth===0?-1:currentMonth-1})" style="font-size:.78rem">← ${MO2[prevM]}</button>
         <button class="btn btn-sm" onclick="switchMonth(${currentMonth===11?12:currentMonth+1})" style="font-size:.78rem">${MO2[nextM]} →</button>
       </div>
@@ -1478,7 +1198,7 @@ function renderAgenda(q){
   if(todayInThisMonth&&!groups[todayStr]) groups[todayStr]=[];
 
   let html=`<div class="agenda-month-block">`;
-  html+=`<div class="agenda-month-hdr">${MO[currentMonth]} ${currentYear} <span>${tx('agEventCount',evs.length)}</span></div>`;
+  html+=`<div class="agenda-month-hdr">${MO[currentMonth]} ${currentYear} <span>${evs.length} kegiatan</span></div>`;
 
   Object.keys(groups).sort().forEach(date=>{
     const dayEvs=groups[date];
@@ -1495,7 +1215,7 @@ function renderAgenda(q){
     // Kolom event — semua event hari itu
     html+=`<div class="ag-events-col">`;
     if(dayEvs.length===0){
-      html+=`<div class="ag-empty-today">${tx('agNoEventToday')}</div>`;
+      html+=`<div class="ag-empty-today">${lang==='en'?'No events scheduled for today — enjoy your day! 🌿':'Tidak ada kegiatan hari ini — nikmati harimu! 🌿'}</div>`;
     }
     dayEvs.forEach((ev,idx)=>{
       const col=catColor(ev.category);
@@ -1597,7 +1317,7 @@ function makePill(ev){
   if(isAdmin){
     const del=document.createElement('button');del.className='ev-del';del.textContent='✕';
     del.onclick=e=>{e.stopPropagation();confirmDel(ev.id,e);};pill.appendChild(del);
-    const cp=document.createElement('button');cp.className='ev-copy';cp.textContent='⧉';cp.title=tx('copyEvTitle');
+    const cp=document.createElement('button');cp.className='ev-copy';cp.textContent='⧉';cp.title='Salin kegiatan';
     cp.onclick=e=>{e.stopPropagation();copyEvent(ev);};pill.appendChild(cp);
   }
   pill.onclick=()=>openDetail(ev);
@@ -1647,7 +1367,7 @@ function showDayPopup(ds,evs){
     item.onclick=()=>openDetail(ev);
     body.appendChild(item);
   });
-  document.getElementById('detailFoot').innerHTML=`<span style="margin-right:auto"></span>${isAdmin?`<button class=\"btn btn-danger\" onclick=\"closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})\" >${tx('deleteBtn')}</button>`:''} ${isAdmin?`<button class=\"btn btn-primary\" onclick=\"closeModal('detailModal');openEditModal(window._detEv)\">✎ ${tx('editBtn')}</button>`:''}`;
+  document.getElementById('detailFoot').innerHTML=`<span style="margin-right:auto"></span>${isAdmin?`<button class=\"btn btn-danger\" onclick=\"closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})\" >X Hapus</button>`:''} ${isAdmin?`<button class=\"btn btn-primary\" onclick=\"closeModal('detailModal');openEditModal(window._detEv)\">✎ ${tx('editBtn')}</button>`:''}`;
   openModal('detailModal');
 }
 
@@ -1663,7 +1383,7 @@ async function dropEv(e,newDate){
       const[ins]=await dbWrite('events','INSERT',newEv);
       EVENTS.push(ins||newEv);EVENTS.sort((a,b)=>a.date.localeCompare(b.date));
       pushUndo({type:'add',ev:ins||newEv});
-      renderCalendar();renderStats();showToast(tx('dupOk'),'ok');setSyncBadge('ok',tx('connected'));return;
+      renderCalendar();renderStats();showToast('Kegiatan diduplikat ✓','ok');setSyncBadge('ok',tx('connected'));return;
     }
     if(ev.date===newDate)return;
     const oldDate=ev.date;
@@ -1722,7 +1442,7 @@ function showConfirmModal(msg,onConfirm,okLabel){
   if(msgEl)msgEl.innerHTML=escapeHTML(msg);
   const okTxt=okLabel||(lang==='en'?'Delete':'Hapus');
   if(okBtn)okBtn.textContent=okTxt;
-  if(cancelBtn)cancelBtn.textContent=tx('cancelBtn');
+  if(cancelBtn)cancelBtn.textContent=lang==='en'?'Cancel':'Batal';
   _confirmCallback=onConfirm;
   if(okBtn)okBtn.onclick=()=>{const cb=_confirmCallback;closeConfirmModal();if(cb)cb();};
   openModal('confirmModal');
@@ -1815,12 +1535,12 @@ function openDetail(ev){
 
   // Tab buttons (admin sees Riwayat tab)
   const tabsHtml=isAdmin?`<div class="det-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin:-2px -4px 12px">
-    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">${tx('detTabInfo')}</button>
-    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">${tx('detTabGallery')}</button>
-    <button class="det-tab-btn" id="detTabLog" onclick="_detSwitchTab('log')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">${tx('detTabLog')}</button>
+    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">ℹ️ Info</button>
+    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📸 Galeri</button>
+    <button class="det-tab-btn" id="detTabLog" onclick="_detSwitchTab('log')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📋 Riwayat</button>
   </div>`:`<div class="det-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);margin:-2px -4px 12px">
-    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">${tx('detTabInfo')}</button>
-    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">${tx('detTabGallery')}</button>
+    <button class="det-tab-btn active" id="detTabInfo" onclick="_detSwitchTab('info')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">ℹ️ Info</button>
+    <button class="det-tab-btn" id="detTabGallery" onclick="_detSwitchTab('gallery')" style="flex:1;padding:7px 4px;font-size:.75rem;font-weight:700;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">📸 Galeri</button>
   </div>`;
 
   const infoHtml=`
@@ -1829,22 +1549,22 @@ function openDetail(ev){
     <div class="det-title">${escapeHTML(ev.title)}</div>
     ${ev.time?`<div class="det-time">⏰ ${escapeHTML(ev.time)}</div>`:''}
     ${ev.link?`<div class="det-link"><a href="${escapeHTML(ev.link)}" target="_blank" rel="noopener" style="color:var(--blue);font-size:.82rem;word-break:break-all">🔗 ${escapeHTML(ev.link)}</a></div>`:''}
-    ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';const isBday=isBirthdayEv(ev);return fields.filter(f=>!f.adminOnly||isAdmin).map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';if(isBday&&f.key==='nama')return `<div class="det-row" style="margin-bottom:6px;font-size:.9rem;font-weight:700;color:var(--gold)">${tx('bdayGreeting',escapeHTML(val))}</div>`;const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
+    ${(()=>{const fields=getExtraFields(ev.category);if(!fields.length||!ev.extra)return '';const isBday=isBirthdayEv(ev);return fields.filter(f=>!f.adminOnly||isAdmin).map(f=>{const val=ev.extra[f.key]||'';if(!val)return '';if(isBday&&f.key==='nama')return `<div class="det-row" style="margin-bottom:6px;font-size:.9rem;font-weight:700;color:var(--gold)">🎂 Selamat ulang tahun, ${escapeHTML(val)}!</div>`;const disp=f.type==='url'?`<a href="${val}" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all;text-decoration:underline" onclick="event.stopPropagation()">${val}</a>`:val;return `<div class="det-row" style="margin-bottom:6px"><span style="font-size:.78rem;color:var(--text2)">📌 ${f.label}:</span> <span style="font-size:.82rem;font-weight:600">${disp}</span></div>`;}).join('');})()}
     ${ev.note?`<div class="det-note">${linkify(escapeHTML(ev.note).replace(/\r\n|\r|\n/g,'<br>'))}</div>`:''}
     <span class="det-cat" style="background:${col}22;color:${col}">${catLabel(ev.category)}</span>
-    <div style="margin-top:10px"><a href="${escapeHTML(buildGCalLink(ev))}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;color:var(--blue);text-decoration:none;padding:4px 10px;border:1px solid rgba(59,130,246,.3);border-radius:20px">${tx('addToGcal')}</a></div>
+    <div style="margin-top:10px"><a href="${escapeHTML(buildGCalLink(ev))}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:600;color:var(--blue);text-decoration:none;padding:4px 10px;border:1px solid rgba(59,130,246,.3);border-radius:20px">📆 Tambah ke Google Kalender</a></div>
     ${ev.category==='reversement'?`<div id="detRevLink" style="margin-top:10px;min-height:18px"></div>`:''}`;
 
   document.getElementById('detailBody').innerHTML=`<div class="det-card" style="padding:4px">
     ${tabsHtml}
     <div id="detPanelInfo">${infoHtml}</div>
-    <div id="detPanelGallery" style="display:none"><div id="detGalleryInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">${tx('detGalleryLoading')}</div></div>
-    ${isAdmin?`<div id="detPanelLog" style="display:none"><div id="detLogInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">${tx('detLogLoading')}</div></div>`:''}
+    <div id="detPanelGallery" style="display:none"><div id="detGalleryInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">Memuat galeri…</div></div>
+    ${isAdmin?`<div id="detPanelLog" style="display:none"><div id="detLogInner" style="font-size:.78rem;color:var(--text3);padding:8px 0">Memuat riwayat…</div></div>`:''}
   </div>`;
 
   document.getElementById('detailFoot').innerHTML=`
-    ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${ev.featured?'var(--gold)':'none'};border:1px solid ${ev.featured?'var(--gold)':'var(--border2)'};color:${ev.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${ev.featured?tx('detFeatOn'):tx('detFeatOff')}</button>`:'<span style="margin-right:auto"></span>'}
-    ${isAdmin&&ev.recur_group_id?`<button class="btn btn-sm" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.3)" onclick="closeModal('detailModal');extendRecurGroup('${ev.recur_group_id}')">${tx('detExtend')}</button>`:''}
+    ${isAdmin?`<button class="btn btn-sm" id="featBtn" onclick="toggleFeatured(window._detEv)" style="background:${ev.featured?'var(--gold)':'none'};border:1px solid ${ev.featured?'var(--gold)':'var(--border2)'};color:${ev.featured?'var(--navy)':'var(--text2)'};margin-right:auto">${ev.featured?'★ Di Beranda':'☆ Beranda'}</button>`:'<span style="margin-right:auto"></span>'}
+    ${isAdmin&&ev.recur_group_id?`<button class="btn btn-sm" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.3)" onclick="closeModal('detailModal');extendRecurGroup('${ev.recur_group_id}')">🔁 Perpanjang</button>`:''}
     ${isAdmin?`<button class="btn btn-danger" onclick="closeModal('detailModal');confirmDel(window._detEv.id,{stopPropagation:()=>{}})">${tx('deleteBtn')}</button>`:''}
     ${isAdmin?`<button class="btn btn-primary" onclick="closeModal('detailModal');openEditModal(window._detEv)">✎ ${tx('editBtn')}</button>`:''}`;
 
@@ -1852,7 +1572,7 @@ function openDetail(ev){
 
   // Reversement auto-link
   if(ev.category==='reversement'){
-    (async()=>{try{const res=await sb(`reversement_posts?select=id&published=eq.true&date=eq.${ev.date}&limit=1`);const rows=res.ok?await res.json():[];const el=document.getElementById('detRevLink');if(el&&rows&&rows.length)el.innerHTML=`<a href="reversement.html?id=${encodeURIComponent(rows[0].id)}" style="color:var(--blue);font-size:.82rem;font-weight:600;text-decoration:none">${tx('openRenungan')}</a>`;}catch(e){}})();
+    (async()=>{try{const res=await sb(`reversement_posts?select=id&published=eq.true&date=eq.${ev.date}&limit=1`);const rows=res.ok?await res.json():[];const el=document.getElementById('detRevLink');if(el&&rows&&rows.length)el.innerHTML=`<a href="reversement.html?id=${encodeURIComponent(rows[0].id)}" style="color:var(--blue);font-size:.82rem;font-weight:600;text-decoration:none">✝️ Buka Renungan →</a>`;}catch(e){}})();
   }
   // Load galeri immediately for gallery tab
   _loadDetGallery(ev.id);
@@ -1872,17 +1592,17 @@ async function _loadDetGallery(evId){
   const el=document.getElementById('detGalleryInner');if(!el)return;
   try{
     const rows=await sbGet(`event_gallery?select=*&event_id=eq.${evId}&order=order.asc,created_at.asc`);
-    const addFormHtml=isAdmin?`<div style="margin-top:12px"><div style="font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:6px">${lang==='en'?'ADD PHOTO':'TAMBAH FOTO'}</div><div style="display:flex;flex-direction:column;gap:6px"><textarea id="galleryUrls" placeholder="${lang==='en'?'Google Drive photo link…\nCan paste multiple links, one per line':'Google Drive link foto…\nBisa paste banyak link, satu per baris'}" rows="4" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);resize:vertical;width:100%;box-sizing:border-box"></textarea><div style="font-size:.7rem;color:var(--text3)">💡 ${lang==='en'?'Paste multiple links at once, one per line':'Paste banyak link sekaligus, satu per baris'}</div><button class="btn btn-sm btn-success" onclick="addGalleryItems('${evId}')">+ ${lang==='en'?'Add Photo':'Tambah Foto'}</button></div></div>`:'';
-    if(!rows||!rows.length){el.innerHTML=`<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:.78rem">${tx('detGalleryEmpty')}</div>${addFormHtml}`;return;}
+    const addFormHtml=isAdmin?`<div style="margin-top:12px"><div style="font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:.07em;margin-bottom:6px">TAMBAH FOTO</div><div style="display:flex;flex-direction:column;gap:6px"><textarea id="galleryUrls" placeholder="Google Drive link foto…&#10;Bisa paste banyak link, satu per baris" rows="4" style="font-size:.78rem;padding:6px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);resize:vertical;width:100%;box-sizing:border-box"></textarea><div style="font-size:.7rem;color:var(--text3)">💡 Paste banyak link sekaligus, satu per baris</div><button class="btn btn-sm btn-success" onclick="addGalleryItems('${evId}')">+ Tambah Foto</button></div></div>`:'';
+    if(!rows||!rows.length){el.innerHTML=`<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:.78rem">Belum ada foto.</div>${addFormHtml}`;return;}
     el.innerHTML=`<div class="det-gallery-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px">${rows.map(r=>{const thumb=driveToThumbnail(r.drive_url);return `<div style="position:relative"><a href="${escapeHTML(r.drive_url)}" target="_blank" rel="noopener"><img src="${escapeHTML(thumb)}" style="width:100%;border-radius:8px;aspect-ratio:4/3;object-fit:cover;background:var(--bg2)" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a>${r.caption?`<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:center">${escapeHTML(r.caption)}</div>`:''} ${isAdmin?`<button onclick="deleteGalleryItem('${r.id}')" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:20px;text-align:center;padding:0">✕</button>`:''}`; }).join('')}</div>
     ${addFormHtml}`;
-  }catch(e){el.innerHTML=`<div style="color:var(--red);font-size:.78rem">${tx('detGalleryFail')}</div>`;}
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:.78rem">Gagal memuat galeri.</div>';}
 }
 
 async function addGalleryItems(evId){
   const raw=document.getElementById('galleryUrls')?.value||'';
   const urls=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
-  if(!urls.length){showToast(tx('addGalleryMissingUrl'),'err');return;}
+  if(!urls.length){showToast('URL foto wajib diisi.','err');return;}
   let ok=0,fail=0;
   for(let i=0;i<urls.length;i++){
     try{
@@ -1890,38 +1610,36 @@ async function addGalleryItems(evId){
       ok++;
     }catch(e){fail++;}
   }
-  if(ok>0)showToast(fail>0?tx('addGalleryOkPartial',ok,fail):tx('addGalleryOk',ok),(fail===0?'ok':''));
-  else showToast(tx('addGalleryFail'),'err');
+  if(ok>0)showToast(`${ok} foto ditambahkan ✓`+(fail>0?` (${fail} gagal)`:''),(fail===0?'ok':''));
+  else showToast('Semua gagal ditambahkan.','err');
   _loadDetGallery(evId);
 }
 // legacy alias
 async function addGalleryItem(evId){return addGalleryItems(evId);}
 
 async function deleteGalleryItem(id){
-  showConfirmModal(tx('deleteGalleryConfirm'),async()=>{
-    try{await dbWrite('event_gallery','DELETE',null,{id},null);showToast(tx('deleteGalleryOk'));if(window._detEv)_loadDetGallery(window._detEv.id);}
-    catch(e){showToast(tx('deleteGalleryFail',e.message),'err');}
+  showConfirmModal('Hapus foto ini?',async()=>{
+    try{await dbWrite('event_gallery','DELETE',null,{id},null);showToast('Foto dihapus.');if(window._detEv)_loadDetGallery(window._detEv.id);}
+    catch(e){showToast('Gagal: '+e.message,'err');}
   });
 }
 
 async function _loadDetLog(evId){
   const el=document.getElementById('detLogInner');if(!el)return;
-  el.innerHTML=`<div style="color:var(--text3);font-size:.78rem">${tx('detLogLoading')}</div>`;
+  el.innerHTML='<div style="color:var(--text3);font-size:.78rem">Memuat…</div>';
   try{
     const rows=await sbGet(`event_logs?select=*&event_id=eq.${evId}&order=created_at.desc&limit=30`);
-    if(!rows||!rows.length){el.innerHTML=`<div style="color:var(--text3);font-size:.78rem;padding:8px 0">${tx('detLogEmpty')}</div>`;return;}
+    if(!rows||!rows.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Belum ada riwayat perubahan.</div>';return;}
     el.innerHTML=rows.map(r=>{
-      const ts=new Date(r.created_at).toLocaleString(lang==='en'?'en-US':'id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      const actionLabel=lang==='en'
-        ?{create:'➕ Created',update:'✏️ Updated',delete:'🗑 Deleted'}[r.action]||r.action
-        :{create:'➕ Dibuat',update:'✏️ Diubah',delete:'🗑 Dihapus'}[r.action]||r.action;
+      const ts=new Date(r.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const actionLabel={create:'➕ Dibuat',update:'✏️ Diubah',delete:'🗑 Dihapus'}[r.action]||r.action;
       let diffHtml='';
       if(r.diff&&typeof r.diff==='object'){
         diffHtml='<div style="margin-top:4px;font-size:.7rem;color:var(--text3)">'+Object.entries(r.diff).map(([k,v])=>`<div><span style="color:var(--text2);font-weight:600">${k}</span>: <span style="color:var(--red);text-decoration:line-through">${v.from??'—'}</span> → <span style="color:var(--green)">${v.to??'—'}</span></div>`).join('')+'</div>';
       }
       return `<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:.75rem;font-weight:700">${actionLabel}</span><span style="font-size:.7rem;color:var(--text3)">${r.admin_name||'—'} · ${ts}</span></div>${diffHtml}</div>`;
     }).join('');
-  }catch(e){el.innerHTML=`<div style="color:var(--red);font-size:.78rem">${tx('detLogFail')}</div>`;}
+  }catch(e){el.innerHTML='<div style="color:var(--red);font-size:.78rem">Gagal memuat riwayat.</div>';}
 }
 
 /* ══ CRUD ══ */
@@ -1975,7 +1693,7 @@ async function saveEvent(){
           const si=EVENTS.findIndex(e=>e.id===sib.id);
           if(si!==-1)EVENTS[si]={...EVENTS[si],...sharedData};
         }
-        if(siblings.length)showToast(tx('savedRecurMany',siblings.length+1),'ok');
+        if(siblings.length)showToast(`${tx('saved')} (${siblings.length+1} kegiatan diupdate)`,'ok');
       }
       _recurEditScope='one'; // reset
     }else{
@@ -2000,7 +1718,7 @@ async function saveEvent(){
             EVENTS.push(iins||instEv);
           }catch(err){console.warn('Recur insert fail',instanceDates[i],err);}
         }
-        showToast(tx('savedRecurCreated',instanceDates.length+1,tx('saved')),'ok');
+        showToast(`${tx('saved')} (${instanceDates.length+1} kegiatan dibuat)`,'ok');
       }
     }
     // Re-show recurring UI for next add
@@ -2034,7 +1752,7 @@ async function _doDeleteAllUpcoming(groupId, anchorId){
     const deletedIds=new Set(toDelete.map(e=>e.id));
     EVENTS=EVENTS.filter(e=>!deletedIds.has(e.id));
     renderCalendar();renderStats();
-    showToast(tx('deleteRecurOk',toDelete.length));setSyncBadge('ok',tx('connected'));
+    showToast(`${toDelete.length} kegiatan dihapus`);setSyncBadge('ok',tx('connected'));
   }catch(err){showToast(`${tx('delFail')}: ${err.message}`,'err');setSyncBadge('err','Error');}
 }
 async function confirmDel(id,e){
@@ -2050,7 +1768,9 @@ async function confirmDel(id,e){
       const count=siblings.filter(s=>s.date>=localDateStr()).length;
       const today=localDateStr();
       const total=EVENTS.filter(s=>s.recur_group_id===ev.recur_group_id&&s.date>=today).length;
-      const msg=tx('deleteRecurAll',total,ev.title);
+      const msg=lang==='en'
+        ?`Delete all ${total} upcoming instances of "${ev.title}"? This cannot be undone.`
+        :`Hapus semua ${total} kegiatan "${ev.title}" yang akan datang? Tidak bisa dibatalkan.`;
       closeModal('recurDelModal');
       showConfirmModal(msg,()=>_doDeleteAllUpcoming(ev.recur_group_id,id));
     };
@@ -2059,7 +1779,9 @@ async function confirmDel(id,e){
   }
   // Event biasa — konfirmasi langsung
   const name=ev?ev.title:(lang==='en'?'this event':'kegiatan ini');
-  const msg=tx('deleteEvMsg',name);
+  const msg=lang==='en'
+    ?`Delete "${name}"? This cannot be undone.`
+    :`Hapus kegiatan "${name}"? Tindakan ini tidak bisa dibatalkan.`;
   showConfirmModal(msg,()=>_doDeleteOne(id));
 }
 
@@ -2086,7 +1808,7 @@ function buildLoginDropdown(){
 async function doLogin(){
   const name=document.getElementById('loginName').value,pw=document.getElementById('loginPw').value;
   if(!name||!pw){document.getElementById('loginErr').style.display='block';return;}
-  const btn=document.getElementById('loginBtn2');btn.disabled=true;btn.textContent=tx('verifyingBtn');
+  const btn=document.getElementById('loginBtn2');btn.disabled=true;btn.textContent='Memverifikasi…';
   let data;
   try{
     const res=await fetch(`${SUPA_URL}/functions/v1/verify-login`,{
@@ -2106,22 +1828,18 @@ async function doLogin(){
   adminToken=data.token||null;
   localStorage.setItem('naposo_token', adminToken);
   localStorage.setItem('naposo_admin_name', name);
-  if(data.role)localStorage.setItem('naposo_role',data.role);else localStorage.removeItem('naposo_role');
   isAdmin=true;resetUndo();document.body.classList.add('admin-mode');
   document.getElementById('adminBar').classList.add('on');
   setAdminBarTxt(name);
   ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.add('on');});
-  ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=lang==='en'?`${name} (Admin)`:name+' (Pengurus)';});
+  ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=name+' (Pengurus)';});
   document.getElementById('loginBtn').textContent=`✓ ${name}`;
   document.getElementById('loginBtn').disabled=false;
-  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='inline-block';
-  _applyRoleBadge();
   document.getElementById('loginBtnMobile').textContent=`✓ ${name}`;document.getElementById('loginBtnMobile').disabled=true;
   const amrLogin=document.getElementById('adminMobileRow');if(amrLogin)amrLogin.style.display='flex';
   const lbmLogin=document.getElementById('loginBtnMobile');if(lbmLogin)lbmLogin.style.display='none';
   const amtLogin=document.getElementById('adminMobileNameTxt');if(amtLogin)amtLogin.textContent=name;
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='flex';
-  const statPill=document.getElementById('navStatPill');if(statPill)statPill.style.display='';
   _syncBnAdminUI(name);
   btn.disabled=false;btn.textContent=tx('loginBtn2');
   setSyncBadge('ok',tx('connected'));closeModal('loginModal');renderCalendar();syncUndoBtn();
@@ -2130,12 +1848,12 @@ async function doLogin(){
 
 function copyEvent(ev){
   copiedEvent={...ev};
-  showToast(tx('copiedEvToast',ev.title),'ok');
+  showToast('Kegiatan disalin: '+ev.title,'ok');
   document.getElementById('pasteBtn').style.opacity='1';
   document.getElementById('pasteBtn').disabled=false;
 }
 function pasteEvent(){
-  if(!copiedEvent){showToast(tx('pasteNoItem'),'err');return;}
+  if(!copiedEvent){showToast('Belum ada kegiatan yang disalin.','err');return;}
   openAddModal(null);
   setTimeout(()=>{
     document.getElementById('evTitle').value=copiedEvent.title;
@@ -2150,17 +1868,15 @@ function doLogout(){
   adminToken=null;
   localStorage.removeItem('naposo_token');
   localStorage.removeItem('naposo_admin_name');
-  localStorage.removeItem('naposo_role');
   isAdmin=false;document.body.classList.remove('admin-mode');
   document.getElementById('adminBar').classList.remove('on');
-  const dot=document.getElementById('adminActiveDot');if(dot)dot.style.display='none';
   const dd=document.getElementById('adminDd');if(dd)dd.classList.remove('open');
   ['loginBadge','loginBadgeMobile'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});
   ['loginBadgeTxt','loginBadgeMobileTxt'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=tx('loginBadgeView');});
   document.getElementById('loginBtn').innerHTML=`🔐 <span id="loginBtnTxt">${tx('loginBtnTxt')}</span>`;document.getElementById('loginBtn').disabled=false;
   document.getElementById('loginBtnMobile').textContent=`🔐 ${tx('loginBtnTxt')}`;document.getElementById('loginBtnMobile').disabled=false;
   const mobAddBtn=document.getElementById('addEventBtnMob');if(mobAddBtn)mobAddBtn.style.display='none';
-  renderCalendar();showToast(tx('logoutSuccess'));
+  renderCalendar();showToast('Logout berhasil.');
   const amr2=document.getElementById('adminMobileRow');if(amr2)amr2.style.display='none';
   const lbm2=document.getElementById('loginBtnMobile');if(lbm2)lbm2.style.display='';
   _syncBnAdminUI(null);
@@ -2188,7 +1904,7 @@ function setSyncBadge(type,txt){
 let exportFormat='pdf', exportScope='all';
 
 function openExportModal(){
-  if(!isAdmin){showToast(tx('exportOnlyAdmin'),'err');return;}
+  if(!isAdmin){showToast('Fitur export hanya untuk pengurus yang login.','err');return;}
   selectExportFormat('pdf');selectExportScope('all');
   document.getElementById('exportProgress').classList.remove('on');
   document.getElementById('doExportBtn').disabled=false;
@@ -2280,11 +1996,11 @@ function doExport(){
 
 /* ── CSV ── */
 function exportCSV(){
-  setExportProgress(40,lang==='en'?'Creating spreadsheet…':'Membuat spreadsheet…');
+  setExportProgress(40,'Membuat spreadsheet…');
   const evs=getExportEvents();
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
-  const rows=[tx('csvHeader')];
-  const dayNames=tx('csvDayNames');
+  const rows=[['Tanggal','Hari','Judul Kegiatan','Waktu','Kategori','Info Tambahan','Catatan']];
+  const dayNames=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   evs.forEach(ev=>{
     const d=new Date(ev.date+'T00:00:00');
     const fields=getExtraFields(ev.category);
@@ -2294,12 +2010,10 @@ function exportCSV(){
   const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
   const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
-  const catSuffix=filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}${lang==='en'?'Categories':'Kategori'}`;
-  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?catSuffix:'';
-  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?(filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}Kategori`):'';  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
   triggerDownload(blob,`Kalender_Naposo_${currentYear}${scopeLabel}.csv`);
-  setExportProgress(100,lang==='en'?'Done! CSV file ready to download.':'Selesai! File CSV siap diunduh.');
-  showToast(tx('exportCSVOk'),'ok');
+  setExportProgress(100,'Selesai! File CSV siap diunduh.');
+  showToast('Export CSV berhasil ✓','ok');
   setTimeout(()=>{document.getElementById('doExportBtn').disabled=false;},1200);
 }
 
@@ -2336,12 +2050,11 @@ function exportICAL(){
   ical+='END:VCALENDAR\r\n';
   const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
   const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
-  const catSuffix2=filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}${lang==='en'?'Categories':'Kategori'}`;
-  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?catSuffix2:'';
+  const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?(filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}Kategori`):'';
   const blob=new Blob([ical],{type:'text/calendar;charset=utf-8;'});
   triggerDownload(blob,`Kalender_Naposo_${currentYear}${scopeLabel}.ics`);
-  setExportProgress(100,lang==='en'?'Done! .ics file ready to download.':'Selesai! File .ics siap diunduh.');
-  showToast(tx('exportICalOk'),'ok');
+  setExportProgress(100,'Selesai! File .ics siap diunduh.');
+  showToast('Export iCal berhasil ✓','ok');
 }
 
 /* ── PDF ── */
@@ -2350,18 +2063,17 @@ function exportPDF(){
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
   const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
-  const catSuffix3=filterCats.size===1?` — ${catLabel([...filterCats][0])}`:` — ${filterCats.size} ${lang==='en'?'Categories':'Kategori'}`;
-  const scopeLabel=exportScope==='month'?` — ${MO[currentMonth]} ${currentYear}`:exportScope==='pick'?` — ${MO[Math.min(f,t)]} ${tx('exportRangeSep')} ${MO[Math.max(f,t)]} ${currentYear}`:exportScope==='cat'&&filterCats.size>0?catSuffix3:` — ${tx('pdfScopeAllMonths')}`;
-  setExportProgress(30,lang==='en'?'Preparing PDF document…':'Menyiapkan dokumen PDF…');
+  const scopeLabel=exportScope==='month'?` — ${MO[currentMonth]} ${currentYear}`:exportScope==='pick'?` — ${MO[Math.min(f,t)]} s/d ${MO[Math.max(f,t)]} ${currentYear}`:exportScope==='cat'&&filterCats.size>0?(filterCats.size===1?` — ${catLabel([...filterCats][0])}`:` — ${filterCats.size} Kategori`):`— Semua Bulan`;
+  setExportProgress(30,'Menyiapkan dokumen PDF…');
   const w=window.open('','_blank');
-  if(!w){showToast(tx('warnPopupBlocked'),'err');return;}
+  if(!w){showToast('Popup diblokir. Izinkan popup di browser.','err');return;}
   const groupByMonth={};
   evs.forEach(ev=>{
     const m=ev.date.slice(0,7);
     if(!groupByMonth[m]) groupByMonth[m]=[];
     groupByMonth[m].push(ev);
   });
-  const dayNames=tx('pdfDayNames');
+  const dayNames=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
   let tableRows='';
   Object.keys(groupByMonth).sort().forEach(ym=>{
     const [y,m]=ym.split('-');
@@ -2382,52 +2094,48 @@ function exportPDF(){
       </tr>`;
     });
   });
-  const pdfLocale=lang==='en'?'en-US':'id-ID';
-  const pdfDateStr=new Date().toLocaleDateString(pdfLocale,{day:'numeric',month:'long',year:'numeric'});
-  const csvH=tx('csvHeader');
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <title>${tx('pdfTitle')} 2026</title>
+  <title>Kalender Pelayanan Naposo HKBP Ujung Menteng 2026</title>
   <link rel="stylesheet" href="css/kalender.css"></head><body>
   <div class="cover">
-    <h1>${tx('pdfTitle')}</h1>
-    <p>${tx('pdfExported',pdfDateStr)}</p>
+    <h1>Kalender Pelayanan Naposo HKBP Ujung Menteng</h1>
+    <p>Diekspor pada ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
     <span class="scope">📅 ${scopeLabel}</span>
   </div>
   <table>
-    <thead><tr><th>${csvH[0]}</th><th>${csvH[1]}</th><th>${csvH[2]}</th><th>${csvH[3]}</th><th>${csvH[4]}</th><th>${csvH[5]}</th></tr></thead>
+    <thead><tr><th>Tanggal</th><th>Hari</th><th>Judul Kegiatan</th><th>Waktu</th><th>Kategori</th><th>Info Tambahan</th></tr></thead>
     <tbody>${tableRows}</tbody>
   </table>
-  <div class="footer">${tx('pdfFooter',evs.length)}</div>
+  <div class="footer">Naposo HKBP Ujung Menteng · Kalender Pelayanan 2026 · Total ${evs.length} kegiatan</div>
   </body></html>`;
-  setExportProgress(80,lang==='en'?'Opening print window…':'Membuka jendela cetak…');
+  setExportProgress(80,'Membuka jendela cetak…');
   w.document.write(html);
   w.document.close();
-  setTimeout(()=>{w.focus();w.print();setExportProgress(100,lang==='en'?'Done!':'Selesai!');showToast(lang==='en'?'PDF ready to print ✓':'PDF siap dicetak ✓','ok');},600);
+  setTimeout(()=>{w.focus();w.print();setExportProgress(100,'Selesai!');showToast('PDF siap dicetak ✓','ok');},600);
 }
 
 /* ── PNG (html2canvas) ── */
 async function exportPNG(){
-  setExportProgress(20,lang==='en'?'Loading screenshot library…':'Memuat library screenshot…');
+  setExportProgress(20,'Memuat library screenshot…');
   document.getElementById('doExportBtn').disabled=true;
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-  setExportProgress(50,lang==='en'?'Capturing calendar screenshot…':'Mengambil screenshot kalender…');
+  setExportProgress(50,'Mengambil screenshot kalender…');
   const MO=lang==='en'?MONTHS_EN:MONTHS_ID;
   try{
     const target=document.getElementById('calWrap');
     const canvas=await html2canvas(target,{scale:2,useCORS:true,backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--surface')||'#ffffff',logging:false});
-    setExportProgress(85,lang==='en'?'Saving image…':'Menyimpan gambar…');
+    setExportProgress(85,'Menyimpan gambar…');
     const f=exportScope==='pick'?parseInt(document.getElementById('exportMonthFrom').value):null;
     const t=exportScope==='pick'?parseInt(document.getElementById('exportMonthTo').value):null;
-    const catSuffix4=filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}${lang==='en'?'Categories':'Kategori'}`;
-    const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?catSuffix4:'';
+    const scopeLabel=exportScope==='month'?`_${MO[currentMonth]}`:exportScope==='pick'?`_${MO[Math.min(f,t)]}-${MO[Math.max(f,t)]}`:exportScope==='cat'&&filterCats.size>0?(filterCats.size===1?`_${catLabel([...filterCats][0])}`:`_${filterCats.size}Kategori`):'';
     canvas.toBlob(blob=>{
       triggerDownload(blob,`Kalender_Naposo_${MO[currentMonth]}_${currentYear}${scopeLabel}.png`);
-      setExportProgress(100,lang==='en'?'Done! PNG image ready to download.':'Selesai! Gambar PNG siap diunduh.');
-      showToast(tx('exportPNGOk'),'ok');
+      setExportProgress(100,'Selesai! Gambar PNG siap diunduh.');
+      showToast('Export PNG berhasil ✓','ok');
       document.getElementById('doExportBtn').disabled=false;
     },'image/png');
   }catch(err){
-    showToast(tx('exportPNGFail',err.message),'err');
+    showToast('Gagal export PNG: '+err.message,'err');
     document.getElementById('doExportBtn').disabled=false;
   }
 }
@@ -2508,9 +2216,9 @@ async function toggleFeatured(ev){
     const i=EVENTS.findIndex(e=>e.id===ev.id);
     if(i!==-1){EVENTS[i]={...EVENTS[i],featured:newVal};window._detEv=EVENTS[i];}
     localStorage.removeItem('naposo_featured_change');localStorage.setItem('naposo_featured_change',JSON.stringify({id:ev.id,featured:newVal,ts:Date.now()}));
-    showToast(newVal?tx('featuredOn'):tx('featuredOff'),'ok');
+    showToast(newVal?'Kegiatan ditampilkan di beranda ★':'Kegiatan dihapus dari beranda','ok');
     openDetail(EVENTS.find(e=>e.id===ev.id));
-  }catch(e){showToast(tx('featuredFail',e.message),'err');}
+  }catch(e){showToast('Gagal update: '+e.message,'err');}
 }
 
 /* ══ Keyboard Shortcut Help ══ */
@@ -2545,7 +2253,6 @@ function linkify(text){
    SESI 35 — BOTTOM NAV
    ══════════════════════════════ */
 function openBnSheet(){
-  if(isAdmin)loadAdminActivityLog();
   document.getElementById('bnSheet').classList.add('open');
   document.getElementById('bnSheetOverlay').classList.add('open');
   const bdt=document.getElementById('bnDarkTrack');if(bdt)bdt.classList.toggle('on',darkMode);
@@ -2618,7 +2325,7 @@ window.addEventListener('storage',ev=>{
         btn.style.background=featured?'var(--gold)':'none';
         btn.style.borderColor=featured?'var(--gold)':'var(--border2)';
         btn.style.color=featured?'var(--navy)':'var(--text2)';
-        btn.textContent=featured?tx('detFeatOn'):tx('detFeatOff');
+        btn.textContent=featured?'★ Di Beranda':'☆ Beranda';
       }
     }
   }catch(_){}
@@ -2663,7 +2370,10 @@ function initDirtyState(){
     // confirmModal tidak boleh kena intercept — langsung ke _origClose
     if(id==='confirmModal'||id==='recurDelModal'||id==='recurEditModal'){_origClose(id);return;}
     if(id==='eventModal'&&_dirty){
-      showConfirmModal(tx('dirtyMsg'),()=>{_dirty=false;_origClose(id);},'OK');
+      const msg=lang==='en'
+        ?'There are unsaved changes. Close without saving?'
+        :'Ada perubahan yang belum disimpan. Tutup tanpa menyimpan?';
+      showConfirmModal(msg,()=>{_dirty=false;_origClose(id);},lang==='en'?'OK':'OK');
       return;
     }
     _origClose(id);
@@ -2680,9 +2390,4 @@ function initDirtyState(){
     await _origSave();
     _dirty=false;
   };
-}
-
-function _applyRoleBadge(){
-  const badge=document.getElementById('bnAdminBadge');
-  if(badge)badge.style.display=isSuperAdmin()?'inline':'none';
 }
