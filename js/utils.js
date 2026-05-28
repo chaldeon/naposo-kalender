@@ -40,8 +40,8 @@ function showToast(msg,type=''){
 
 /* ── driveToThumbnail (index.js / kalender.js variant — lh3) ── */
 function driveToThumbnail(url){
-  if(!url)return '';
-  const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);
-  if(m)return `https://lh3.googleusercontent.com/d/${m[1]}`;
+if(!url)return '';
+const m=url.match(/(?:id=|\/d\/)([A-Za-z0-9_-]{20,})/);
+if(m)return `https://lh3.googleusercontent.com/d/${m[1]}`;
   return url;
 }
