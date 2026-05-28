@@ -67,8 +67,8 @@
       <button class="navbar-pill pill-login" id="loginBtn" onclick="handleLoginBtn()">🔐 <span id="loginBtnTxt">Login</span><span id="adminActiveDot" class="admin-active-dot" style="display:none"></span></button>
       <div class="admin-dd" id="adminDd">
         <div class="admin-dd-section">Aksi</div>
-        <button class="admin-dd-item" onclick="openAdminForm();document.getElementById('adminDd').classList.remove('open')">✝️ <span>Tambah Renungan</span></button>
-        <a class="admin-dd-item" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
+        <button class="admin-dd-item" onclick="openAdminForm();document.getElementById('adminDd').classList.remove('open')">✝️ <span id="ddAddRev">Tambah Post</span></button>
+
         <div class="admin-dd-sep"></div>
         <button class="admin-dd-item danger" onclick="confirmLogout()">→ <span id="ddLogout">Logout</span></button>
       </div>
@@ -140,17 +140,17 @@
   </div>
   <div class="bn-sheet-sep"></div>
   <div id="bnAdminSection" style="display:none;flex-direction:column;gap:0">
-    <div class="bn-sheet-section-lbl">Aksi Cepat</div>
-    <button class="bn-sheet-item bn-sheet-action" onclick="typeof openRevAdmin==='function'&&openRevAdmin();closeBnSheet()">✝️ <span>Tambah Renungan</span></button>
-    <a class="bn-sheet-item bn-sheet-action" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
+    <div class="bn-sheet-section-lbl" id="bnSheetActionsLbl">Aksi Cepat</div>
+    <button class="bn-sheet-item bn-sheet-action" onclick="typeof openRevAdmin==='function'&&openRevAdmin();closeBnSheet()">✝️ <span id="bnAddRev">Tambah Post</span></button>
+
     <div class="bn-sheet-sep"></div>
     <div class="bn-sheet-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Log Aktivitas</span>
+      <span id="bnSheetLogLbl">Log Aktivitas</span>
       <button onclick="loadAdminActivityLog()" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--gold-lt);padding:0">↻</button>
     </div>
     <div id="bnActivityLog" class="bn-activity-log"><span class="bn-act-empty">Memuat…</span></div>
     <div class="bn-sheet-sep"></div>
-    <div class="bn-sheet-section-lbl">Akun</div>
+    <div class="bn-sheet-section-lbl" id="bnSheetAccountLbl">Akun</div>
     <button class="bn-sheet-item bn-sheet-action bn-sheet-danger" onclick="confirmLogout()"><span id="bnLogout">Logout</span></button>
   </div>
   <div id="bnGuestSection">

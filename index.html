@@ -69,7 +69,7 @@
         <button class="admin-dd-item" onclick="openDocsModal()">📂 <span id="ddDocs">Kelola Dokumen</span></button>
         <button class="admin-dd-item" id="ddRecapBtn" onclick="openRecapAdminModal()">🖼️ <span id="ddRecap">Kelola Recap</span></button>
         <button class="admin-dd-item" onclick="openAnnounceModal()">📢 <span id="ddAnnounce">Kelola Pengumuman</span></button>
-        <a class="admin-dd-item" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
+
         <div class="admin-dd-sep"></div>
         <button class="admin-dd-item danger" onclick="confirmLogout()">→ <span id="ddLogout">Logout</span></button>
       </div>
@@ -149,7 +149,7 @@
     <button class="bn-sheet-item bn-sheet-action" onclick="openDocsModal();closeBnSheet()">📂 <span id="bnDocs">Kelola Dokumen</span></button>
     <button class="bn-sheet-item bn-sheet-action" id="bnRecapBtn" onclick="openRecapAdminModal();closeBnSheet()">🖼️ <span id="bnRecap">Kelola Recap</span></button>
     <button class="bn-sheet-item bn-sheet-action" onclick="openAnnounceModal();closeBnSheet()">📢 <span id="bnAnnounce">Kelola Pengumuman</span></button>
-    <a class="bn-sheet-item bn-sheet-action" href="statistik.html" style="text-decoration:none">📊 <span>Statistik</span></a>
+
     <div class="bn-sheet-sep"></div>
     <div class="bn-sheet-section-lbl" style="display:flex;align-items:center;justify-content:space-between">
       <span id="bnSheetLogLbl">Log Aktivitas</span>
@@ -391,6 +391,10 @@
           <select id="docCat"><option value="publik" id="docCatPublic">📂 Publik</option><option value="pengurus" id="docCatPrivate">🔒 Pengurus</option></select>
         </div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:2px">
+        <input type="checkbox" id="docActive" checked style="width:16px;height:16px;accent-color:var(--blue)">
+        <span id="lbDocActive" style="font-size:.875rem;font-weight:600">Aktifkan dokumen</span>
+      </label>
       <button class="btn btn-success btn-sm" onclick="addDoc()" id="addDocBtn">+ Tambah</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelDocEdit()" id="cancelDocEditBtn" style="display:none">Batal</button>
       <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
@@ -554,6 +558,7 @@
   <button class="rlb-close" onclick="closeLightbox()">×</button>
   <button class="rlb-nav rlb-prev" onclick="lightboxNav(-1)">&#8249;</button>
   <div class="rlb-img-wrap">
+    <div id="rlbSpinner" class="rlb-spinner" style="display:none"><div class="rlb-spin"></div></div>
     <img id="rlbImg" src="" alt="" class="rlb-img">
   </div>
   <button class="rlb-nav rlb-next" onclick="lightboxNav(1)">&#8250;</button>
@@ -567,7 +572,7 @@
 <div class="overlay" id="recapAdminModal" onclick="if(event.target===this)closeRecapAdminModal()">
   <div class="modal" style="max-width:520px">
     <div class="modal-hdr">
-      <h2>🖼️ Kelola Recap</h2>
+      <h2>🖼️ <span id="recapAdmModalTitle">Kelola Recap</span></h2>
       <button class="modal-x" onclick="closeRecapAdminModal()">×</button>
     </div>
     <div class="modal-body">
@@ -589,7 +594,7 @@
           <div class="dfg" style="max-width:130px"><label>Tanggal <span style="color:var(--red)">*</span></label><input type="date" id="radmDate"></div>
         </div>
         <div class="drow" style="gap:8px">
-          <div class="dfg" style="flex:1"><label>Cover URL <span style="color:var(--text3);font-weight:400;font-size:.75rem">(opsional)</span></label><input type="url" id="radmCoverUrl" placeholder="https://..."></div>
+          <div class="dfg" style="flex:1"><label>Cover URL <span style="color:var(--text3);font-weight:400;font-size:.75rem">(opsional)</span></label><input type="url" id="radmCoverUrl" placeholder="https://..." oninput="_updateCoverPreview()"><img id="radmCoverPreview" src="" alt="" style="display:none;width:64px;height:64px;object-fit:cover;border-radius:8px;margin-top:6px;border:1px solid var(--border2)"></div>
           <div class="dfg" style="max-width:110px"><label>Warna BG</label><input type="color" id="radmBgColor" value="#1a2e5e" style="height:36px;padding:2px 4px;cursor:pointer"></div>
         </div>
         <div class="dfg"><label>Folder ID Drive <span style="color:var(--text3);font-weight:400;font-size:.75rem">(ID folder Google Drive, bukan full URL)</span></label><input type="text" id="radmFolderId" placeholder="cth: 15-Q65ZNKw1yzO3nxx1aYNJ94eQh7v6QM"></div>

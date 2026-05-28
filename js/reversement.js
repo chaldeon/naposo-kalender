@@ -59,6 +59,8 @@ const T={
   welcome:{id:'Selamat datang',en:'Welcome'},
   modeActive:{id:'Mode pengurus aktif.',en:'Admin mode active.'},
   addPost:{id:'+ Tambah Post',en:'+ Add Post'},
+  ddAddRev:{id:'Tambah Post',en:'Add Post'},
+  bnAddRev:{id:'Tambah Post',en:'Add Post'},
   adminFormTitle:{id:'Tambah Post Reversement',en:'Add Reversement Post'},
   adminFormEditTitle:{id:'Edit Post Reversement',en:'Edit Reversement Post'},
   fldTitle:{id:'Judul',en:'Title'},
@@ -86,6 +88,16 @@ const T={
   footerVisitLbl:{id:'kunjungan bulan ini',en:'visits this month'},
   feedbackFabTxt:{id:'Beri Saran',en:'Give Feedback'},
   revSearchPlaceholder:{id:'Cari renungan…',en:'Search devotionals…'},
+  navRevMob:{id:'Reversement',en:'Reversement'},
+  bnKalender:{id:'Kalender',en:'Calendar'},
+  bnRev:{id:'Reversement',en:'Reversement'},
+  bnDarkLbl:{id:'Dark Mode',en:'Dark Mode'},
+  bnLangLbl:{id:'Bahasa',en:'Language'},
+  bnLogout:{id:'Logout',en:'Logout'},
+  bnLoginLbl:{id:'Login Admin',en:'Admin Login'},
+  bnSheetActionsLbl:{id:'Aksi Cepat',en:'Quick Actions'},
+  bnSheetLogLbl:{id:'Log Aktivitas',en:'Activity Log'},
+  bnSheetAccountLbl:{id:'Akun',en:'Account'},
 };
 function tx(id){return T[id]?T[id][_lang]||T[id].id:'';}
 function applyLang(){

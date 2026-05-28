@@ -149,7 +149,7 @@ function _applyRoleBadge(){
   if(ddRecapBtn)ddRecapBtn.style.display='';
 }
 // ══ BANNERS — array dari tabel announcements ══
-let BANNERS=[];
+let BANNERS=[],_BANNERS_ALL=[];
 
 /* ══ I18N ══ */
 const T={
@@ -157,7 +157,7 @@ const T={
   navRev:{id:'Reversement',en:'Reversement'},navRevMob:{id:'Reversement',en:'Reversement'},
   smIgLabel:{id:'Instagram',en:'Instagram'},smYtLabel:{id:'YouTube',en:'YouTube'},smTtLabel:{id:'TikTok',en:'TikTok'},
   loginBtnTxt:{id:'Login',en:'Login'},loginBtnMobileTxt:{id:'Login',en:'Login'},
-  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},ddAnnounce:{id:'Kelola Pengumuman',en:'Manage Announcements'},ddLogout:{id:'Logout',en:'Logout'},
+  ddDocs:{id:'Kelola Dokumen',en:'Manage Documents'},ddAnnounce:{id:'Kelola Pengumuman',en:'Manage Announcements'},ddRecap:{id:'Kelola Recap',en:'Manage Recap'},mobRecap:{id:'Kelola Recap',en:'Manage Recap'},bnRecap:{id:'Kelola Recap',en:'Manage Recap'},recapAdmModalTitle:{id:'Kelola Recap',en:'Manage Recap'},ddLogout:{id:'Logout',en:'Logout'},
   darkModeLbl:{id:'Dark Mode',en:'Dark Mode'},langModeLbl:{id:'Bahasa',en:'Language'},
   mobDocs:{id:'Kelola Dokumen',en:'Manage Documents'},mobAnnounce:{id:'Kelola Pengumuman',en:'Manage Announcements'},logoutBtnMobTxt:{id:'Logout',en:'Logout'},
   heroTitle:{id:'Naposo HKBP Ujung Menteng',en:'Naposo HKBP Ujung Menteng'},
@@ -299,7 +299,7 @@ function showConfirmModal(msg,onConfirm,okLabel){
   if(okBtn)okBtn.textContent=okTxt;
   if(cancelBtn)cancelBtn.textContent=_lang==='en'?'Cancel':'Batal';
   _confirmCallback=onConfirm;
-  if(okBtn)okBtn.onclick=()=>{closeConfirmModal();if(_confirmCallback)_confirmCallback();};
+  if(okBtn)okBtn.onclick=()=>{const cb=_confirmCallback;closeConfirmModal();if(cb)cb();};
   openModal('confirmModal');
 }
 function closeConfirmModal(){closeModal('confirmModal');_confirmCallback=null;}
@@ -475,18 +475,24 @@ async function _loadBannerList(){
   list.innerHTML=`<div style="font-size:.78rem;color:var(--text3)">${tx('bannerAdmLoading')}</div>`;
   try{
     const rows=await dbGet('announcements','select=*&order=updated_at.desc');
-    if(!rows||!rows.length){list.innerHTML=`<div style="font-size:.78rem;color:var(--text3);padding:8px 0">${tx('bannerAdmEmpty')}</div>`;return;}
-    list.innerHTML=rows.map(b=>`
+    _BANNERS_ALL=rows||[];
+    _renderBannerAdmList();
+  }catch(e){list.innerHTML=`<div style="font-size:.78rem;color:var(--red)">${tx('bannerAdmError')}</div>`;}
+}
+function _renderBannerAdmList(){
+  const list=document.getElementById('bannerAdmList');if(!list)return;
+  if(!_BANNERS_ALL.length){list.innerHTML=`<div style="font-size:.78rem;color:var(--text3);padding:8px 0">${tx('bannerAdmEmpty')}</div>`;return;}
+  list.innerHTML=_BANNERS_ALL.map(b=>`
       <div class="banner-adm-item" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
         <div style="width:12px;height:12px;border-radius:50%;background:${b.color||'#1e5ac8'};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div style="font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(b.text||'')}</div>
           <div style="font-size:.7rem;color:var(--text3)">${b.active?tx('bannerActiveStatus'):tx('bannerInactiveStatus')}</div>
         </div>
+        <button class="btn btn-ghost btn-sm" title="${b.active?'Nonaktifkan':'Aktifkan'}" onclick="toggleBannerActive('${b.id}')">${b.active?'👁':'👁‍🗨'}</button>
         <button class="btn btn-ghost btn-sm" onclick="editBanner('${b.id}')">✎</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteBanner('${b.id}')">×</button>
       </div>`).join('');
-  }catch(e){list.innerHTML=`<div style="font-size:.78rem;color:var(--red)">${tx('bannerAdmError')}</div>`;}
 }
 
 function _resetBannerForm(){
@@ -557,6 +563,17 @@ async function deleteBanner(id){
   });
 }
 
+async function toggleBannerActive(id){
+  const b=_BANNERS_ALL.find(x=>x.id===id);if(!b)return;
+  const newActive=!b.active;
+  try{
+    await dbWrite('announcements','UPDATE',{active:newActive,updated_at:new Date().toISOString()},{id});
+    const idx=_BANNERS_ALL.findIndex(x=>x.id===id);if(idx>-1)_BANNERS_ALL[idx]={..._BANNERS_ALL[idx],active:newActive};
+    _renderBannerAdmList();
+    BANNERS=_BANNERS_ALL.filter(x=>x.active);_renderBanners();
+    showToast(newActive?'Banner diaktifkan ✓':'Banner disembunyikan','ok');
+  }catch(e){showToast('Gagal: '+e.message,'err');}
+}
 // Legacy compat — closeBanner tidak dipakai lagi tapi aman jika masih dipanggil dari HTML lama
 function closeBanner(){
   const el=document.getElementById('announceBanner');if(el)el.classList.remove('on');
@@ -1040,7 +1057,7 @@ async function saveEditEvent(){
   btn.disabled=false;btn.textContent=tx('editSubmitBtn');
 }
 
-let RECAP=[];
+let RECAP=[],RECAP_ALL=[];
 async function renderRecap(){
   const el=document.getElementById('recapCarousel');if(!el)return;
   try{
@@ -1133,8 +1150,25 @@ function _renderRecapGallery(files){
       const emptyMsg=_r&&!_r.folder_id?tx('galleryNoFolder'):tx('galleryNoPhoto');
       el.innerHTML=`<div class="recap-gallery-empty">${emptyMsg}</div>`;return;
     }
-    // Item 2: thumbnail jadi button lightbox, bukan link ke Drive
-    el.innerHTML=`<div class="recap-gallery-grid">${photos.map((f,i)=>`<button class="recap-gallery-thumb" onclick="openLightbox(${i})" title="${escapeHTML(f.name)}"><img src="${escapeHTML(f.thumbnail)}" alt="${escapeHTML(f.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></button>`).join('')}</div>`;
+    // Item 2: thumbnail jadi button lightbox — lazy load batch 48
+    const BATCH=48;
+    let _rendered=BATCH;
+    const _makeThumb=(f,i)=>`<button class="recap-gallery-thumb" onclick="openLightbox(${i})" title="${escapeHTML(f.name)}"><img src="${escapeHTML(f.thumbnail)}" alt="${escapeHTML(f.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></button>`;
+    const grid=document.createElement('div');grid.className='recap-gallery-grid';
+    grid.innerHTML=photos.slice(0,BATCH).map(_makeThumb).join('');
+    el.innerHTML='';el.appendChild(grid);
+    if(photos.length>BATCH){
+      const sentinel=document.createElement('div');sentinel.className='recap-gallery-sentinel';
+      el.appendChild(sentinel);
+      const obs=new IntersectionObserver((entries)=>{
+        if(!entries[0].isIntersecting)return;
+        const next=photos.slice(_rendered,_rendered+BATCH);
+        grid.insertAdjacentHTML('beforeend',next.map((f,j)=>_makeThumb(f,_rendered+j)).join(''));
+        _rendered+=next.length;
+        if(_rendered>=photos.length){obs.disconnect();sentinel.remove();}
+      },{rootMargin:'200px'});
+      obs.observe(sentinel);
+    }
   }else{
     if(!videos.length){el.innerHTML=`<div class="recap-gallery-empty">${tx('galleryNoVideo')}</div>`;return;}
     el.innerHTML=`<div class="recap-video-grid">${videos.map(f=>`<a href="${escapeHTML(f.driveLink)}" target="_blank" rel="noopener" class="recap-video-thumb" title="${escapeHTML(f.name)}"><img src="${escapeHTML(f.thumbnail)}" alt="${escapeHTML(f.name)}" loading="lazy" onerror="this.src=''"><div class="recap-video-play">▶</div><div class="recap-video-name">${escapeHTML(f.name)}</div></a>`).join('')}</div>`;
@@ -1148,16 +1182,18 @@ function _renderRecapGallery(files){
 function _lbSrc(f){return `https://lh3.googleusercontent.com/d/${f.id}`;}
 let _lbIdx=0;
 function _lbPhotos(){return _recapModal.files.filter(f=>f.type==='photo');}
+function _rlbShowSpinner(){const s=document.getElementById('rlbSpinner');if(s)s.style.display='flex';}
+function _rlbHideSpinner(){const s=document.getElementById('rlbSpinner');if(s)s.style.display='none';}
 function openLightbox(idx){
   const photos=_lbPhotos();if(!photos.length)return;
   _lbIdx=idx;
   const f=photos[_lbIdx];
   const lb=document.getElementById('recapLightbox');if(!lb)return;
   const img=document.getElementById('rlbImg');
-  img.style.opacity='0';
+  img.style.opacity='0';_rlbShowSpinner();
   img.src=_lbSrc(f);
-  img.onload=()=>{img.style.opacity='1';};
-  img.onerror=()=>{img.style.opacity='1';};
+  img.onload=()=>{_rlbHideSpinner();img.style.opacity='1';};
+  img.onerror=()=>{_rlbHideSpinner();img.style.opacity='1';};
   document.getElementById('rlbCaption').textContent=`${f.name} · ${_lbIdx+1}/${photos.length}`;
   const rlbEl=document.getElementById('rlbDriveLink');rlbEl.href=f.driveLink;rlbEl.textContent=tx('rlbDriveLinkTxt');
   lb.style.display='flex';
@@ -1179,9 +1215,9 @@ function lightboxNav(dir){
   _lbIdx=(_lbIdx+dir+photos.length)%photos.length;
   const f=photos[_lbIdx];
   const img=document.getElementById('rlbImg');
-  img.style.opacity='0';
-  img.onload=()=>{img.style.opacity='1';};
-  img.onerror=()=>{img.style.opacity='1';};
+  img.style.opacity='0';_rlbShowSpinner();
+  img.onload=()=>{_rlbHideSpinner();img.style.opacity='1';};
+  img.onerror=()=>{_rlbHideSpinner();img.style.opacity='1';};
   setTimeout(()=>{img.src=_lbSrc(f);},120);
   document.getElementById('rlbCaption').textContent=`${f.name} · ${_lbIdx+1}/${photos.length}`;
   const rlbEl=document.getElementById('rlbDriveLink');rlbEl.href=f.driveLink;rlbEl.textContent=tx('rlbDriveLinkTxt');
@@ -1200,15 +1236,26 @@ function _lbTouchEnd(e){
 
 /* ══ RECAP ADMIN (Item 5) ══ */
 let _radmEdit=null,_radmActive=true;
+function _updateCoverPreview(){
+  const url=document.getElementById('radmCoverUrl').value.trim();
+  const img=document.getElementById('radmCoverPreview');if(!img)return;
+  if(url){img.src=url;img.style.display='block';img.onerror=()=>{img.style.display='none';};}
+  else{img.src='';img.style.display='none';}
+}
 function toggleRadmActive(){
   _radmActive=!_radmActive;
   document.getElementById('radmActiveTrack').classList.toggle('on',_radmActive);
   document.getElementById('radmActiveLbl').textContent=_radmActive?tx('radmActiveLblOn'):tx('radmActiveLblOff');
 }
-function openRecapAdminModal(){
+async function openRecapAdminModal(){
   document.getElementById('adminDd').classList.remove('open');
   _radmEdit=null;_radmActive=true;
   _resetRecapAdmForm();
+  try{
+    const rows=await dbGet('recap_items','select=*&order=sort_order.asc');
+    if(rows)RECAP_ALL=rows;
+    else RECAP_ALL=[...RECAP];
+  }catch(e){RECAP_ALL=[...RECAP];}
   _renderRecapAdmList();
   openModal('recapAdminModal');
 }
@@ -1217,7 +1264,7 @@ function _resetRecapAdmForm(){
   document.getElementById('radmTitle').value='';
   document.getElementById('radmCategory').value='ibadah';
   document.getElementById('radmDate').value='';
-  document.getElementById('radmCoverUrl').value='';
+  document.getElementById('radmCoverUrl').value='';_updateCoverPreview();
   document.getElementById('radmBgColor').value='#1a2e5e';
   document.getElementById('radmFolderId').value='';
   document.getElementById('radmPhotoCount').value='';
@@ -1231,12 +1278,12 @@ function _resetRecapAdmForm(){
 }
 function cancelRecapAdminEdit(){_radmEdit=null;_resetRecapAdmForm();}
 function editRecapAdmin(id){
-  const r=RECAP.find(x=>x.id===id);if(!r)return;
+  const r=RECAP_ALL.find(x=>x.id===id);if(!r)return;
   _radmEdit=id;
   document.getElementById('radmTitle').value=r.title||'';
   document.getElementById('radmCategory').value=r.category||'ibadah';
   document.getElementById('radmDate').value=r.date||'';
-  document.getElementById('radmCoverUrl').value=r.cover_url||'';
+  document.getElementById('radmCoverUrl').value=r.cover_url||'';_updateCoverPreview();
   document.getElementById('radmBgColor').value=r.bg_color||'#1a2e5e';
   document.getElementById('radmFolderId').value=r.folder_id||'';
   document.getElementById('radmPhotoCount').value=r.photo_count!=null?r.photo_count:'';
@@ -1270,14 +1317,14 @@ async function saveRecapAdmin(){
   try{
     if(_radmEdit){
       await dbWrite('recap_items','UPDATE',payload,{id:_radmEdit});
-      const idx=RECAP.findIndex(x=>x.id===_radmEdit);
-      if(idx>-1)RECAP[idx]={...RECAP[idx],...payload};
+      const idx=RECAP_ALL.findIndex(x=>x.id===_radmEdit);
+      if(idx>-1)RECAP_ALL[idx]={...RECAP_ALL[idx],...payload};
       showToast('Recap diupdate ✓','ok');
     }else{
       const newId='recap_'+Date.now();
       const inserted=await dbWrite('recap_items','INSERT',{id:newId,...payload});
       const row=Array.isArray(inserted)?inserted[0]:{id:newId,...payload};
-      RECAP.push(row);
+      RECAP_ALL.push(row);
       showToast('Recap ditambahkan ✓','ok');
     }
     _resetRecapAdmForm();
@@ -1287,20 +1334,30 @@ async function saveRecapAdmin(){
   btn.disabled=false;
 }
 async function deleteRecapAdmin(id){
-  const r=RECAP.find(x=>x.id===id);const name=r?r.title:'recap ini';
+  const r=RECAP_ALL.find(x=>x.id===id);const name=r?r.title:'recap ini';
   showConfirmModal(`Hapus recap "${name}"? Tindakan ini tidak bisa dibatalkan.`,async()=>{
     try{
       await dbWrite('recap_items','DELETE',null,{id});
-      RECAP=RECAP.filter(x=>x.id!==id);
+      RECAP_ALL=RECAP_ALL.filter(x=>x.id!==id);
       _renderRecapAdmList();
       await renderRecap();
       showToast('Recap dihapus.');
     }catch(e){showToast('Gagal: '+e.message,'err');}
   });
 }
+async function toggleRecapActive(id){
+  const r=RECAP_ALL.find(x=>x.id===id);if(!r)return;
+  const newActive=r.active===false;
+  try{
+    await dbWrite('recap_items','UPDATE',{active:newActive},{id});
+    const idx=RECAP_ALL.findIndex(x=>x.id===id);if(idx>-1)RECAP_ALL[idx]={...RECAP_ALL[idx],active:newActive};
+    _renderRecapAdmList();await renderRecap();
+    showToast(newActive?'Recap diaktifkan ✓':'Recap disembunyikan','ok');
+  }catch(e){showToast('Gagal: '+e.message,'err');}
+}
 function _renderRecapAdmList(){
   const list=document.getElementById('recapAdmList');if(!list)return;
-  const all=RECAP.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const all=RECAP_ALL.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   if(!all.length){list.innerHTML=`<p style="color:var(--text3);font-size:.85rem;margin:0">${tx('recapAdmEmpty')}</p>`;return;}
   list.innerHTML=all.map(r=>{
     const meta=r.date?new Date(r.date+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'';
@@ -1312,6 +1369,7 @@ function _renderRecapAdmList(){
         <div class="recap-adm-meta">${meta} ${countBadge}</div>
       </div>
       <div class="recap-adm-actions">
+        <button class="btn btn-ghost btn-sm" title="${r.active===false?'Aktifkan':'Nonaktifkan'}" onclick="toggleRecapActive('${r.id}')">${r.active===false?'👁‍🗨':'👁'}</button>
         <button class="btn btn-ghost btn-sm" onclick="editRecapAdmin('${r.id}')">✎</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteRecapAdmin('${r.id}')">×</button>
       </div>
@@ -1323,10 +1381,10 @@ function _renderRecapAdmList(){
 function toEmbedUrl(url){const m=url.match(/\/file\/d\/([\w-]+)/);if(m)return `https://drive.google.com/file/d/${m[1]}/preview`;return url;}
 function renderDocs(){
   const grid=document.getElementById('docGrid');if(!grid)return;grid.innerHTML='';
-  const visible=DOCS.filter(d=>d.category==='publik'||(isAdmin&&d.category==='pengurus'));
+  const visible=DOCS.filter(d=>(d.active!==false||isAdmin)&&(d.category==='publik'||(isAdmin&&d.category==='pengurus')));
   if(!visible.length){grid.innerHTML=`<p class="doc-empty">${_lang==='en'?'No documents yet.':'Belum ada dokumen.'}</p>`;return;}
   visible.forEach(doc=>{
-    const card=document.createElement('div');card.className='doc-card';
+    const card=document.createElement('div');card.className='doc-card';if(isAdmin&&doc.active===false)card.style.opacity='.5';
     card.innerHTML=`<div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="doc-info"><div class="doc-title">${escapeHTML(doc.title)}</div><div class="doc-meta">${doc.category==='pengurus'?tx('docCatPrivate'):tx('docCatPublic')}</div></div><svg viewBox="0 0 16 16" fill="currentColor" width="10" style="color:var(--text3);flex-shrink:0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/></svg>`;
     card.onclick=()=>openDocViewer(doc);grid.appendChild(card);
   });
@@ -1334,7 +1392,7 @@ function renderDocs(){
 function openDocViewer(doc){document.getElementById('docModalTitle').textContent=doc.title;document.getElementById('docFrame').src=toEmbedUrl(doc.link);openModal('docOverlay');}
 function closeDoc(){closeModal('docOverlay');document.getElementById('docFrame').src='';}
 let _docEditId=null;
-function _resetDocForm(){_docEditId=null;document.getElementById('docTitle').value='';document.getElementById('docLink').value='';document.getElementById('docCat').value='publik';document.getElementById('addDocBtn').textContent=tx('addDocBtn');document.getElementById('cancelDocEditBtn').style.display='none';}
+function _resetDocForm(){_docEditId=null;document.getElementById('docTitle').value='';document.getElementById('docLink').value='';document.getElementById('docCat').value='publik';const docActiveEl=document.getElementById('docActive');if(docActiveEl)docActiveEl.checked=true;document.getElementById('addDocBtn').textContent=tx('addDocBtn');document.getElementById('cancelDocEditBtn').style.display='none';}
 function cancelDocEdit(){_resetDocForm();}
 function editDoc(id){
   const doc=DOCS.find(d=>d.id===id);if(!doc)return;
@@ -1342,6 +1400,7 @@ function editDoc(id){
   document.getElementById('docTitle').value=doc.title;
   document.getElementById('docLink').value=doc.link;
   document.getElementById('docCat').value=doc.category||'publik';
+  const docActiveEl=document.getElementById('docActive');if(docActiveEl)docActiveEl.checked=doc.active!==false;
   document.getElementById('addDocBtn').textContent=tx('bannerSaveBtnEdit');
   document.getElementById('cancelDocEditBtn').style.display='';
   document.getElementById('docTitle').focus();
@@ -1351,7 +1410,9 @@ function renderDocAdmList(){
   if(!DOCS.length){list.innerHTML=`<p class="doc-empty" style="margin-top:8px">${tx('docAdmEmpty')}</p>`;return;}
   DOCS.forEach(doc=>{
     const item=document.createElement('div');item.className='doc-adm-item';
-    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${escapeHTML(doc.title)}</div><div class="doc-adm-meta">${doc.category==='pengurus'?tx('docCatPrivate'):tx('docCatPublic')}</div></div><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="editDoc('${doc.id}')">✎</button><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteDoc('${doc.id}')">×</button></div>`;
+    const isActive=doc.active!==false;
+    const statusBadge=isActive?'':' <span style="font-size:.68rem;background:var(--surface2);color:var(--text3);padding:1px 6px;border-radius:10px;margin-left:4px">nonaktif</span>';
+    item.innerHTML=`<div class="doc-adm-info"><div class="doc-adm-title">${escapeHTML(doc.title)}${statusBadge}</div><div class="doc-adm-meta">${doc.category==='pengurus'?tx('docCatPrivate'):tx('docCatPublic')}</div></div><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" title="${isActive?'Nonaktifkan':'Aktifkan'}" onclick="toggleDocActive('${doc.id}')">${isActive?'👁':'👁‍🗨'}</button><button class="btn btn-ghost btn-sm" onclick="editDoc('${doc.id}')">✎</button><button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteDoc('${doc.id}')">×</button></div>`;
     list.appendChild(item);
   });
 }
@@ -1359,12 +1420,13 @@ function openDocsModal(){document.getElementById('adminDd').classList.remove('op
 async function addDoc(){
   const title=document.getElementById('docTitle').value.trim();const link=document.getElementById('docLink').value.trim();const category=document.getElementById('docCat').value;
   if(!title||!link){showToast('Nama dan link harus diisi!','err');return;}
+  const active=document.getElementById('docActive')?.checked!==false;
   if(_docEditId){
-    try{await dbWrite('home_docs','UPDATE',{title,link,category},{id:_docEditId},'edit-doc');const idx=DOCS.findIndex(d=>d.id===_docEditId);if(idx>-1)DOCS[idx]={...DOCS[idx],title,link,category};renderDocs();renderDocAdmList();_resetDocForm();showToast('Dokumen diperbarui ✓','ok');}
+    try{await dbWrite('home_docs','UPDATE',{title,link,category,active},{id:_docEditId},'edit-doc');const idx=DOCS.findIndex(d=>d.id===_docEditId);if(idx>-1)DOCS[idx]={...DOCS[idx],title,link,category,active};renderDocs();renderDocAdmList();_resetDocForm();showToast('Dokumen diperbarui ✓','ok');}
     catch(e){showToast('Gagal: '+e.message,'err');}
     return;
   }
-  try{const ins=await dbIns('home_docs',{id:'doc_'+Date.now(),title,link,category});DOCS.push(Array.isArray(ins)?ins[0]:ins);renderDocs();renderDocAdmList();document.getElementById('docTitle').value='';document.getElementById('docLink').value='';showToast('Dokumen ditambahkan ✓','ok');}
+  try{const ins=await dbIns('home_docs',{id:'doc_'+Date.now(),title,link,category,active});DOCS.push(Array.isArray(ins)?ins[0]:ins);renderDocs();renderDocAdmList();document.getElementById('docTitle').value='';document.getElementById('docLink').value='';showToast('Dokumen ditambahkan ✓','ok');}
   catch(e){showToast('Gagal: '+e.message,'err');}
 }
 async function deleteDoc(id){
@@ -1373,6 +1435,16 @@ async function deleteDoc(id){
     try{await dbDel('home_docs',`id=eq.${id}`);DOCS=DOCS.filter(d=>d.id!==id);if(_docEditId===id)_resetDocForm();renderDocs();renderDocAdmList();showToast('Dokumen dihapus.');}
     catch(e){showToast('Gagal: '+e.message,'err');}
   });
+}
+async function toggleDocActive(id){
+  const doc=DOCS.find(d=>d.id===id);if(!doc)return;
+  const newActive=doc.active===false;
+  try{
+    await dbWrite('home_docs','UPDATE',{active:newActive},{id},'toggle-doc-active');
+    const idx=DOCS.findIndex(d=>d.id===id);if(idx>-1)DOCS[idx]={...DOCS[idx],active:newActive};
+    renderDocs();renderDocAdmList();
+    showToast(newActive?'Dokumen diaktifkan ✓':'Dokumen disembunyikan','ok');
+  }catch(e){showToast('Gagal: '+e.message,'err');}
 }
 
 /* ══ VISIT COUNTER ══ */
