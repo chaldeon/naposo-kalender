@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ══ Palet & token asli dari css/index.css (naposo-kalender lama) ══
+   Dipertahankan persis supaya tampilan tidak berubah saat migrasi. ══ */
+:root {
+  --navy: #0a1f44;
+  --blue-mid: #1a4a8a;
+  --blue: #2563be;
+  --blue-lt: #4a90d9;
+  --sky: #dbeafe;
+  --sky-pale: #eff6ff;
+  --gold: #c9a227;
+  --gold-lt: #f5e0a0;
+  --purple: #7c3aed;
+  --pink: #db2777;
+  --cyan: #0891b2;
+  --green: #16a34a;
+  --red: #dc2626;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --surface3: #e8eef5;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+  --text: #1e293b;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --shadow: 0 1px 6px rgba(10, 31, 68, .08), 0 4px 20px rgba(10, 31, 68, .05);
+  --shadow-lg: 0 4px 24px rgba(10, 31, 68, .13), 0 1px 4px rgba(10, 31, 68, .07);
+  --font-s: var(--font-libre-baskerville), Georgia, serif;
+  --font-b: var(--font-dm-sans), system-ui, sans-serif;
+  --r: 12px;
+  --hh: 60px;
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #263348;
+  --surface3: #2d3f58;
+  --border: #2d3f58;
+  --border2: #374f6b;
+  --text: #e2eaf8;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --shadow: 0 1px 6px rgba(0, 0, 0, .3), 0 4px 20px rgba(0, 0, 0, .2);
+  --shadow-lg: 0 4px 24px rgba(0, 0, 0, .4);
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-blue-mid: var(--blue-mid);
+  --color-blue: var(--blue);
+  --color-blue-lt: var(--blue-lt);
+  --color-gold: var(--gold);
+  --color-gold-lt: var(--gold-lt);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-border2: var(--border2);
+  --color-text: var(--text);
+  --color-text2: var(--text2);
+  --color-text3: var(--text3);
+  --font-serif: var(--font-s);
+  --font-sans: var(--font-b);
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-b);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
