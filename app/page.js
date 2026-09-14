@@ -1,46 +1,78 @@
-import { supabase } from '@/lib/supabase';
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, FileText } from 'lucide-react';
+import { CalendarDays, FileText, Megaphone, Settings, Images } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import AnnouncementManagerModal from '@/components/home/AnnouncementManagerModal';
+import DocManagerModal from '@/components/home/DocManagerModal';
+import RecapManagerModal from '@/components/home/RecapManagerModal';
+import RecapCarousel from '@/components/home/RecapCarousel';
+import RecapGalleryModal from '@/components/home/RecapGalleryModal';
 
-async function getHomeData() {
-  const [{ data: banner }, { data: announcements }, { data: events }, { data: docs }] = await Promise.all([
-    supabase.from('home_announcement').select('*').eq('id', 'config').eq('active', true).maybeSingle(),
-    supabase.from('announcements').select('*').eq('active', true).order('updated_at', { ascending: false }),
-    supabase.from('events').select('*').eq('status', 'published').gte('date', new Date().toISOString().slice(0, 10)).order('date').limit(5),
-    supabase.from('home_docs').select('*').eq('active', true),
-  ]);
-  return { banner, announcements: announcements || [], events: events || [], docs: docs || [] };
-}
+export default function HomePage() {
+  const [session, setSession] = useState({ loggedIn: false });
+  const [announcements, setAnnouncements] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [docs, setDocs] = useState([]);
+  const [recapItems, setRecapItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [annMgrOpen, setAnnMgrOpen] = useState(false);
+  const [docMgrOpen, setDocMgrOpen] = useState(false);
+  const [recapMgrOpen, setRecapMgrOpen] = useState(false);
+  const [openRecap, setOpenRecap] = useState(null);
 
-export default async function HomePage() {
-  const { banner, announcements, events, docs } = await getHomeData();
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => r.json()).then(setSession).catch(() => {});
+    load();
+  }, []);
+
+  async function load() {
+    setLoading(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const [{ data: ann }, { data: evs }, { data: allDocs }, { data: recap }] = await Promise.all([
+      supabase.from('announcements').select('*').order('updated_at', { ascending: false }),
+      supabase.from('events').select('*').eq('status', 'published').gte('date', today).order('date').limit(5),
+      supabase.from('home_docs').select('*'),
+      supabase.from('recap_items').select('*').order('sort_order', { ascending: true }),
+    ]);
+    setAnnouncements(ann || []);
+    setEvents(evs || []);
+    setDocs(allDocs || []);
+    setRecapItems(recap || []);
+    setLoading(false);
+  }
+
+  const isAdmin = session.loggedIn;
+  const activeAnnouncements = isAdmin ? announcements : announcements.filter((a) => a.active);
+  // Publik selalu boleh lihat kategori 'publik' yang aktif; kategori 'pengurus' hanya untuk admin — sama seperti logic renderDocs() lama.
+  const visibleDocs = docs.filter((d) => (d.active !== false || isAdmin) && (d.category === 'publik' || (isAdmin && d.category === 'pengurus')));
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
-      {banner && (
-        <div
-          className="rounded-2xl p-5 text-white"
-          style={{ background: 'linear-gradient(135deg, var(--navy) 0%, var(--blue-mid) 100%)' }}
-        >
-          <div className="font-serif text-lg font-bold mb-1">{banner.title}</div>
-          {banner.sub && <p className="text-sm opacity-90 mb-3">{banner.sub}</p>}
-          {banner.link && banner.cta && (
-            <Link
-              href={banner.link}
-              className="inline-block rounded-full bg-gold text-navy text-xs font-semibold px-4 py-1.5 no-underline"
-            >
-              {banner.cta}
-            </Link>
-          )}
+      {isAdmin && (
+        <div className="flex gap-2 justify-end">
+          <button onClick={() => setAnnMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
+            <Megaphone size={13} /> Pengumuman
+          </button>
+          <button onClick={() => setDocMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
+            <Settings size={13} /> Dokumen
+          </button>
+          <button onClick={() => setRecapMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
+            <Images size={13} /> Recap Galeri
+          </button>
         </div>
       )}
 
-      {announcements.map((a) => (
+      {activeAnnouncements.map((a) => (
         <div
           key={a.id}
-          className="rounded-xl px-4 py-3 text-sm"
-          style={{ background: a.color || 'var(--blue)', color: '#fff' }}
+          className="rounded-xl px-4 py-3 text-sm relative"
+          style={{ background: a.color || 'var(--blue)', color: '#fff', opacity: a.active ? 1 : 0.5 }}
         >
+          {!a.active && (
+            <span className="absolute top-1.5 right-2 text-[9px] font-bold bg-black/20 px-1.5 py-0.5 rounded-full">NONAKTIF</span>
+          )}
           {a.text}
           {a.link && a.link_label && (
             <Link href={a.link} className="ml-2 underline font-semibold">
@@ -57,7 +89,9 @@ export default async function HomePage() {
             Kegiatan Mendatang
           </h2>
         </div>
-        {events.length === 0 ? (
+        {loading ? (
+          <p className="text-sm" style={{ color: 'var(--text3)' }}>Memuat…</p>
+        ) : events.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text3)' }}>
             Belum ada kegiatan terjadwal.
           </p>
@@ -90,7 +124,19 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      {docs.length > 0 && (
+      {recapItems.filter((r) => r.active !== false).length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <Images size={16} style={{ color: 'var(--blue)' }} />
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+              Recap Kegiatan
+            </h2>
+          </div>
+          <RecapCarousel items={recapItems.filter((r) => r.active !== false)} onOpen={setOpenRecap} />
+        </section>
+      )}
+
+      {visibleDocs.length > 0 && (
         <section className="rounded-2xl border p-5" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
           <div className="flex items-center gap-2 mb-4">
             <FileText size={16} style={{ color: 'var(--blue)' }} />
@@ -99,16 +145,26 @@ export default async function HomePage() {
             </h2>
           </div>
           <ul className="flex flex-col gap-2">
-            {docs.map((d) => (
-              <li key={d.id}>
-                <Link href={d.link} className="text-sm font-medium underline" style={{ color: 'var(--blue)' }}>
+            {visibleDocs.map((d) => (
+              <li key={d.id} className="flex items-center gap-2">
+                <Link href={d.link} target="_blank" rel="noopener noreferrer" className="text-sm font-medium underline" style={{ color: 'var(--blue)' }}>
                   {d.title}
                 </Link>
+                {d.category === 'pengurus' && (
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--surface2)', color: 'var(--text3)' }}>
+                    Pengurus
+                  </span>
+                )}
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      {annMgrOpen && <AnnouncementManagerModal announcements={announcements} onClose={() => setAnnMgrOpen(false)} onChanged={load} />}
+      {docMgrOpen && <DocManagerModal docs={docs} onClose={() => setDocMgrOpen(false)} onChanged={load} />}
+      {recapMgrOpen && <RecapManagerModal recapItems={recapItems} onClose={() => setRecapMgrOpen(false)} onChanged={load} />}
+      {openRecap && <RecapGalleryModal recap={openRecap} onClose={() => setOpenRecap(null)} />}
     </div>
   );
 }

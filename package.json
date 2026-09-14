@@ -12,6 +12,7 @@
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.3",
     "chart.js": "^4.4.2",
+    "html2canvas": "^1.4.1",
     "jose": "^5.9.6",
     "lucide-react": "^1.23.0",
     "next": "16.2.10",

@@ -3,9 +3,9 @@ import { verifyAdminToken, ADMIN_COOKIE_NAME } from '@/lib/adminAuth';
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  const isAdminRoute = pathname.startsWith('/admin');
+  const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/statistik');
 
-  if (isAdminRoute) {
+  if (isProtectedRoute) {
     const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
     const payload = await verifyAdminToken(token);
 
@@ -21,5 +21,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/statistik/:path*'],
 };
