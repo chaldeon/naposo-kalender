@@ -1,6 +1,11 @@
-import { localDateStr, MONTHS_ID } from '@/lib/dates';
+'use client';
+
+import { localDateStr, MONTHS_ID, MONTHS_EN } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function EventsTable({ events, labels }) {
+  const { t, lang } = useLanguage();
+  const MO = lang === 'en' ? MONTHS_EN : MONTHS_ID;
   const today = localDateStr();
   const sorted = [...events].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
 
@@ -8,18 +13,18 @@ export default function EventsTable({ events, labels }) {
     if (ev.status === 'draft')
       return (
         <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(245,158,11,.15)', color: '#b45309', border: '1px solid rgba(245,158,11,.3)' }}>
-          Draft
+          {t('stat_table_draft')}
         </span>
       );
     if (ev.date < today)
       return (
         <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(100,100,100,.1)', color: 'var(--text3)' }}>
-          Selesai
+          {t('stat_table_done')}
         </span>
       );
     return (
       <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,.12)', color: '#059669', border: '1px solid rgba(16,185,129,.3)' }}>
-        Mendatang
+        {t('stat_table_upcoming')}
       </span>
     );
   }
@@ -29,7 +34,7 @@ export default function EventsTable({ events, labels }) {
       <table className="w-full text-xs">
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            {['Tanggal', 'Judul', 'Kategori', 'Status'].map((h) => (
+            {[t('stat_table_date'), t('stat_table_title_col'), t('stat_table_category'), t('stat_table_status')].map((h) => (
               <th key={h} className="text-left font-bold py-1.5 px-2" style={{ color: 'var(--text3)' }}>
                 {h}
               </th>
@@ -42,7 +47,7 @@ export default function EventsTable({ events, labels }) {
             return (
               <tr key={ev.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td className="py-1.5 px-2" style={{ color: 'var(--text)' }}>
-                  {d.getDate()} {MONTHS_ID[d.getMonth()].slice(0, 3)} {d.getFullYear()}
+                  {d.getDate()} {MO[d.getMonth()].slice(0, 3)} {d.getFullYear()}
                 </td>
                 <td className="py-1.5 px-2 font-semibold" style={{ color: 'var(--text)' }}>
                   {ev.title}

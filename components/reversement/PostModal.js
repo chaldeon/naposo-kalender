@@ -2,18 +2,14 @@
 
 import { X } from 'lucide-react';
 import { driveToThumbnail } from '@/lib/drive';
+import { formatFullDate } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
 import ReactionBar from './ReactionBar';
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
 export default function PostModal({ post, onClose, isAdmin, onEdit, onDelete }) {
+  const { t, lang } = useLanguage();
   if (!post) return null;
-  const dayLabel = post.day_type === 'senin' ? 'Senin' : 'Jumat';
+  const dayLabel = post.day_type === 'senin' ? t('rev_day_senin') : t('rev_day_jumat');
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{ background: 'rgba(10,31,68,.6)' }} onClick={onClose}>
@@ -38,9 +34,9 @@ export default function PostModal({ post, onClose, isAdmin, onEdit, onDelete }) 
           <div className="p-5 flex flex-col gap-2">
             <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--blue)' }}>
               <span className="rounded-full px-2 py-0.5" style={{ background: 'var(--sky-pale)' }}>
-                {dayLabel === 'Senin' ? '🌅' : '🌿'} {dayLabel}
+                {post.day_type === 'senin' ? '🌅' : '🌿'} {dayLabel}
               </span>
-              <span style={{ color: 'var(--text3)' }}>{formatDate(post.date)}</span>
+              <span style={{ color: 'var(--text3)' }}>{formatFullDate(post.date, lang)}</span>
             </div>
             <h2 className="font-serif font-bold text-xl leading-snug" style={{ color: 'var(--text)' }}>
               {post.title}
@@ -58,10 +54,10 @@ export default function PostModal({ post, onClose, isAdmin, onEdit, onDelete }) 
               {isAdmin && (
                 <div className="flex gap-2">
                   <button onClick={() => onEdit(post)} className="text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-                    ✏️ Edit
+                    {t('rev_edit')}
                   </button>
                   <button onClick={() => onDelete(post)} className="text-xs font-semibold rounded-full px-3 py-1.5" style={{ background: 'rgba(220,38,38,.1)', color: 'var(--red)' }}>
-                    🗑 Hapus
+                    {t('rev_delete')}
                   </button>
                 </div>
               )}

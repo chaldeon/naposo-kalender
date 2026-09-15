@@ -1,17 +1,24 @@
 'use client';
 
-function catLabelFallback(id) {
-  const map = { ibadah: 'Ibadah', olahraga: 'Olahraga', 'event-gabungan': 'Event Gabungan', rapat: 'Rapat', lainnya: 'Lainnya' };
-  return map[id] || id;
+import { useLanguage } from '@/context/LanguageContext';
+
+const CAT_LABELS = {
+  id: { ibadah: 'Ibadah', olahraga: 'Olahraga', 'event-gabungan': 'Event Gabungan', rapat: 'Rapat', lainnya: 'Lainnya' },
+  en: { ibadah: 'Worship', olahraga: 'Sports', 'event-gabungan': 'Combined Event', rapat: 'Meeting', lainnya: 'Other' },
+};
+
+function catLabelFallback(id, lang) {
+  return CAT_LABELS[lang]?.[id] || CAT_LABELS.id[id] || id;
 }
 
 export default function RecapCarousel({ items, onOpen }) {
+  const { lang } = useLanguage();
   if (!items.length) return null;
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollSnapType: 'x mandatory' }}>
       {items.map((r) => {
-        const meta = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        const meta = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
         return (
           <button
             key={r.id}
@@ -24,7 +31,7 @@ export default function RecapCarousel({ items, onOpen }) {
           >
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,.75), rgba(0,0,0,.1))' }} />
             <div className="absolute inset-0 p-3 flex flex-col justify-end text-white">
-              <span className="text-[10px] font-bold tracking-wide opacity-80">• {catLabelFallback(r.category).toUpperCase()}</span>
+              <span className="text-[10px] font-bold tracking-wide opacity-80">• {catLabelFallback(r.category, lang).toUpperCase()}</span>
               <div className="font-serif font-bold text-sm leading-tight truncate">{r.title}</div>
               <div className="flex items-center gap-2 text-[11px] opacity-80">
                 <span>{meta}</span>

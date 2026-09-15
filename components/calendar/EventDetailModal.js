@@ -6,6 +6,7 @@ import { formatFullDate } from '@/lib/dates';
 import { getExtraFields } from '@/lib/eventExtraFields';
 import { supabase } from '@/lib/supabase';
 import { dbWrite } from '@/lib/dbWrite';
+import { useLanguage } from '@/context/LanguageContext';
 
 function buildGCalLink(ev) {
   const start = ev.date.replace(/-/g, '');
@@ -29,6 +30,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
   const [galleryUrls, setGalleryUrls] = useState('');
   const [addingPhotos, setAddingPhotos] = useState(false);
   const [activityLog, setActivityLog] = useState(null);
+  const { t, lang } = useLanguage();
 
   function reloadGallery() {
     supabase
@@ -105,7 +107,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
       >
         <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-serif font-bold text-base" style={{ color: 'var(--text)' }}>
-            Detail Event
+            {t('det_title')}
           </h2>
           <button onClick={onClose}>
             <X size={18} style={{ color: 'var(--text3)' }} />
@@ -113,17 +115,17 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
         </div>
 
         <div className="flex border-b" style={{ borderColor: 'var(--border)' }}>
-          {['info', 'gallery', ...(isAdmin ? ['log'] : [])].map((t) => (
+          {['info', 'gallery', ...(isAdmin ? ['log'] : [])].map((tabKey) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               className="flex-1 text-xs font-bold py-2"
               style={{
-                color: tab === t ? 'var(--blue)' : 'var(--text3)',
-                borderBottom: tab === t ? '2px solid var(--blue)' : '2px solid transparent',
+                color: tab === tabKey ? 'var(--blue)' : 'var(--text3)',
+                borderBottom: tab === tabKey ? '2px solid var(--blue)' : '2px solid transparent',
               }}
             >
-              {t === 'info' ? 'Info' : t === 'gallery' ? 'Galeri' : 'Log'}
+              {tabKey === 'info' ? t('det_tab_info') : tabKey === 'gallery' ? t('det_tab_gallery') : t('det_tab_log')}
             </button>
           ))}
         </div>
@@ -136,11 +138,11 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                   className="self-start text-[10px] font-extrabold tracking-wide px-2.5 py-0.5 rounded-full mb-1"
                   style={{ background: 'rgba(245,158,11,.15)', color: '#b45309', border: '1px solid rgba(245,158,11,.35)' }}
                 >
-                  📝 DRAFT
+                  {t('det_draft_badge')}
                 </span>
               )}
               <div className="text-xs" style={{ color: 'var(--text3)' }}>
-                {formatFullDate(event.date)}
+                {formatFullDate(event.date, lang)}
               </div>
               <div className="font-serif font-bold text-lg" style={{ color: 'var(--text)' }}>
                 {event.title}
@@ -185,7 +187,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                 className="self-start text-xs font-semibold rounded-full px-3 py-1.5 border mt-2"
                 style={{ borderColor: 'rgba(59,130,246,.3)', color: 'var(--blue)' }}
               >
-                + Tambah ke Google Calendar
+                {t('det_add_gcal')}
               </a>
               {isAdmin && (
                 <div className="flex gap-2 mt-2 pt-2 border-t flex-wrap" style={{ borderColor: 'var(--border)' }}>
@@ -194,7 +196,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                     className="text-xs font-semibold rounded-full px-3.5 py-1.5 border"
                     style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}
                   >
-                    ✏️ Edit
+                    {t('det_edit')}
                   </button>
                   {event.recur_group_id && (
                     <button
@@ -202,7 +204,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                       className="text-xs font-semibold rounded-full px-3.5 py-1.5 border"
                       style={{ borderColor: 'rgba(59,130,246,.3)', color: 'var(--blue)' }}
                     >
-                      🔁 Perpanjang Rangkaian
+                      {t('det_extend')}
                     </button>
                   )}
                   <button
@@ -210,7 +212,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                     className="text-xs font-semibold rounded-full px-3.5 py-1.5"
                     style={{ background: 'rgba(220,38,38,.1)', color: 'var(--red)' }}
                   >
-                    🗑 Hapus
+                    {t('det_delete')}
                   </button>
                 </div>
               )}
@@ -219,11 +221,11 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
             <div>
               {gallery === null ? (
                 <p className="text-xs" style={{ color: 'var(--text3)' }}>
-                  Memuat…
+                  {t('det_gallery_loading')}
                 </p>
               ) : gallery.length === 0 ? (
                 <p className="text-xs text-center py-6" style={{ color: 'var(--text3)' }}>
-                  Belum ada foto.
+                  {t('det_gallery_empty')}
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
@@ -249,13 +251,13 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
               {isAdmin && (
                 <div className="mt-3 flex flex-col gap-1.5">
                   <div className="text-[11px] font-bold" style={{ color: 'var(--text3)' }}>
-                    TAMBAH FOTO
+                    {t('det_gallery_add_title')}
                   </div>
                   <textarea
                     rows={3}
                     value={galleryUrls}
                     onChange={(e) => setGalleryUrls(e.target.value)}
-                    placeholder="Link Google Drive foto… (bisa banyak, satu per baris)"
+                    placeholder={t('det_gallery_add_placeholder')}
                     className="text-xs rounded-lg border p-2 resize-y"
                     style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}
                   />
@@ -264,7 +266,7 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
                     disabled={addingPhotos}
                     className="self-start text-xs font-semibold rounded-full px-3.5 py-1.5 bg-gold text-navy disabled:opacity-60"
                   >
-                    {addingPhotos ? 'Menambahkan…' : '+ Tambah Foto'}
+                    {addingPhotos ? t('det_gallery_adding') : t('det_gallery_add_btn')}
                   </button>
                 </div>
               )}
@@ -272,14 +274,14 @@ export default function EventDetailModal({ event, catColor, catLabel, onClose, i
           ) : (
             <div>
               {activityLog === null ? (
-                <p className="text-xs" style={{ color: 'var(--text3)' }}>Memuat…</p>
+                <p className="text-xs" style={{ color: 'var(--text3)' }}>{t('det_log_loading')}</p>
               ) : activityLog.length === 0 ? (
-                <p className="text-xs text-center py-6" style={{ color: 'var(--text3)' }}>Belum ada aktivitas tercatat.</p>
+                <p className="text-xs text-center py-6" style={{ color: 'var(--text3)' }}>{t('det_log_empty')}</p>
               ) : (
                 <div className="flex flex-col">
                   {activityLog.map((r) => {
                     const ts = new Date(r.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-                    const actionLabel = { create: '➕ Dibuat', update: '✏️ Diubah', delete: '🗑 Dihapus' }[r.action] || r.action;
+                    const actionLabel = { create: t('det_log_created'), update: t('det_log_updated'), delete: t('det_log_deleted') }[r.action] || r.action;
                     return (
                       <div key={r.id} className="py-2 border-b" style={{ borderColor: 'var(--border)' }}>
                         <div className="flex items-center gap-1.5 flex-wrap">

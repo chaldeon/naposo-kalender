@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { REACTION_TYPES, REACTION_META, getMyReaction, fetchReactionCounts, toggleReaction } from '@/lib/reversementReactions';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ReactionBar({ postId, dark = false }) {
   const [counts, setCounts] = useState({ amin: 0, tersentuh: 0, menguatkan: 0 });
   const [myReaction, setLocalReaction] = useState(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     setLocalReaction(getMyReaction(postId));
@@ -36,7 +38,7 @@ export default function ReactionBar({ postId, dark = false }) {
           <button
             key={type}
             onClick={() => handleClick(type)}
-            title={meta.label}
+            title={t('rx_' + type)}
             className="flex items-center gap-1 rounded-full px-2 py-1 text-xs transition-colors"
             style={
               active

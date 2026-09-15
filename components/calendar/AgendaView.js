@@ -1,24 +1,26 @@
 'use client';
 
 import { formatFullDate } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function AgendaView({ events, catColor, catLabel, onSelectEvent, monthLabel, onPrevMonth, onNextMonth }) {
+  const { t } = useLanguage();
   if (!events.length) {
     return (
       <div className="text-center py-16">
         <div className="text-4xl mb-2">📭</div>
         <div className="font-semibold mb-1" style={{ color: 'var(--text)' }}>
-          Belum ada kegiatan bulan ini
+          {t('cal_agenda_empty_title')}
         </div>
         <div className="text-sm mb-4" style={{ color: 'var(--text2)' }}>
-          Coba lihat bulan lain
+          {t('cal_agenda_empty_sub')}
         </div>
         <div className="flex gap-2 justify-center">
           <button onClick={onPrevMonth} className="text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)' }}>
-            ← Bulan lalu
+            {t('cal_prev_month')}
           </button>
           <button onClick={onNextMonth} className="text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)' }}>
-            Bulan depan →
+            {t('cal_next_month')}
           </button>
         </div>
       </div>

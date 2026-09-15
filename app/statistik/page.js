@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { MONTHS_ID } from '@/lib/dates';
-import { DEF_CAT_LABELS, DEF_CAT_COLORS, MONTHS_SHORT_ID } from '@/lib/statCategories';
+import { MONTHS_ID, MONTHS_EN } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
+import { DEF_CAT_LABELS, DEF_CAT_COLORS, MONTHS_SHORT_ID, MONTHS_SHORT_EN } from '@/lib/statCategories';
 import KpiCard from '@/components/statistik/KpiCard';
 import BarChart from '@/components/statistik/BarChart';
 import CategoryBars from '@/components/statistik/CategoryBars';
@@ -19,6 +20,9 @@ function dedupeVisits(visits) {
 }
 
 export default function StatistikPage() {
+  const { t, lang } = useLanguage();
+  const MO = lang === 'en' ? MONTHS_EN : MONTHS_ID;
+  const MO_SHORT = lang === 'en' ? MONTHS_SHORT_EN : MONTHS_SHORT_ID;
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState([]);
   const [visits, setVisits] = useState([]);
@@ -92,7 +96,7 @@ export default function StatistikPage() {
   const kpiDraft = events.filter((e) => e.status === 'draft').length;
   const kpiVisits = visits.length;
 
-  let kpiVisitsWeekLabel = 'KUNJUNGAN 7 HARI';
+  let kpiVisitsWeekLabel = t('stat_kpi_week_default');
   let kpiVisitsWeek = 0;
   if (visitView === 'weekly') {
     const day = now.getDay();
@@ -101,10 +105,10 @@ export default function StatistikPage() {
     monday.setDate(now.getDate() + mondayOffset);
     monday.setHours(0, 0, 0, 0);
     kpiVisitsWeek = visits.filter((v) => v.created_at && new Date(v.created_at) >= monday).length;
-    kpiVisitsWeekLabel = 'MINGGU INI';
+    kpiVisitsWeekLabel = t('stat_kpi_week_this_week');
   } else if (visitView === 'monthly') {
     kpiVisitsWeek = visits.filter((v) => v.created_at?.startsWith(monStr)).length;
-    kpiVisitsWeekLabel = 'BULAN INI';
+    kpiVisitsWeekLabel = t('stat_kpi_week_this_month');
   } else {
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
     kpiVisitsWeek = visits.filter((v) => v.created_at >= weekAgo).length;
@@ -143,24 +147,24 @@ export default function StatistikPage() {
       for (let i = 11; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        labels.push(MONTHS_SHORT_ID[d.getMonth()]);
+        labels.push(MO_SHORT[d.getMonth()]);
         data.push(visits.filter((v) => v.created_at?.startsWith(ym)).length);
       }
     }
     return { labels, data };
-  }, [visits, visitView]);
+  }, [visits, visitView, MO_SHORT]);
 
   // ── Month chart (event per bulan, sesuai filter) ──
   const monthChart = useMemo(() => {
     const from = Math.min(monthFrom, monthTo);
     const to = Math.max(monthFrom, monthTo);
-    const labels = MONTHS_SHORT_ID.slice(from, to + 1);
+    const labels = MO_SHORT.slice(from, to + 1);
     const data = labels.map((_, i) => {
       const mStr = `${year}-${String(from + i + 1).padStart(2, '0')}`;
       return events.filter((e) => e.date.startsWith(mStr) && e.status !== 'draft').length;
     });
     return { labels, data };
-  }, [events, year, monthFrom, monthTo]);
+  }, [events, year, monthFrom, monthTo, MO_SHORT]);
 
   const catCounts = useMemo(() => {
     const counts = {};
@@ -187,7 +191,7 @@ export default function StatistikPage() {
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center text-sm" style={{ color: 'var(--text3)' }}>
-        Memuat statistik…
+        {t('stat_loading')}
       </div>
     );
   }
@@ -196,54 +200,54 @@ export default function StatistikPage() {
     <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-6">
       <div>
         <h1 className="font-serif text-xl font-bold" style={{ color: 'var(--text)' }}>
-          📊 Statistik Pelayanan
+          {t('stat_title')}
         </h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--text2)' }}>
-          Data event, kunjungan, dan kategori kegiatan Naposo HKBP Ujung Menteng.
+          {t('stat_subtitle')}
         </p>
       </div>
 
       {/* Filter */}
       <div className="rounded-2xl border p-4 flex flex-wrap items-end gap-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div>
-          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>TAHUN</label>
+          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>{t('stat_filter_year')}</label>
           <select value={year} onChange={(e) => setYear(e.target.value)} className="text-xs rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>BULAN AWAL</label>
+          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>{t('stat_filter_month_from')}</label>
           <select value={monthFrom} onChange={(e) => setMonthFrom(parseInt(e.target.value))} className="text-xs rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}>
-            {MONTHS_ID.map((m, i) => <option key={m} value={i}>{m}</option>)}
+            {MO.map((m, i) => <option key={m} value={i}>{m}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>BULAN AKHIR</label>
+          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>{t('stat_filter_month_to')}</label>
           <select value={monthTo} onChange={(e) => setMonthTo(parseInt(e.target.value))} className="text-xs rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}>
-            {MONTHS_ID.map((m, i) => <option key={m} value={i}>{m}</option>)}
+            {MO.map((m, i) => <option key={m} value={i}>{m}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>KATEGORI</label>
+          <label className="text-[10px] font-bold block mb-1" style={{ color: 'var(--text3)' }}>{t('stat_filter_category')}</label>
           <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="text-xs rounded-lg border px-2 py-1.5" style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}>
-            <option value="">Semua Kategori</option>
+            <option value="">{t('stat_filter_all_cat')}</option>
             {categoriesInData.map((c) => <option key={c} value={c}>{catLabels[c] || c}</option>)}
           </select>
         </div>
         <button onClick={resetFilter} className="text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-          ↺ Reset
+          {t('stat_filter_reset')}
         </button>
         <div className="text-xs basis-full mt-1" style={{ color: 'var(--text3)' }}>
-          Menampilkan: {year} · {filteredEvents.length} event
+          {t('stat_filter_showing')} {year} · {filteredEvents.length} {t('stat_filter_events_suffix')}
         </div>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KpiCard label="TOTAL EVENT" value={kpiTotal} />
-        <KpiCard label="BULAN INI" value={kpiMonth} />
-        <KpiCard label="DRAFT" value={kpiDraft} />
-        <KpiCard label="TOTAL KUNJUNGAN" value={kpiVisits} />
+        <KpiCard label={t('stat_kpi_total_events')} value={kpiTotal} />
+        <KpiCard label={t('stat_kpi_this_month')} value={kpiMonth} />
+        <KpiCard label={t('stat_kpi_draft')} value={kpiDraft} />
+        <KpiCard label={t('stat_kpi_total_visits')} value={kpiVisits} />
       </div>
       <div className="grid grid-cols-2 gap-3 -mt-3">
         <KpiCard label={kpiVisitsWeekLabel} value={kpiVisitsWeek} />
@@ -253,7 +257,7 @@ export default function StatistikPage() {
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold tracking-wide" style={{ color: 'var(--text3)' }}>
-            📈 KUNJUNGAN {visitView === 'daily' ? '30 HARI' : visitView === 'weekly' ? '12 MINGGU' : '12 BULAN'} TERAKHIR
+            📈 {t('stat_visits_chart_title')} {visitView === 'daily' ? t('stat_visits_30days') : visitView === 'weekly' ? t('stat_visits_12weeks') : t('stat_visits_12months')}
           </div>
           <div className="flex gap-1">
             {['daily', 'weekly', 'monthly'].map((v) => (
@@ -263,26 +267,26 @@ export default function StatistikPage() {
                 className="text-[10px] font-semibold rounded-full px-2.5 py-1"
                 style={visitView === v ? { background: 'var(--blue)', color: '#fff' } : { color: 'var(--text3)' }}
               >
-                {v === 'daily' ? 'Harian' : v === 'weekly' ? 'Mingguan' : 'Bulanan'}
+                {v === 'daily' ? t('stat_visits_daily') : v === 'weekly' ? t('stat_visits_weekly') : t('stat_visits_monthly')}
               </button>
             ))}
           </div>
         </div>
-        <BarChart labels={visitChart.labels} data={visitChart.data} label="Kunjungan" />
+        <BarChart labels={visitChart.labels} data={visitChart.data} label={t('stat_visits_chart_title')} />
       </div>
 
       {/* Month chart */}
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="text-xs font-bold tracking-wide mb-3" style={{ color: 'var(--text3)' }}>
-          📅 EVENT PER BULAN ({year})
+          📅 {t('stat_month_chart_title')} ({year})
         </div>
-        <BarChart labels={monthChart.labels} data={monthChart.data} label="Event" color="rgba(201,162,39,.6)" borderColor="rgba(201,162,39,.9)" />
+        <BarChart labels={monthChart.labels} data={monthChart.data} label={t('stat_table_title_col')} color="rgba(201,162,39,.6)" borderColor="rgba(201,162,39,.9)" />
       </div>
 
       {/* Category bars */}
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="text-xs font-bold tracking-wide mb-3" style={{ color: 'var(--text3)' }}>
-          🏷️ DISTRIBUSI KATEGORI
+          🏷️ {t('stat_cat_dist_title')}
         </div>
         <CategoryBars counts={catCounts} labels={catLabels} colors={catColors} />
       </div>
@@ -290,7 +294,7 @@ export default function StatistikPage() {
       {/* Events table */}
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="text-xs font-bold tracking-wide mb-3" style={{ color: 'var(--text3)' }}>
-          🕐 EVENT TERBARU / AKAN DATANG
+          🕐 {t('stat_table_title')}
         </div>
         <EventsTable events={filteredEvents} labels={catLabels} />
       </div>
@@ -298,31 +302,31 @@ export default function StatistikPage() {
       {/* Reversement stats */}
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="text-xs font-bold tracking-wide mb-3" style={{ color: 'var(--text3)' }}>
-          ✝️ STATISTIK REVERSEMENT
+          ✝️ {t('stat_rev_title')}
         </div>
         <div className="grid grid-cols-3 gap-3 mb-3">
-          <KpiCard label="TOTAL POST" value={revTotal} />
-          <KpiCard label="POST SENIN" value={revSenin} />
-          <KpiCard label="POST JUMAT" value={revJumat} />
+          <KpiCard label={t('stat_rev_total_posts')} value={revTotal} />
+          <KpiCard label={t('stat_rev_senin_posts')} value={revSenin} />
+          <KpiCard label={t('stat_rev_jumat_posts')} value={revJumat} />
         </div>
         <div className="text-xs font-bold tracking-wide mb-2" style={{ color: 'var(--text3)' }}>
-          🙏 TOTAL REAKSI
+          {t('stat_rev_reactions_title')}
         </div>
         <div className="flex gap-4 text-sm">
-          <span>🙏 Amin: <b>{rxAmin}</b></span>
-          <span>❤️ Tersentuh: <b>{rxTersentuh}</b></span>
-          <span>✨ Menguatkan: <b>{rxMenguatkan}</b></span>
+          <span>🙏 {t('rx_amin')}: <b>{rxAmin}</b></span>
+          <span>❤️ {t('rx_tersentuh')}: <b>{rxTersentuh}</b></span>
+          <span>✨ {t('rx_menguatkan')}: <b>{rxMenguatkan}</b></span>
         </div>
       </div>
 
       {/* Recap stats */}
       <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="text-xs font-bold tracking-wide mb-3" style={{ color: 'var(--text3)' }}>
-          📸 STATISTIK RECAP
+          📸 {t('stat_recap_title')}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <KpiCard label="ALBUM AKTIF" value={activeRecap.length} />
-          <KpiCard label="TOTAL RECAP" value={recapItems.length} />
+          <KpiCard label={t('stat_recap_active_albums')} value={activeRecap.length} />
+          <KpiCard label={t('stat_recap_total')} value={recapItems.length} />
         </div>
       </div>
     </div>

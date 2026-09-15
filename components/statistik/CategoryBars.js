@@ -1,11 +1,16 @@
+'use client';
+
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function CategoryBars({ counts, labels, colors }) {
+  const { t } = useLanguage();
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const max = sorted[0]?.[1] || 1;
 
   if (!sorted.length) {
     return (
       <p className="text-sm" style={{ color: 'var(--text3)' }}>
-        Belum ada data.
+        {t('stat_cat_dist_empty')}
       </p>
     );
   }

@@ -2,10 +2,13 @@
 
 import EventPill from './EventPill';
 import { localDateStr, DAYS_ID } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
 
 const MAX_VISIBLE = 3;
 
 export default function MonthGrid({ year, month, events, catColor, onSelectEvent, onShowMore }) {
+  const { t, lang } = useLanguage();
+  const dayLabels = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : DAYS_ID;
   const rawFirst = new Date(year, month, 1).getDay();
   const first = rawFirst === 0 ? 6 : rawFirst - 1; // Senin = kolom pertama
   const total = new Date(year, month + 1, 0).getDate();
@@ -48,7 +51,7 @@ export default function MonthGrid({ year, month, events, catColor, onSelectEvent
             className="text-[10px] font-semibold text-left px-1"
             style={{ color: 'var(--text3)' }}
           >
-            +{hiddenCount} lainnya
++{hiddenCount} {t('cal_show_more')}
           </button>
         )}
       </div>
@@ -58,7 +61,7 @@ export default function MonthGrid({ year, month, events, catColor, onSelectEvent
   return (
     <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'var(--border)' }}>
       <div className="grid grid-cols-7" style={{ background: 'var(--surface2)' }}>
-        {DAYS_ID.map((d) => (
+        {dayLabels.map((d) => (
           <div key={d} className="text-center text-[11px] font-semibold py-2" style={{ color: 'var(--text2)' }}>
             {d}
           </div>

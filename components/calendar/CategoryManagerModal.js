@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { dbWrite } from '@/lib/dbWrite';
+import { useLanguage } from '@/context/LanguageContext';
 
 const BUILT_IN = ['koor', 'ibadah', 'rapat', 'latihan', 'reversement', 'doa', 'other'];
 
@@ -11,6 +12,7 @@ export default function CategoryManagerModal({ categories, onClose, onChanged })
   const [newColor, setNewColor] = useState('#3b82f6');
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState('');
+  const { t } = useLanguage();
 
   async function addCategory() {
     const name = newName.trim();
@@ -56,7 +58,7 @@ export default function CategoryManagerModal({ categories, onClose, onChanged })
 
   async function removeCategory(cat) {
     if (BUILT_IN.includes(cat.id)) return;
-    if (!confirm('Hapus kategori "' + cat.label_id + '"? Event yang sudah memakai kategori ini tidak ikut terhapus.')) return;
+    if (!confirm(t('catmgr_delete_confirm') + ' "' + cat.label_id + '"?')) return;
     setBusyId(cat.id);
     try {
       await dbWrite({ table: 'categories', method: 'DELETE', match: { id: cat.id } });
@@ -72,7 +74,7 @@ export default function CategoryManagerModal({ categories, onClose, onChanged })
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{ background: 'rgba(10,31,68,.55)' }} onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl overflow-hidden max-h-[85vh] flex flex-col" style={{ background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
-          <h2 className="font-serif font-bold text-base" style={{ color: 'var(--text)' }}>Kelola Kategori</h2>
+          <h2 className="font-serif font-bold text-base" style={{ color: 'var(--text)' }}>{t('catmgr_title')}</h2>
           <button onClick={onClose}><X size={18} style={{ color: 'var(--text3)' }} /></button>
         </div>
 
@@ -97,7 +99,7 @@ export default function CategoryManagerModal({ categories, onClose, onChanged })
                 />
                 {isBuiltIn ? (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0" style={{ background: 'var(--surface2)', color: 'var(--text3)' }}>
-                    Bawaan
+                    {t('catmgr_builtin')}
                   </span>
                 ) : (
                   <button onClick={() => removeCategory(cat)} className="shrink-0" style={{ color: 'var(--red)' }}>
@@ -116,12 +118,12 @@ export default function CategoryManagerModal({ categories, onClose, onChanged })
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Nama kategori baru"
+              placeholder={t('catmgr_new_placeholder')}
               className="flex-1 text-xs rounded-lg border px-2 py-1.5"
               style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}
             />
             <button onClick={addCategory} className="text-xs font-semibold rounded-full px-3 py-1.5 bg-gold text-navy shrink-0">
-              Tambah
+              {t('catmgr_add')}
             </button>
           </div>
         </div>

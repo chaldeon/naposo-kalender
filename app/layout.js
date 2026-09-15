@@ -1,5 +1,6 @@
 import { Libre_Baskerville, DM_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import './globals.css';
@@ -26,11 +27,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={`${libreBaskerville.variable} ${dmSans.variable}`}>
-        <ThemeProvider>
-          <Navbar />
-          <main className="min-h-[calc(100vh-60px-56px)]">{children}</main>
-          <Footer />
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <Navbar />
+            <main className="min-h-[calc(100vh-60px-56px)]">{children}</main>
+            <Footer />
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

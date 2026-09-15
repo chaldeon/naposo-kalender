@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { getExtraFields, GABUNGAN_CATS } from '@/lib/eventExtraFields';
 import { RECUR_PATTERNS, recurDates } from '@/lib/recurrence';
+import { useLanguage } from '@/context/LanguageContext';
 
 const BLANK = {
   date: '',
@@ -24,6 +25,7 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
   const [form, setForm] = useState(BLANK);
   const [recurPattern, setRecurPattern] = useState('');
   const [error, setError] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (initial) {
@@ -59,7 +61,7 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
   function handleSubmit(e) {
     e.preventDefault();
     if (!form.date || !form.title.trim()) {
-      setError('Tanggal dan judul wajib diisi.');
+      setError(t('form_error_required'));
       return;
     }
     setError('');
@@ -95,7 +97,7 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
       >
         <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-serif font-bold text-base" style={{ color: 'var(--text)' }}>
-            {isEdit ? 'Edit Event' : 'Tambah Event'}
+            {isEdit ? t('form_edit_title') : t('form_add_title')}
           </h2>
           <button type="button" onClick={onClose}>
             <X size={18} style={{ color: 'var(--text3)' }} />
@@ -104,10 +106,10 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
 
         <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Tanggal">
+            <Field label={t('form_date')}>
               <input type="date" required value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="input" />
             </Field>
-            <Field label="Kategori">
+            <Field label={t('form_category')}>
               <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="input">
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.label_id}</option>
@@ -116,29 +118,29 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
             </Field>
           </div>
 
-          <Field label="Judul">
+          <Field label={t('form_event_title')}>
             <input required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className="input" />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Jam Mulai">
+            <Field label={t('form_time_start')}>
               <input type="time" value={form.timeStart} onChange={(e) => setForm((f) => ({ ...f, timeStart: e.target.value }))} className="input" />
             </Field>
-            <Field label="Jam Selesai">
+            <Field label={t('form_time_end')}>
               <input type="time" value={form.timeEnd} onChange={(e) => setForm((f) => ({ ...f, timeEnd: e.target.value }))} className="input" />
             </Field>
           </div>
 
           {!isEdit && (
-            <Field label="Pengulangan">
+            <Field label={t('form_recurrence')}>
               <select value={recurPattern} onChange={(e) => setRecurPattern(e.target.value)} className="input">
                 {RECUR_PATTERNS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                  <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
                 ))}
               </select>
               {recurPattern && (
                 <p className="text-[11px] mt-1" style={{ color: 'var(--text3)' }}>
-                  {recurCount > 0 ? `Akan membuat ${recurCount} instance tambahan sampai akhir kuartal.` : 'Tidak ada instance tambahan sampai akhir kuartal.'}
+                  {recurCount > 0 ? `${t('form_recur_will_create')} ${recurCount} ${t('form_recur_instances')}` : t('form_recur_none_created')}
                 </p>
               )}
             </Field>
@@ -147,7 +149,7 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
           {showGabungan && (
             <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text2)' }}>
               <input type="checkbox" checked={form.gabungan} onChange={(e) => setForm((f) => ({ ...f, gabungan: e.target.checked }))} />
-              Event gabungan
+              {t('form_gabungan')}
             </label>
           )}
 
@@ -171,22 +173,22 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
             </Field>
           ))}
 
-          <Field label="Catatan">
+          <Field label={t('form_note')}>
             <textarea rows={3} value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} className="input" />
           </Field>
 
-          <Field label="URL Thumbnail (opsional)">
+          <Field label={t('form_thumbnail')}>
             <input value={form.thumbnail_url} onChange={(e) => setForm((f) => ({ ...f, thumbnail_url: e.target.value }))} className="input" />
           </Field>
 
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text2)' }}>
               <input type="checkbox" checked={form.featured} onChange={(e) => setForm((f) => ({ ...f, featured: e.target.checked }))} />
-              Featured
+              {t('form_featured')}
             </label>
             <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text2)' }}>
               <input type="checkbox" checked={form.draft} onChange={(e) => setForm((f) => ({ ...f, draft: e.target.checked }))} />
-              Simpan sebagai draft
+              {t('form_draft')}
             </label>
           </div>
 
@@ -195,10 +197,10 @@ export default function EventFormModal({ categories, catLabel, initial, onClose,
 
         <div className="flex justify-end gap-2 px-5 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
           <button type="button" onClick={onClose} className="text-xs font-semibold rounded-full px-4 py-2 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            Batal
+            {t('form_cancel')}
           </button>
           <button type="submit" disabled={saving} className="text-xs font-semibold rounded-full px-4 py-2 bg-gold text-navy disabled:opacity-60">
-            {saving ? 'Menyimpan…' : 'Simpan'}
+            {saving ? t('form_saving') : t('form_save')}
           </button>
         </div>
 

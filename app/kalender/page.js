@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Search, Grid3x3, List, Plus, Settings, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { MONTHS_ID } from '@/lib/dates';
+import { MONTHS_ID, MONTHS_EN } from '@/lib/dates';
 import { dbWrite } from '@/lib/dbWrite';
 import { recurDates, computeExtension } from '@/lib/recurrence';
 import MonthGrid from '@/components/calendar/MonthGrid';
 import AgendaView from '@/components/calendar/AgendaView';
 import CategoryFilter from '@/components/calendar/CategoryFilter';
+import { useLanguage } from '@/context/LanguageContext';
 import EventDetailModal from '@/components/calendar/EventDetailModal';
 import DayPopup from '@/components/calendar/DayPopup';
 import EventFormModal from '@/components/calendar/EventFormModal';
@@ -46,6 +47,8 @@ export default function KalenderPage() {
   const [undoState, setUndoState] = useState(null);
   const calWrapRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+  const { t, lang } = useLanguage();
+  const MO_DISPLAY = lang === 'en' ? MONTHS_EN : MONTHS_ID;
 
   useEffect(() => {
     load();
@@ -122,6 +125,17 @@ export default function KalenderPage() {
     await doSave(payload, recurPattern, 'one');
   }
 
+  function pushUndo(message, { onUndo, onDismiss }) {
+    setUndoState({ message, onUndo, onDismiss: onDismiss || (() => {}) });
+  }
+
+  function stripForRevert(row) {
+    const clean = { ...row };
+    delete clean.id;
+    delete clean.created_at;
+    return clean;
+  }
+
   async function doSave(payload, recurPattern, scope) {
     setSaving(true);
     try {
@@ -139,38 +153,77 @@ export default function KalenderPage() {
           log: { event_id: prev.id, action: 'update', diff: Object.keys(diff).length ? diff : null },
         });
 
+        const revertTargets = [{ id: prev.id, before: stripForRevert(prev) }];
+
         if (scope === 'all' && prev.recur_group_id) {
           const todayStr = new Date().toISOString().slice(0, 10);
           const siblings = events.filter((e) => e.recur_group_id === prev.recur_group_id && e.id !== prev.id && e.date >= todayStr);
           const shared = { title: payload.title, time: payload.time, category: payload.category, note: payload.note, extra: payload.extra, status: payload.status };
           for (const sib of siblings) {
             await dbWrite({ table: 'events', method: 'UPDATE', data: shared, match: { id: sib.id } });
+            revertTargets.push({ id: sib.id, before: stripForRevert(sib) });
           }
         }
+
+        setFormOpen(false);
+        setEditingEvent(null);
+        setRecurScope(null);
+        await load();
+
+        pushUndo(scope === 'all' ? `${revertTargets.length} event diperbarui.` : 'Perubahan disimpan.', {
+          onUndo: async () => {
+            try {
+              for (const t of revertTargets) {
+                await dbWrite({ table: 'events', method: 'UPDATE', data: t.before, match: { id: t.id } });
+              }
+              await load();
+            } catch (err) {
+              alert('Gagal mengurungkan: ' + err.message);
+            }
+          },
+        });
       } else {
+        const insertedIds = [];
         const [inserted] = await dbWrite({
           table: 'events',
           method: 'INSERT',
           data: Object.assign({}, payload, { recur_group_id: null, recur_pattern: null }),
           log: { action: 'create' },
         });
+        insertedIds.push(inserted.id);
+
         if (recurPattern) {
           const groupId = 'rg_' + Date.now();
           await dbWrite({ table: 'events', method: 'UPDATE', data: { recur_group_id: groupId, recur_pattern: recurPattern }, match: { id: inserted.id } });
           const dates = recurDates(payload.date, recurPattern);
           for (const d of dates) {
-            await dbWrite({
+            const [row] = await dbWrite({
               table: 'events',
               method: 'INSERT',
               data: Object.assign({}, payload, { date: d, featured: false, recur_group_id: groupId, recur_pattern: recurPattern }),
             });
+            insertedIds.push(row.id);
           }
         }
+
+        setFormOpen(false);
+        setEditingEvent(null);
+        setRecurScope(null);
+        await load();
+
+        pushUndo(insertedIds.length > 1 ? `${insertedIds.length} event ditambahkan.` : 'Event ditambahkan.', {
+          onUndo: async () => {
+            try {
+              for (const id of insertedIds) {
+                await dbWrite({ table: 'events', method: 'DELETE', match: { id } });
+              }
+              await load();
+            } catch (err) {
+              alert('Gagal mengurungkan: ' + err.message);
+            }
+          },
+        });
       }
-      setFormOpen(false);
-      setEditingEvent(null);
-      setRecurScope(null);
-      await load();
     } catch (err) {
       alert('Gagal menyimpan: ' + err.message);
     } finally {
@@ -193,27 +246,21 @@ export default function KalenderPage() {
   function deleteWithUndo(ids, message) {
     const snapshot = events.filter((e) => ids.includes(e.id));
     setEvents((prev) => prev.filter((e) => !ids.includes(e.id)));
-    setUndoState({ message, ids, snapshot });
-  }
-
-  function handleUndo() {
-    if (!undoState) return;
-    setEvents((prev) => [...prev, ...undoState.snapshot].sort((a, b) => a.date.localeCompare(b.date)));
-    setUndoState(null);
-  }
-
-  async function handleUndoExpire() {
-    if (!undoState) return;
-    const { ids } = undoState;
-    setUndoState(null);
-    try {
-      for (const id of ids) {
-        await dbWrite({ table: 'events', method: 'DELETE', match: { id }, log: { event_id: id, action: 'delete' } });
-      }
-    } catch (err) {
-      alert('Gagal menghapus: ' + err.message);
-      await load();
-    }
+    pushUndo(message, {
+      onUndo: () => {
+        setEvents((prev) => [...prev, ...snapshot].sort((a, b) => a.date.localeCompare(b.date)));
+      },
+      onDismiss: async () => {
+        try {
+          for (const id of ids) {
+            await dbWrite({ table: 'events', method: 'DELETE', match: { id }, log: { event_id: id, action: 'delete' } });
+          }
+        } catch (err) {
+          alert('Gagal menghapus: ' + err.message);
+          await load();
+        }
+      },
+    });
   }
 
   function doDeleteOne(id) {
@@ -245,14 +292,28 @@ export default function KalenderPage() {
       const base = { ...ext.first };
       delete base.id;
       delete base.created_at;
+      const insertedIds = [];
       for (const d of ext.toCreate) {
-        await dbWrite({
+        const [row] = await dbWrite({
           table: 'events',
           method: 'INSERT',
           data: { ...base, date: d, featured: false, recur_group_id: groupId, recur_pattern: ext.pattern },
         });
+        insertedIds.push(row.id);
       }
       await load();
+      pushUndo(`${insertedIds.length} event rangkaian ditambahkan.`, {
+        onUndo: async () => {
+          try {
+            for (const id of insertedIds) {
+              await dbWrite({ table: 'events', method: 'DELETE', match: { id } });
+            }
+            await load();
+          } catch (err) {
+            alert('Gagal mengurungkan: ' + err.message);
+          }
+        },
+      });
     } catch (err) {
       alert('Gagal memperpanjang rangkaian: ' + err.message);
     }
@@ -326,13 +387,13 @@ export default function KalenderPage() {
           <ChevronLeft size={14} />
         </button>
         <h2 className="font-serif font-bold text-base min-w-[140px] text-center" style={{ color: 'var(--text)' }}>
-          {MONTHS_ID[month]} {year}
+          {MO_DISPLAY[month]} {year}
         </h2>
         <button onClick={() => switchMonth(1)} className="p-1.5 rounded-full border" style={{ borderColor: 'var(--border2)' }}>
           <ChevronRight size={14} />
         </button>
         <button onClick={goToday} className="text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-          Hari ini
+          {t('cal_today')}
         </button>
 
         <div className="flex-1" />
@@ -342,7 +403,7 @@ export default function KalenderPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari event…"
+            placeholder={t('cal_search_placeholder')}
             className="text-xs rounded-full border pl-7 pr-3 py-1.5 outline-none w-36"
             style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}
           />
@@ -350,25 +411,25 @@ export default function KalenderPage() {
         <CategoryFilter categories={categories} activeCats={activeCats} onToggle={toggleCat} onReset={() => setActiveCats(new Set())} />
 
         <button onClick={() => setExportOpen(true)} disabled={exporting} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border disabled:opacity-60" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-          <Download size={13} /> {exporting ? 'Memproses…' : 'Export'}
+          <Download size={13} /> {exporting ? t('cal_exporting') : t('cal_export')}
         </button>
 
         {session.loggedIn && (
           <>
             <button onClick={() => setCatMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-              <Settings size={13} /> Kategori
+              <Settings size={13} /> {t('cal_manage_categories')}
             </button>
             <button onClick={openAddForm} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3.5 py-1.5 bg-gold text-navy">
-              <Plus size={13} /> Tambah Event
+              <Plus size={13} /> {t('cal_add_event')}
             </button>
           </>
         )}
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-sm" style={{ color: 'var(--text3)' }}>Memuat kalender…</div>
+        <div className="text-center py-16 text-sm" style={{ color: 'var(--text3)' }}>{t('cal_loading')}</div>
       ) : error ? (
-        <div className="text-center py-16 text-sm" style={{ color: 'var(--red)' }}>Gagal memuat data: {error}</div>
+        <div className="text-center py-16 text-sm" style={{ color: 'var(--red)' }}>{t('cal_load_error')} {error}</div>
       ) : (
         <div ref={calWrapRef}>
           {view === 'grid' ? (
@@ -460,7 +521,7 @@ export default function KalenderPage() {
         />
       )}
       {undoState && (
-        <UndoToast message={undoState.message} onUndo={handleUndo} onDismiss={handleUndoExpire} />
+        <UndoToast message={undoState.message} onUndo={undoState.onUndo} onDismiss={undoState.onDismiss} />
       )}
     </div>
   );

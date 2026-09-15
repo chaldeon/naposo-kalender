@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/context/LanguageContext';
 
 const LS_KEY = 'naposo_sid';
 const LS_EXP = 'naposo_sid_exp';
 
 export default function Footer() {
   const [visits, setVisits] = useState(null);
+  const { t } = useLanguage();
   const year = new Date().getFullYear();
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function Footer() {
     >
       <strong>Naposo HKBP Ujung Menteng</strong>
       <span>· © {year}</span>
-      <span>· 👁 {visits ?? '–'} kunjungan bulan ini</span>
+      <span>· 👁 {visits ?? '–'} {t('footer_visits')}</span>
     </footer>
   );
 }

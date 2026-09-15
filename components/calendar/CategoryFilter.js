@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ListFilter, ChevronDown } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function CategoryFilter({ categories, activeCats, onToggle, onReset }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     function onDocClick(e) {
@@ -15,7 +17,7 @@ export default function CategoryFilter({ categories, activeCats, onToggle, onRes
     return () => document.removeEventListener('click', onDocClick);
   }, []);
 
-  const label = activeCats.size === 0 ? 'Semua Kategori' : `${activeCats.size} kategori dipilih`;
+  const label = activeCats.size === 0 ? t('cal_all_categories') : `${activeCats.size} ${t('cal_categories_selected')}`;
 
   return (
     <div className="relative" ref={ref}>
@@ -41,7 +43,7 @@ export default function CategoryFilter({ categories, activeCats, onToggle, onRes
             className="text-left text-xs font-semibold px-2 py-1.5 rounded-lg hover:bg-black/5"
             style={{ color: 'var(--blue)' }}
           >
-            ✕ Reset filter
+            {t('cal_reset_filter')}
           </button>
           {categories.map((c) => (
             <label

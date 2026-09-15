@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -23,7 +25,7 @@ export default function LoginForm() {
       });
       const json = await res.json();
       if (!json.success) {
-        setError(json.error || 'Login gagal');
+        setError(json.error || t('login_error_default'));
         return;
       }
       const redirectedFrom = searchParams.get('redirectedFrom') || '/';
@@ -37,12 +39,12 @@ export default function LoginForm() {
   return (
     <div className="max-w-sm mx-auto px-4 py-16">
       <h1 className="font-serif text-xl font-bold mb-6 text-center" style={{ color: 'var(--text)' }}>
-        Login Pengurus
+        {t('login_title')}
       </h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label className="text-xs font-semibold block mb-1" style={{ color: 'var(--text2)' }}>
-            Username
+            {t('login_username')}
           </label>
           <input
             value={username}
@@ -55,7 +57,7 @@ export default function LoginForm() {
         </div>
         <div>
           <label className="text-xs font-semibold block mb-1" style={{ color: 'var(--text2)' }}>
-            Password
+            {t('login_password')}
           </label>
           <input
             type="password"
@@ -73,7 +75,7 @@ export default function LoginForm() {
           disabled={loading}
           className="rounded-full font-semibold text-sm py-2 bg-gold text-navy disabled:opacity-60"
         >
-          {loading ? 'Memproses…' : 'Login'}
+          {loading ? t('login_loading') : t('login_submit')}
         </button>
       </form>
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 const BLANK = {
   title: '',
@@ -23,6 +24,7 @@ export default function PostFormModal({ initial, onClose, onSave, saving }) {
   const isEdit = !!initial;
   const [form, setForm] = useState(BLANK);
   const [error, setError] = useState('');
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (initial) {
@@ -46,7 +48,7 @@ export default function PostFormModal({ initial, onClose, onSave, saving }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (!form.title.trim() || !form.date) {
-      setError('Judul dan tanggal wajib diisi.');
+      setError(t('revform_error_required'));
       return;
     }
     const payload = {
@@ -74,7 +76,7 @@ export default function PostFormModal({ initial, onClose, onSave, saving }) {
       >
         <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-serif font-bold text-base" style={{ color: 'var(--text)' }}>
-            {isEdit ? 'Edit Post' : 'Tambah Post Reversement'}
+            {isEdit ? t('revform_edit_title') : t('revform_add_title')}
           </h2>
           <button type="button" onClick={onClose}>
             <X size={18} style={{ color: 'var(--text3)' }} />
@@ -82,45 +84,45 @@ export default function PostFormModal({ initial, onClose, onSave, saving }) {
         </div>
 
         <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-3">
-          <Field label="Judul">
+          <Field label={t('revform_title')}>
             <input required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className="input" />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Hari">
+            <Field label={t('revform_day')}>
               <select value={form.day_type} onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value }))} className="input">
-                <option value="senin">Senin</option>
-                <option value="jumat">Jumat</option>
+                <option value="senin">{t('rev_day_senin')}</option>
+                <option value="jumat">{t('rev_day_jumat')}</option>
               </select>
             </Field>
-            <Field label="Tanggal">
+            <Field label={t('revform_date')}>
               <input type="date" required value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="input" />
             </Field>
           </div>
 
-          <Field label="Nama Seri">
+          <Field label={t('revform_series')}>
             <input value={form.series_name} onChange={(e) => setForm((f) => ({ ...f, series_name: e.target.value }))} className="input" />
           </Field>
 
-          <Field label="Ayat Referensi">
-            <input value={form.verse_ref} onChange={(e) => setForm((f) => ({ ...f, verse_ref: e.target.value }))} className="input" placeholder="mis. Yohanes 3:16" />
+          <Field label={t('revform_verse')}>
+            <input value={form.verse_ref} onChange={(e) => setForm((f) => ({ ...f, verse_ref: e.target.value }))} className="input" placeholder={t('revform_verse_placeholder')} />
           </Field>
 
-          <Field label="URL Poster (Google Drive)">
+          <Field label={t('revform_poster')}>
             <input value={form.poster_url} onChange={(e) => setForm((f) => ({ ...f, poster_url: e.target.value }))} className="input" />
           </Field>
 
-          <Field label="Ringkasan (excerpt, opsional)">
+          <Field label={t('revform_excerpt')}>
             <textarea rows={2} value={form.excerpt} onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))} className="input" />
           </Field>
 
-          <Field label="Isi Renungan">
+          <Field label={t('revform_body')}>
             <textarea rows={8} required value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} className="input" />
           </Field>
 
           <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text2)' }}>
             <input type="checkbox" checked={form.published} onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))} />
-            Publikasikan sekarang
+            {t('revform_publish')}
           </label>
 
           {error && <p className="text-xs" style={{ color: 'var(--red)' }}>{error}</p>}
@@ -128,10 +130,10 @@ export default function PostFormModal({ initial, onClose, onSave, saving }) {
 
         <div className="flex justify-end gap-2 px-5 py-3 border-t" style={{ borderColor: 'var(--border)' }}>
           <button type="button" onClick={onClose} className="text-xs font-semibold rounded-full px-4 py-2 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            Batal
+            {t('form_cancel')}
           </button>
           <button type="submit" disabled={saving} className="text-xs font-semibold rounded-full px-4 py-2 bg-gold text-navy disabled:opacity-60">
-            {saving ? 'Menyimpan…' : 'Simpan'}
+            {saving ? t('form_saving') : t('form_save')}
           </button>
         </div>
 

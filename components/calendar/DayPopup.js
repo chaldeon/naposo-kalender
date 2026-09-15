@@ -2,8 +2,10 @@
 
 import { X } from 'lucide-react';
 import { formatFullDate } from '@/lib/dates';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function DayPopup({ date, events, catColor, catLabel, onSelectEvent, onClose }) {
+  const { lang } = useLanguage();
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{ background: 'rgba(10,31,68,.55)' }} onClick={onClose}>
       <div
@@ -13,7 +15,7 @@ export default function DayPopup({ date, events, catColor, catLabel, onSelectEve
       >
         <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
           <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-            {formatFullDate(date)}
+            {formatFullDate(date, lang)}
           </h2>
           <button onClick={onClose}>
             <X size={18} style={{ color: 'var(--text3)' }} />

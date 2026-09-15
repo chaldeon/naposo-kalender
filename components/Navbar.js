@@ -5,18 +5,20 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, CalendarDays, Cross, BarChart3, Lock, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/kalender', label: 'Kalender', icon: CalendarDays },
-  { href: '/reversement', label: 'Reversement', icon: Cross },
-  { href: '/statistik', label: 'Statistik', icon: BarChart3 },
+  { href: '/', key: 'nav_home', icon: Home },
+  { href: '/kalender', key: 'nav_kalender', icon: CalendarDays },
+  { href: '/reversement', key: 'nav_reversement', icon: Cross },
+  { href: '/statistik', key: 'nav_statistik', icon: BarChart3 },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { lang, toggleLang, t } = useLanguage();
   const [session, setSession] = useState({ loggedIn: false });
 
   useEffect(() => {
@@ -60,7 +62,7 @@ export default function Navbar() {
 
           <div className="w-px h-[22px] bg-white/20 mx-1" />
 
-          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+          {NAV_LINKS.map(({ href, key, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
@@ -73,10 +75,18 @@ export default function Navbar() {
                 }`}
               >
                 <Icon size={13} />
-                {label}
+                {t(key)}
               </Link>
             );
           })}
+
+          <button
+            onClick={toggleLang}
+            title="Switch language"
+            className="flex items-center justify-center bg-white/10 border border-white/20 text-white/85 hover:bg-white/20 hover:text-white rounded-md px-2 py-1 text-[11px] font-bold transition-colors"
+          >
+            {lang === 'id' ? 'EN' : 'ID'}
+          </button>
 
           {session.loggedIn ? (
             <button
@@ -84,7 +94,7 @@ export default function Navbar() {
               className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold bg-gold text-navy"
             >
               <Lock size={13} />
-              Logout
+              {t('nav_logout')}
             </button>
           ) : (
             <Link
@@ -92,13 +102,16 @@ export default function Navbar() {
               className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold no-underline bg-gold text-navy"
             >
               <Lock size={13} />
-              Login
+              {t('nav_login')}
             </Link>
           )}
         </div>
 
         {/* Mobile: cukup toggle tema + link login/logout, nav utama pindah ke bottom bar (menyusul) */}
         <div className="flex md:hidden items-center gap-2">
+          <button onClick={toggleLang} className="bg-white/10 border border-white/20 rounded-md px-2 py-1 text-[11px] font-bold">
+            {lang === 'id' ? 'EN' : 'ID'}
+          </button>
           <button onClick={toggleTheme} className="bg-white/10 border border-white/20 rounded-md px-2 py-1">
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>

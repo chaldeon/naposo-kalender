@@ -9,12 +9,13 @@ import PostModal from '@/components/reversement/PostModal';
 import Pagination from '@/components/reversement/Pagination';
 import PostFormModal from '@/components/reversement/PostFormModal';
 import ConfirmModal from '@/components/calendar/ConfirmModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 const PAGE_SIZE = 6;
 const FILTERS = [
-  { id: 'all', label: 'Semua' },
-  { id: 'senin', label: '🌅 Senin' },
-  { id: 'jumat', label: '🌿 Jumat' },
+  { id: 'all', labelKey: 'rev_filter_all' },
+  { id: 'senin', labelKey: 'rev_filter_senin' },
+  { id: 'jumat', labelKey: 'rev_filter_jumat' },
 ];
 
 export default function ReversementPage() {
@@ -33,6 +34,7 @@ export default function ReversementPage() {
   const [editingPost, setEditingPost] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetch('/api/auth/me').then((r) => r.json()).then(setSession).catch(() => {});
@@ -124,7 +126,7 @@ export default function ReversementPage() {
   function requestDelete(post) {
     setSelected(null);
     setConfirmState({
-      message: `Hapus post "${post.title}"? Tindakan ini tidak bisa dibatalkan.`,
+      message: `${t('rev_delete_confirm')} "${post.title}"? ${t('rev_delete_confirm_sub')}`,
       onConfirm: async () => {
         setConfirmState(null);
         try {
@@ -141,13 +143,13 @@ export default function ReversementPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="text-center mb-6">
         <div className="text-xs font-semibold tracking-wide mb-1" style={{ color: 'var(--gold)' }}>
-          RENUNGAN MINGGUAN
+          {t('rev_eyebrow')}
         </div>
         <h1 className="font-serif text-2xl font-bold" style={{ color: 'var(--text)' }}>
-          Reversement
+          {t('rev_title')}
         </h1>
         <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-          Ayat dan renungan untuk memulai harimu bersama Naposo · Senin &amp; Jumat
+          {t('rev_subtitle')}
         </p>
       </div>
 
@@ -163,7 +165,7 @@ export default function ReversementPage() {
                 : { borderColor: 'var(--border2)', color: 'var(--text2)' }
             }
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
         <div className="relative ml-2">
@@ -171,30 +173,30 @@ export default function ReversementPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari renungan…"
+            placeholder={t('rev_search_placeholder')}
             className="text-xs rounded-full border pl-7 pr-3 py-1.5 outline-none w-40"
             style={{ borderColor: 'var(--border2)', background: 'var(--surface)', color: 'var(--text)' }}
           />
         </div>
         {session.loggedIn && (
           <button onClick={openAddForm} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3.5 py-1.5 bg-gold text-navy">
-            <Plus size={13} /> Tambah Post
+            <Plus size={13} /> {t('rev_add_post')}
           </button>
         )}
       </div>
 
       {loading ? (
         <div className="text-center py-16 text-sm" style={{ color: 'var(--text3)' }}>
-          Memuat…
+          {t('rev_loading')}
         </div>
       ) : displayed.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-3xl mb-2">{filter !== 'all' || query ? '🔍' : '📖'}</div>
           <div className="font-semibold" style={{ color: 'var(--text)' }}>
-            {query ? 'Tidak ada hasil pencarian' : filter !== 'all' ? 'Tidak ada post untuk filter ini' : 'Belum ada konten'}
+            {query ? t('rev_empty_search') : filter !== 'all' ? t('rev_empty_filter') : t('rev_empty_default')}
           </div>
           <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>
-            {query ? 'Coba kata kunci lain.' : 'Konten akan hadir setiap Senin dan Jumat.'}
+            {query ? t('rev_empty_sub_search') : t('rev_empty_sub_default')}
           </p>
         </div>
       ) : (
@@ -219,7 +221,7 @@ export default function ReversementPage() {
         />
       )}
       {confirmState && (
-        <ConfirmModal message={confirmState.message} confirmLabel="Hapus" onConfirm={confirmState.onConfirm} onCancel={() => setConfirmState(null)} />
+        <ConfirmModal message={confirmState.message} onConfirm={confirmState.onConfirm} onCancel={() => setConfirmState(null)} />
       )}
     </div>
   );

@@ -1,6 +1,10 @@
 'use client';
 
-export default function ConfirmModal({ message, confirmLabel = 'Ya', onConfirm, onCancel }) {
+import { useLanguage } from '@/context/LanguageContext';
+
+export default function ConfirmModal({ message, confirmLabel, onConfirm, onCancel }) {
+  const { t } = useLanguage();
+  const label = confirmLabel || t('confirm_delete');
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4" style={{ background: 'rgba(10,31,68,.55)' }} onClick={onCancel}>
       <div className="w-full max-w-xs rounded-2xl p-5" style={{ background: 'var(--surface)' }} onClick={(e) => e.stopPropagation()}>
@@ -9,10 +13,10 @@ export default function ConfirmModal({ message, confirmLabel = 'Ya', onConfirm, 
         </p>
         <div className="flex gap-2 justify-end">
           <button onClick={onCancel} className="text-xs font-semibold rounded-full px-3.5 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            Batal
+            {t('confirm_cancel')}
           </button>
           <button onClick={onConfirm} className="text-xs font-semibold rounded-full px-3.5 py-1.5" style={{ background: 'var(--red)', color: '#fff' }}>
-            {confirmLabel}
+            {label}
           </button>
         </div>
       </div>

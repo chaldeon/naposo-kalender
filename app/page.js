@@ -9,6 +9,7 @@ import DocManagerModal from '@/components/home/DocManagerModal';
 import RecapManagerModal from '@/components/home/RecapManagerModal';
 import RecapCarousel from '@/components/home/RecapCarousel';
 import RecapGalleryModal from '@/components/home/RecapGalleryModal';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function HomePage() {
   const [session, setSession] = useState({ loggedIn: false });
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [docMgrOpen, setDocMgrOpen] = useState(false);
   const [recapMgrOpen, setRecapMgrOpen] = useState(false);
   const [openRecap, setOpenRecap] = useState(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetch('/api/auth/me').then((r) => r.json()).then(setSession).catch(() => {});
@@ -53,13 +55,13 @@ export default function HomePage() {
       {isAdmin && (
         <div className="flex gap-2 justify-end">
           <button onClick={() => setAnnMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            <Megaphone size={13} /> Pengumuman
+            <Megaphone size={13} /> {t('home_announcements_manage')}
           </button>
           <button onClick={() => setDocMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            <Settings size={13} /> Dokumen
+            <Settings size={13} /> {t('home_docs_manage')}
           </button>
           <button onClick={() => setRecapMgrOpen(true)} className="flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5 border" style={{ borderColor: 'var(--border2)', color: 'var(--text2)' }}>
-            <Images size={13} /> Recap Galeri
+            <Images size={13} /> {t('home_recap_manage')}
           </button>
         </div>
       )}
@@ -71,7 +73,7 @@ export default function HomePage() {
           style={{ background: a.color || 'var(--blue)', color: '#fff', opacity: a.active ? 1 : 0.5 }}
         >
           {!a.active && (
-            <span className="absolute top-1.5 right-2 text-[9px] font-bold bg-black/20 px-1.5 py-0.5 rounded-full">NONAKTIF</span>
+            <span className="absolute top-1.5 right-2 text-[9px] font-bold bg-black/20 px-1.5 py-0.5 rounded-full">{t('home_inactive_badge')}</span>
           )}
           {a.text}
           {a.link && a.link_label && (
@@ -86,14 +88,14 @@ export default function HomePage() {
         <div className="flex items-center gap-2 mb-4">
           <CalendarDays size={16} style={{ color: 'var(--blue)' }} />
           <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-            Kegiatan Mendatang
+            {t('home_upcoming_events')}
           </h2>
         </div>
         {loading ? (
-          <p className="text-sm" style={{ color: 'var(--text3)' }}>Memuat…</p>
+          <p className="text-sm" style={{ color: 'var(--text3)' }}>{t('home_loading')}</p>
         ) : events.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--text3)' }}>
-            Belum ada kegiatan terjadwal.
+            {t('home_no_events')}
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -120,7 +122,7 @@ export default function HomePage() {
           </ul>
         )}
         <Link href="/kalender" className="inline-block mt-4 text-xs font-semibold" style={{ color: 'var(--blue)' }}>
-          Lihat kalender lengkap →
+          {t('home_view_full_calendar')}
         </Link>
       </section>
 
@@ -129,7 +131,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2 mb-3">
             <Images size={16} style={{ color: 'var(--blue)' }} />
             <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-              Recap Kegiatan
+              {t('home_recap_title')}
             </h2>
           </div>
           <RecapCarousel items={recapItems.filter((r) => r.active !== false)} onOpen={setOpenRecap} />
@@ -141,7 +143,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2 mb-4">
             <FileText size={16} style={{ color: 'var(--blue)' }} />
             <h2 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-              Dokumen
+              {t('home_docs_title')}
             </h2>
           </div>
           <ul className="flex flex-col gap-2">
@@ -152,7 +154,7 @@ export default function HomePage() {
                 </Link>
                 {d.category === 'pengurus' && (
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--surface2)', color: 'var(--text3)' }}>
-                    Pengurus
+                    {t('home_docs_pengurus_badge')}
                   </span>
                 )}
               </li>

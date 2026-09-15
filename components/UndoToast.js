@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function UndoToast({ message, onUndo, onDismiss, seconds = 6 }) {
   const [left, setLeft] = useState(seconds);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (left <= 0) {
@@ -28,7 +30,7 @@ export default function UndoToast({ message, onUndo, onDismiss, seconds = 6 }) {
         className="text-xs font-bold"
         style={{ color: 'var(--gold)' }}
       >
-        URUNGKAN ({left})
+        {t('undo_action')} ({left})
       </button>
     </div>
   );

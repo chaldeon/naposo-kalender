@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
 
 const BATCH = 48;
 
-function catLabelFallback(id) {
-  const map = { ibadah: 'Ibadah', olahraga: 'Olahraga', 'event-gabungan': 'Event Gabungan', rapat: 'Rapat', lainnya: 'Lainnya' };
-  return map[id] || id;
+const CAT_LABELS = {
+  id: { ibadah: 'Ibadah', olahraga: 'Olahraga', 'event-gabungan': 'Event Gabungan', rapat: 'Rapat', lainnya: 'Lainnya' },
+  en: { ibadah: 'Worship', olahraga: 'Sports', 'event-gabungan': 'Combined Event', rapat: 'Meeting', lainnya: 'Other' },
+};
+
+function catLabelFallback(id, lang) {
+  return CAT_LABELS[lang]?.[id] || CAT_LABELS.id[id] || id;
 }
 
 export default function RecapGalleryModal({ recap, onClose }) {
@@ -16,6 +21,7 @@ export default function RecapGalleryModal({ recap, onClose }) {
   const [visibleCount, setVisibleCount] = useState(BATCH);
   const [lightboxIdx, setLightboxIdx] = useState(null);
   const sentinelRef = useRef(null);
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     setFiles(null);
@@ -38,7 +44,6 @@ export default function RecapGalleryModal({ recap, onClose }) {
   const photos = (files || []).filter((f) => f.type === 'photo');
   const videos = (files || []).filter((f) => f.type === 'video');
 
-  // Lazy load batch berikutnya saat sentinel terlihat
   useEffect(() => {
     if (!sentinelRef.current || visibleCount >= photos.length) return;
     const obs = new IntersectionObserver(
@@ -62,7 +67,7 @@ export default function RecapGalleryModal({ recap, onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [lightboxIdx, photos.length]);
 
-  const meta = recap.date ? new Date(recap.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const meta = recap.date ? new Date(recap.date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4" style={{ background: 'rgba(10,31,68,.6)' }} onClick={onClose}>
@@ -76,24 +81,24 @@ export default function RecapGalleryModal({ recap, onClose }) {
             <X size={16} />
           </button>
           <div className="relative">
-            <span className="text-[10px] font-bold tracking-wide opacity-80">{catLabelFallback(recap.category).toUpperCase()}</span>
+            <span className="text-[10px] font-bold tracking-wide opacity-80">{catLabelFallback(recap.category, lang).toUpperCase()}</span>
             <div className="font-serif font-bold text-lg leading-tight">{recap.title}</div>
             <div className="text-xs opacity-80">
-              {meta} {files !== null && `· ${photos.length} foto${videos.length ? ' · ' + videos.length + ' video' : ''}`}
+              {meta} {files !== null && `· ${photos.length} ${t('recap_photos')}${videos.length ? ' · ' + videos.length + ' ' + t('recap_videos') : ''}`}
             </div>
           </div>
         </div>
 
         {videos.length > 0 && (
           <div className="flex border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
-            {['photo', 'video'].map((t) => (
+            {['photo', 'video'].map((tabKey) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
+                key={tabKey}
+                onClick={() => setTab(tabKey)}
                 className="flex-1 text-xs font-bold py-2"
-                style={{ color: tab === t ? 'var(--blue)' : 'var(--text3)', borderBottom: tab === t ? '2px solid var(--blue)' : '2px solid transparent' }}
+                style={{ color: tab === tabKey ? 'var(--blue)' : 'var(--text3)', borderBottom: tab === tabKey ? '2px solid var(--blue)' : '2px solid transparent' }}
               >
-                {t === 'photo' ? `Foto (${photos.length})` : `Video (${videos.length})`}
+                {tabKey === 'photo' ? `${t('recap_tab_photo')} (${photos.length})` : `${t('recap_tab_video')} (${videos.length})`}
               </button>
             ))}
           </div>
@@ -101,11 +106,11 @@ export default function RecapGalleryModal({ recap, onClose }) {
 
         <div className="p-4 overflow-y-auto flex-1">
           {files === null ? (
-            <p className="text-xs text-center py-10" style={{ color: 'var(--text3)' }}>Memuat foto…</p>
+            <p className="text-xs text-center py-10" style={{ color: 'var(--text3)' }}>{t('det_gallery_loading')}</p>
           ) : tab === 'photo' ? (
             photos.length === 0 ? (
               <p className="text-xs text-center py-10" style={{ color: 'var(--text3)' }}>
-                {recap.folder_id ? 'Belum ada foto.' : 'Folder galeri belum diatur.'}
+                {recap.folder_id ? t('recap_no_photos') : t('recap_folder_empty')}
               </p>
             ) : (
               <>
@@ -121,7 +126,7 @@ export default function RecapGalleryModal({ recap, onClose }) {
               </>
             )
           ) : videos.length === 0 ? (
-            <p className="text-xs text-center py-10" style={{ color: 'var(--text3)' }}>Belum ada video.</p>
+            <p className="text-xs text-center py-10" style={{ color: 'var(--text3)' }}>{t('recap_no_videos')}</p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {videos.map((f) => (
@@ -155,7 +160,7 @@ export default function RecapGalleryModal({ recap, onClose }) {
           <div className="mt-3 flex items-center gap-3 text-white text-xs" onClick={(e) => e.stopPropagation()}>
             <span>{photos[lightboxIdx].name} · {lightboxIdx + 1}/{photos.length}</span>
             <a href={photos[lightboxIdx].driveLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 underline">
-              <ExternalLink size={12} /> Buka di Drive
+              <ExternalLink size={12} /> {t('recap_open_drive')}
             </a>
           </div>
         </div>
